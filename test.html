@@ -1,0 +1,37 @@
+<html>
+
+<head>
+<title>支付宝微信自动识别</title>
+</head>
+
+<body>
+<script>
+function getPar(name) { 
+var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i"); 
+var r = window.location.search.substr(1).match(reg); 
+if (r != null) return unescape(r[2]); return null; 
+} 
+var ua=navigator.userAgent.toLowerCase();
+if(ua.indexOf("micromessenger")>-1)
+{
+	//微信
+	document.write("微信访问"+getPar("w"));
+    wx.redirectTo(escape(getPar("w")));
+	window.location=escape(getPar("w"));
+	
+}
+else if(ua.indexOf("alipayclient")>-1)
+{
+	//支付宝
+	document.write("支付宝访问"+getPar("z"));
+	window.location.href="http://"+escape(getPar("z"));
+}
+else
+{
+	document.write("其他浏览器访问"+getPar("o"));
+	window.location.href="http://"+escape(getPar("o"));
+}
+</script>
+<p>Hosted by <a href="https://pages.coding.me" style="font-weight: bold">Coding Pages</a></p> 
+</body>
+</html>
