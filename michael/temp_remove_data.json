@@ -1,0 +1,8 @@
+{
+    "can_removeable": [
+        "com.android.email"
+    ],
+    "not_removeable": [
+        "com.android.os"
+    ]
+}

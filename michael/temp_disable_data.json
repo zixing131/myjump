@@ -1,0 +1,8 @@
+{
+    "can_disabled": [
+        "com.android.email"
+    ],
+    "not_disablable": [
+        "com.android.os"
+    ]
+}
