@@ -3,36 +3,30 @@ branches: {
   }
 fileChange:
   /store:
-    newFile: !uuid '029810b15bb4034dc687a65f056ad311b99d0a6d'
-    oldFile: null
+    newFile: !uuid '46e408b631f482e515255a9ec56bc17a7c555653'
+    oldFile: !uuid '029810b15bb4034dc687a65f056ad311b99d0a6d'
   /store/icon.png:
-    newFile: !uuid '7e5edb9ed984d1829869d3dd4c1043052d66c1bd'
-    oldFile: null
+    newFile: !uuid '5c92243f1852cf740df3fcb975539866c4f8d300'
+    oldFile: !uuid '7e5edb9ed984d1829869d3dd4c1043052d66c1bd'
   /store/qqmusic:
-    newFile: !uuid 'b9db5185715ec300808bc7d6d4cc5cfcba20b5a3'
-    oldFile: null
+    newFile: !uuid '2996d1b01d8be498bf8aca252f62cde171dfd1de'
+    oldFile: !uuid 'b9db5185715ec300808bc7d6d4cc5cfcba20b5a3'
   /store/qqmusic/1.png:
-    newFile: !uuid '65f512314ee51e81b2fb4c9c45c2519d3c839097'
-    oldFile: null
+    newFile: !uuid '061b6de5d2eff2955e2b2b626b5e59bc0961ed4b'
+    oldFile: !uuid '65f512314ee51e81b2fb4c9c45c2519d3c839097'
   /store/qqmusic/icon.png:
-    newFile: !uuid '5fab8ec7c1ae0ab1c9d00f0d09fd5836532b72cc'
-    oldFile: null
-  /store/qqmusic/qqmusic2010.jar:
-    newFile: !uuid '8b90be23d3af310b749f34cfdfff58f5653d0194'
-    oldFile: null
+    newFile: !uuid '032f2fc58eae88e79e0b0f24148282be1347000d'
+    oldFile: !uuid '5fab8ec7c1ae0ab1c9d00f0d09fd5836532b72cc'
   /store/uc:
-    newFile: !uuid '6278abd39f93f94443c31b2924bce329e937fccd'
-    oldFile: null
+    newFile: !uuid '73d60f118a5bde53d1bcb648c93652e69611aad7'
+    oldFile: !uuid '6278abd39f93f94443c31b2924bce329e937fccd'
   /store/uc/1.png:
-    newFile: !uuid '8f6167ea47666f9188561be7f5100dbc87660a40'
-    oldFile: null
+    newFile: !uuid 'db44825369f2496659f61edbdc80115fe6e4a409'
+    oldFile: !uuid '8f6167ea47666f9188561be7f5100dbc87660a40'
   /store/uc/icon.png:
-    newFile: !uuid 'dca8fe4fbf6425a10a5c39f380e1158408ab359e'
-    oldFile: null
-  /store/uc/uc.jar:
-    newFile: !uuid '0f0cefdfb7826fdd1111c6c358ac486ec1fb6a8f'
-    oldFile: null
-gitCommitId: !uuid '8971a653c4bf1701aec0826fe03330985c694187'
+    newFile: !uuid 'a1cd8e9cab71c93bac5a3493d2d1f82d65b97490'
+    oldFile: !uuid 'dca8fe4fbf6425a10a5c39f380e1158408ab359e'
+gitCommitId: !uuid 'b3eee3786ee976130d07e1e8bde588cdc1ba8cc5'
 renames: {
   }
-revisionId: 6
+revisionId: 7
