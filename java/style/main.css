@@ -33,6 +33,24 @@ body {
 }
 
 /* Set the display size. */
+
+.size-240x320 #display-container {
+  width: 240px !important;
+}
+
+.size-240x320 #pageContainer {
+  width: calc(100% - 240px) !important;
+}
+
+.size-240x320 #display {
+  height: 320px !important;
+}
+
+.size-240x320 #settings {
+  height: calc(100% - 320px) !important;
+}
+
+
 .size-320x240 #display-container {
   width: 320px !important;
 }
@@ -50,36 +68,36 @@ body {
 }
 
 
-.size-320x480 #display-container {
-  width: 320px !important;
+.size-360x640 #display-container {
+  width: 360px !important;
 }
 
-.size-320x480 #pageContainer {
-  width: calc(100% - 320px) !important;
+.size-360x640 #pageContainer {
+  width: calc(100% - 360px) !important;
 }
 
-.size-320x480 #display {
-  height: 480px !important;
+.size-360x640 #display {
+  height: 640px !important;
 }
 
-.size-320x480 #settings {
-  height: calc(100% - 480px) !important;
+.size-360x640 #settings {
+  height: calc(100% - 640px) !important;
 }
 
-.size-480x320 #display-container {
-  width: 480px !important;
+.size-640x360 #display-container {
+  width: 640px !important;
 }
 
-.size-480x320 #pageContainer {
-  width: calc(100% - 480px) !important;
+.size-640x360 #pageContainer {
+  width: calc(100% - 640px) !important;
 }
 
-.size-480x320 #display {
-  height: 320px !important;
+.size-640x360 #display {
+  height: 360px !important;
 }
 
-.size-480x320 #settings {
-  height: calc(100% - 320px) !important;
+.size-640x360 #settings {
+  height: calc(100% - 360px) !important;
 }
 /* Float the back button to the bottom right corner */
 #back-button {

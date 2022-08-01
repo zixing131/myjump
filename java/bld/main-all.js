@@ -6973,6 +6973,8 @@ if (typeof module !== "undefined" && module.exports) {
   return {isVKVisible:isVKVisible, manifest:manifest, sendCommandEvent:sendCommandEvent, sendVirtualKeyboardEvent:sendVirtualKeyboardEvent, sendEndOfMediaEvent:sendEndOfMediaEvent, sendMediaSnapshotFinishedEvent:sendMediaSnapshotFinishedEvent, sendKeyPress:sendKeyPress, sendKeyRelease:sendKeyRelease, sendDestroyMIDletEvent:sendDestroyMIDletEvent, setDestroyedForRestart:setDestroyedForRestart, registerDestroyedListener:registerDestroyedListener, sendExecuteMIDletEvent:sendExecuteMIDletEvent, deviceContext:deviceContext, 
   updatePhysicalScreenSize:updatePhysicalScreenSize, updateCanvas:updateCanvas, localizedStrings:localizedStrings};
 }();
+
+window.MIDP=MIDP;
 var FrameAnimator = function() {
 };
 FrameAnimator.numRegistered = 0;
@@ -13020,6 +13022,22 @@ Promise.all(loadingPromises).then(start, function(reason) {
 document.getElementById("start").onclick = function() {
   start();
 };
+
+
+
+if(config.canvasSize)
+{
+	Array.prototype.forEach.call(document.body.classList, function(c) {
+		if (c.indexOf("size-") == 0) {
+		  document.body.classList.remove(c);
+		}
+	  });
+	document.body.classList.add(config.canvasSize); 
+	MIDP.updatePhysicalScreenSize();
+	MIDP.updateCanvas();
+	start();
+}
+
 document.getElementById("canvasSize").onchange = function() {
   Array.prototype.forEach.call(document.body.classList, function(c) {
     if (c.indexOf("size-") == 0) {
