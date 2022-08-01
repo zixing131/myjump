@@ -2,13 +2,67 @@
 branches: {
   }
 fileChange:
-  /midijs:
-    newFile: !uuid '9b59ad236c86c7223399dd082502a0a306877ca1'
-    oldFile: !uuid 'd72ef518df9ee665e1b0d936ca9e38ffcd5a2ccc'
-  /midijs/midi.js:
-    newFile: !uuid '237b3e1133b287994cf6c82cb71e7619eba08a78'
-    oldFile: !uuid '1d1ee448cca0be194adb43d96524028ace2b30da'
-gitCommitId: !uuid '0abca6cf82c2e4a9b89fca2d222fa0bdf2c14756'
+  /java:
+    newFile: !uuid 'a15d121fecfa0362bc78466c98c3e27b16ee8403'
+    oldFile: !uuid 'ebd213df34b6720f5a37bcdd5784ebdccbdf8c67'
+  /java/bld:
+    newFile: !uuid '8e9aef0455f14de5b1073dcc234d109d67d1ed87'
+    oldFile: !uuid '666c720a57225c9909a6407dfebaeadb72d8e2fe'
+  /java/bld/main-all.js:
+    newFile: !uuid 'f43ca8f514c00cece7dee8666c0e941610e595ad'
+    oldFile: !uuid '2335bddc5d8b6e60b758a4d51f8f2154173615cb'
+  /java/img:
+    newFile: !uuid 'c82cdc63e453220f4a5b09e029801a0c56a5d74c'
+    oldFile: !uuid '734c528eba8523e6f91ab53f50c5d554d430f7f7'
+  /java/img/anyview.png:
+    newFile: !uuid 'c170c1153dd465d97456e86bc7ad261bccee8398'
+    oldFile: null
+  /java/img/ckxt2.png:
+    newFile: !uuid 'b2d37289c24cffdd7b6c2b9b1b96ea679ef4bb99'
+    oldFile: null
+  /java/img/ckxt3.png:
+    newFile: !uuid 'd0616799d8e754dc6895bdf7a10f8816886ecfd1'
+    oldFile: null
+  /java/img/kxnc.png:
+    newFile: !uuid 'd8bcb6819817f104ae9c9deaff1540e917cb6a54'
+    oldFile: null
+  /java/img/rf18.png:
+    newFile: !uuid '5e8d8a0e5b32e2703995923658d09ca100ac18c9'
+    oldFile: null
+  /java/index.html:
+    newFile: !uuid 'b1b4ee9b130b52b44acd8b96b0d3d238ed45a978'
+    oldFile: !uuid 'bde4ded07b93edd0d8eb3e5dbc60ace88ab17388'
+  /java/index2.html:
+    newFile: !uuid '09c0d6a97d2bd71d9c9f47460a64ae9622b2a197'
+    oldFile: null
+  /java/jar:
+    newFile: !uuid 'b4134507922e19257760c87fd8780bb686e5161c'
+    oldFile: !uuid '31b235abc45cb628a979cd0867985580f2f1e4f8'
+  /java/jar/ckxt3.jar:
+    newFile: !uuid '15331a3747e170f2a9252ff3a789a537288d6ae4'
+    oldFile: null
+  /java/jar/kemulator.cfg:
+    newFile: !uuid 'e5453e3b5ac3b9e93e99b6e67cd9163c719fd9cb'
+    oldFile: null
+  /java/jar/kxnc.jar:
+    newFile: !uuid '9c7638cb8b1b348cb8864d2dbe405fe29fb27bba'
+    oldFile: null
+  /java/jar/rf18.jar:
+    newFile: !uuid 'bab408553547abef6c7d4c5268fa6a46433a7034'
+    oldFile: null
+  /java/keymap.js:
+    newFile: !uuid '15fb6fc7d9236c7920b9b9b2a3eaf66e37b2c247'
+    oldFile: null
+  /java/main.html:
+    newFile: !uuid 'c95807243b76f47aaf753aaae757dab6d13b01f8'
+    oldFile: !uuid 'd7078f5fda4aa4ea46b5d9916824b867e9b72886'
+  /java/style:
+    newFile: !uuid 'd987b7f2b78edbd4b14a14d4db920df827fd3caa'
+    oldFile: !uuid '08338337d732445d07cbe250a356a6b7275a62b7'
+  /java/style/main.css:
+    newFile: !uuid 'a111e1947027e9e52f30633b2ec9cbaa7b8d9ffa'
+    oldFile: !uuid '8d950af3d1e7b7174d32da46a2e1dfb90a9afb11'
+gitCommitId: !uuid 'b7fa41e1a251515b690657c5f0d81021abac1fe6'
 renames: {
   }
-revisionId: 15
+revisionId: 16
