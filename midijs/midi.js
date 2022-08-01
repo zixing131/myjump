@@ -515,7 +515,7 @@
                     return t.substr(0, n + 1)
             }
             return null
-        }()).match(/https?:\/\/[^\.]+\.(scorio.com|midijs.net).*/) ? "https://cdn.scorio.com/midijs/lib/" : M) + "libtimidity.js?v=" + c
+        }()).match(/https?:\/\/[^\.]+\.(scorio.com|midijs).*/) ? "http://zixing.gitee.io/myjump/midijs/lib/" :  "http://zixing.gitee.io/myjump/midijs/lib/") + "libtimidity.js?v=" + c
           , me = (Ie = navigator.userAgent,
         be = navigator.appName,
         Me = "" + parseFloat(navigator.appVersion),
