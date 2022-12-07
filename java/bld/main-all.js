@@ -6154,6 +6154,23 @@ if (typeof module !== "undefined" && module.exports) {
       deviceCanvas.style.top = headerHeight + "px";
       deviceCanvas.dispatchEvent(new Event("canvasresize"));
     }
+    /*
+    if (config.enablexy && config.enablexy=="1"){
+      if(config.canvasSize)
+      {
+        var canx =parseInt(config.canvasSize.split("-")[1].split("x")[0]);
+        var cany =parseInt(config.canvasSize.split("-")[1].split("x")[1]);
+
+        var cxt = deviceCanvas.getContext("2d");
+        var cx = document.body.clientWidth / canx;
+        var cy = document.body.clientHeight/cany;
+        console.log(document.body.clientWidth, document.body.clientHeight , deviceCanvas.width,deviceCanvas.height,cx,cy);
+        var cc = Math.min(cx,cy);
+        
+        cxt.scale( cc,cc);
+      } 
+    }
+    */
   }
   function onWindowResize(evt) {
     var newPhysicalScreenWidth = window.outerWidth - horizontalChrome;
@@ -12301,6 +12318,7 @@ var Content = function() {
   addUnimplementedNative("com/sun/j2me/content/InvocationStore.resetFlags0.(I)V");
   return {addInvocation:addInvocation};
 }();
+/*
 document.getElementById("up").onmousedown = function() {
   MIDP.sendKeyPress(119);
 };
@@ -12331,6 +12349,7 @@ document.getElementById("fire").onmousedown = function() {
 document.getElementById("fire").onmouseup = function() {
   MIDP.sendKeyRelease(32);
 };
+*/
 var Location = {};
 Location.PROVIDER_NAME = "browser";
 Location.Providers = {};
@@ -12825,6 +12844,8 @@ if (typeof Benchmark !== "undefined") {
 if (config.jars) {
   jars = jars.concat(config.jars.split(":"));
 }
+
+
 var mobileInfo;
 var getMobileInfo = new Promise(function(resolve, reject) {
   var sender = DumbPipe.open("mobileInfo", {}, function(message) {
@@ -13037,6 +13058,7 @@ if(config.canvasSize)
 	MIDP.updateCanvas();
 	start();
 }
+ 
 
 document.getElementById("canvasSize").onchange = function() {
   Array.prototype.forEach.call(document.body.classList, function(c) {

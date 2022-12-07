@@ -174,19 +174,34 @@ button {
 .log-item-warn:before { content: 'W'; padding-right: 1rem; font-weight: bold; }
 .log-item-error:before { content: 'E'; padding-right: 1rem; font-weight: bold; }
 
-#gamepad button {
-  display: none;
-  position: absolute;
+#gamepad { 
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin:0 auto;
+  width: 240px; 
+} 
+#gamepad #padcontent{
+  width: 240px; 
+  float: left;
+}
+#gamepad #padcontent div{
+  margin: 1px 1px 1px 1px;
+  float: left;
   z-index: 102;
-  height: 40px;
-  width: 40px;
+  height: 36px;
+  width: 36px;
 }
 
-#gamepad #up { left: 75px; bottom: 40px; }
-#gamepad #down { left: 75px; bottom: 0px; }
-#gamepad #left { left: 25px; bottom: 20px; }
-#gamepad #right { left: 125px; bottom: 20px; }
-#gamepad #fire { left: 175px; bottom: 20px; }
+#gamepad button {  
+  opacity: 0.5;
+  margin: 1px 1px 1px 1px;
+  float: left;
+  z-index: 102;
+  height: 36px;
+  width: 36px;
+} 
 
 .gamepad #display > #gamepad {
   display: block;

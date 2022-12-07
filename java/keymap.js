@@ -140,6 +140,24 @@ function handleKeyup(e) {
 window.addEventListener('keydown', handleKeydown);
 window.addEventListener('keyup', handleKeyup);
 
+window.addEventListener("mousedown", function (e) {
+    e = e || window.event;
+    
+    var button = e.which || e.button;
+    
+    var content = button.innerHtml;
+    console.log(content)
+
+});
+window.addEventListener("mouseup", function (e) {
+    e = e || window.event;
+    
+    var button = e.which || e.button;
+    
+});
+
+
+
 //-----------------------keymap
 const onUploadFile = (e) => {
     const _files = e.target.files;
