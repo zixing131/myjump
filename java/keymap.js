@@ -140,7 +140,13 @@ function handleKeyup(e) {
 window.addEventListener('keydown', handleKeydown);
 window.addEventListener('keyup', handleKeyup);
 
-window.addEventListener("mousedown", function (e) {
+var SupportsTouches = ("createTouch" in document),//判断是否支持触摸
+
+StartEvent = SupportsTouches ? "touchstart" : "mousedown",//支持触摸式使用相应的事件替代
+
+EndEvent = SupportsTouches ? "touchend" : "mouseup";
+
+window.addEventListener(StartEvent, function (e) {
     e = e || window.event; 
     var button = e.srcElement || e.target; 
     var content = button.innerText;
@@ -201,7 +207,8 @@ window.addEventListener("mousedown", function (e) {
     }
 
 });
-window.addEventListener("mouseup", function (e) {
+
+window.addEventListener(EndEvent, function (e) {
     e = e || window.event;  
     var button = e.srcElement || e.target; 
     var content = button.innerText;
