@@ -144,7 +144,7 @@ window.addEventListener("mousedown", function (e) {
     e = e || window.event;
     
     var button = e.which || e.button;
-    
+    console.log(button)
     var content = button.innerHtml;
     console.log(content)
 
