@@ -141,19 +141,126 @@ window.addEventListener('keydown', handleKeydown);
 window.addEventListener('keyup', handleKeyup);
 
 window.addEventListener("mousedown", function (e) {
-    e = e || window.event;
+    e = e || window.event; 
+    var button = e.srcElement || e.target; 
+    var content = button.innerText;
     
-    var button = e.which || e.button;
-    console.log(button)
-    var content = button.innerHtml;
-    console.log(content)
+    switch (content) {
+        case 'up':
+            MIDP.sendKeyPress(-1);
+            break;
+        case 'down':
+            MIDP.sendKeyPress(-2);
+            break;
+        case 'right':
+            MIDP.sendKeyPress(-4);
+            break;
+        case 'left':
+            MIDP.sendKeyPress(-3);
+            break;
+        case 'OK':
+            MIDP.sendKeyPress(-5);
+            break;  
+        case 'L':
+            MIDP.sendKeyPress(-6);
+            break; 
+        case 'R':
+            MIDP.sendKeyPress(-7);
+            break;
+        case '0':
+            MIDP.sendKeyPress(48);
+            break;
+        case '1':
+            MIDP.sendKeyPress(49);
+            break; case '2':
+            MIDP.sendKeyPress(50);
+            break; case '3':
+            MIDP.sendKeyPress(51);
+            break; case '4':
+            MIDP.sendKeyPress(52);
+            break; case '5':
+            MIDP.sendKeyPress(53);
+            break; case '6':
+            MIDP.sendKeyPress(54);
+            break; case '7':
+            MIDP.sendKeyPress(55);
+            break; case '8':
+            MIDP.sendKeyPress(56);
+            break; case '9':
+            MIDP.sendKeyPress(57);
+            break;
+        case '*':
+            if (keyDownTime_Star == 0) {
+                keyDownTime_Star = Date.now()
+            }
+            MIDP.sendKeyPress(42);
+            break;
+        case '#': 
+            MIDP.sendKeyPress(35);
+            break;
+    }
 
 });
 window.addEventListener("mouseup", function (e) {
-    e = e || window.event;
-    
-    var button = e.which || e.button;
-    
+    e = e || window.event;  
+    var button = e.srcElement || e.target; 
+    var content = button.innerText;
+    switch (content) {
+        case 'up':
+            MIDP.sendKeyRelease(-1);
+            break;
+        case 'down':
+            MIDP.sendKeyRelease(-2);
+            break;
+        case 'right':
+            MIDP.sendKeyRelease(-4);
+            break;
+        case 'left':
+            MIDP.sendKeyRelease(-3);
+            break;
+        case 'OK':
+            MIDP.sendKeyRelease(-5);
+            break;  
+        case 'L':
+            MIDP.sendKeyRelease(-6);
+            break; 
+        case 'R':
+            MIDP.sendKeyRelease(-7);
+            break;
+        case '0':
+            MIDP.sendKeyRelease(48);
+            break;
+        case '1':
+            MIDP.sendKeyRelease(49);
+            break; case '2':
+            MIDP.sendKeyRelease(50);
+            break; case '3':
+            MIDP.sendKeyRelease(51);
+            break; case '4':
+            MIDP.sendKeyRelease(52);
+            break; case '5':
+            MIDP.sendKeyRelease(53);
+            break; case '6':
+            MIDP.sendKeyRelease(54);
+            break; case '7':
+            MIDP.sendKeyRelease(55);
+            break; case '8':
+            MIDP.sendKeyRelease(56);
+            break; case '9':
+            MIDP.sendKeyRelease(57);
+            break;
+        case '*':
+            if (Date.now() - keyDownTime_Star > 1000) {
+                document.getElementById("File").click();
+            }
+            keyDownTime_Star = 0
+            MIDP.sendKeyRelease(42);
+            break;
+        case '#':
+            MIDP.sendKeyRelease(35);
+            break;
+    }
+
 });
 
 
