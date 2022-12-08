@@ -3,12 +3,18 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '39d1755229f76bfe7b6ae3f7ecafaadbd76b4ddd'
-    oldFile: !uuid '89b5ef08fee0c48cbc716350ef77be243db4ee01'
-  /java/keymap.js:
-    newFile: !uuid 'be1513504136dcaaf1ee9f80f157013d2ff9b562'
-    oldFile: !uuid '5ba387dcf5017f4d2c20fce2ae0892e3c711411f'
-gitCommitId: !uuid 'd89da43448758a356b2f9ce791b0e0ced21d14c9'
+    newFile: !uuid '4a16ed8d9cf83313197cbc81001d3ea4c48f5919'
+    oldFile: !uuid '39d1755229f76bfe7b6ae3f7ecafaadbd76b4ddd'
+  /java/main.html:
+    newFile: !uuid '5a6d7ce01166b658137b31df22efa93ed309ff12'
+    oldFile: !uuid '6d437859f036d4e3152229cc0190292a1e7c4fbd'
+  /java/style:
+    newFile: !uuid '0a2ca0c194cdcb826e7aab69ffdcdf0d07a1445c'
+    oldFile: !uuid 'cf99cd1443edb7b56a45605cd91927819805c409'
+  /java/style/main.css:
+    newFile: !uuid '47b8ba36fc009a2e4665e68207bdfce3d0ad2ac4'
+    oldFile: !uuid 'aedd53bd73feee16605d04dfc99fc4bfce40f929'
+gitCommitId: !uuid '9ef0aa1c0597bcc266b8688dc393e75e9f94a677'
 renames: {
   }
-revisionId: 25
+revisionId: 26
