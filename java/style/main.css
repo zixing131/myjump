@@ -180,9 +180,13 @@ button {
   right: 0;
   bottom: 0;
   margin:0 auto;
-  width: 240px;  
-  -webkit-user-seletct: none;
-  -moz-user-seletct: none;
+  width: 240px;   
+  -moz-user-select: none; 
+  -o-user-select:none; 
+  -khtml-user-select:none; 
+  -webkit-user-select:none; 
+  -ms-user-select:none; 
+  user-select:none;
 } 
 #gamepad #padcontent{
   width: 240px; 
