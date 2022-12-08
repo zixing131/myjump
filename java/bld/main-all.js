@@ -6154,23 +6154,90 @@ if (typeof module !== "undefined" && module.exports) {
       deviceCanvas.style.top = headerHeight + "px";
       deviceCanvas.dispatchEvent(new Event("canvasresize"));
     }
-    /*
-    if (config.enablexy && config.enablexy=="1"){
-      if(config.canvasSize)
+    console.log(config.canvasSize);
+    if(config.canvasSize)
+    {
+      try{
+        if(config.canvasSize!="size-no")
+        {
+          var canx =parseInt(config.canvasSize.split("-")[1].split("x")[0]);
+          var cany =parseInt(config.canvasSize.split("-")[1].split("x")[1]);
+          
+            deviceCanvas.height = cany;
+            deviceCanvas.width = canx;
+            deviceCanvas.style.height = deviceCanvas.height + "px";
+            deviceCanvas.style.width = deviceCanvas.width + "px";
+            deviceCanvas.style.top = headerHeight + "px";
+            deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+        } 
+        else{
+            var canx ="100%";
+            var cany ="100%"; 
+            deviceCanvas.style.height = deviceCanvas.height;
+            deviceCanvas.style.width = deviceCanvas.width;
+            deviceCanvas.style.top = headerHeight + "px";
+            deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+            
+        }
+      }catch(err)
       {
-        var canx =parseInt(config.canvasSize.split("-")[1].split("x")[0]);
-        var cany =parseInt(config.canvasSize.split("-")[1].split("x")[1]);
-
-        var cxt = deviceCanvas.getContext("2d");
-        var cx = document.body.clientWidth / canx;
-        var cy = document.body.clientHeight/cany;
-        console.log(document.body.clientWidth, document.body.clientHeight , deviceCanvas.width,deviceCanvas.height,cx,cy);
-        var cc = Math.min(cx,cy);
         
-        cxt.scale( cc,cc);
-      } 
-    }
-    */
+      }
+     
+        if(config.gameresize)
+        {
+          if(config.gameresize!="resize-1")
+          {
+            var sca = 1;
+            if(config.gameresize=="resize-1x5")
+            {
+              sca=1.5;
+            }
+            else  if(config.gameresize=="resize-2")
+            {
+              sca=2;
+            }
+            else  if(config.gameresize=="resize-2x5")
+            {
+              sca=2.5;
+            } else  if(config.gameresize=="resize-3")
+            {
+              sca=3;
+            } 
+
+
+            var cxt = deviceCanvas.getContext("2d"); 
+            //cxt.scale( sca,sca);  
+
+            var cany= parseInt(deviceCanvas.height*sca);
+            var canx = parseInt(deviceCanvas.width *sca);
+            var mainid = document.getElementById("main");
+            var display_container = document.getElementById("display-container");
+            var display = document.getElementById("display");
+            // deviceCanvas.height = cany;
+            // deviceCanvas.width = canx;
+            deviceCanvas.style.height = cany + "px";
+            deviceCanvas.style.width = canx+ "px";
+            mainid.style.height = cany + "px";
+            mainid.style.width = canx+ "px";
+            display_container.style.height = cany + "px !important";
+            display_container.style.width = canx+ "px !important";
+            display.style.height = cany + "px !important";
+            display.style.width = canx+ "px !important";
+            
+            
+            
+
+            deviceCanvas.style.top = headerHeight + "px";
+            deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+
+          }
+        
+       
+        }
+
+    } 
+    
   }
   function onWindowResize(evt) {
     var newPhysicalScreenWidth = window.outerWidth - horizontalChrome;

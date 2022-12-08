@@ -19,6 +19,7 @@ body {
   float: right;
   width: 240px;
   height: 100%;
+  background: white;
 }
 
 #display {
@@ -27,15 +28,16 @@ body {
   right: 0px;
   border-bottom: 1px solid #ababab;
   width: 100%;
-  height: 320px;
+  height: 100%;;
   z-index: 1;
-  background: black;
+  margin:0 auto;
+  background: white; 
 }
 
 /* Set the display size. */
 
 .size-240x320 #display-container {
-  width: 240px !important;
+  width: 240px;
 }
 
 .size-240x320 #pageContainer {
@@ -43,7 +45,7 @@ body {
 }
 
 .size-240x320 #display {
-  height: 320px !important;
+  height: 320px ;
 }
 
 .size-240x320 #settings {
@@ -52,7 +54,7 @@ body {
 
 
 .size-320x240 #display-container {
-  width: 320px !important;
+  width: 320px ;
 }
 
 .size-320x240 #pageContainer {
@@ -60,7 +62,7 @@ body {
 }
 
 .size-320x240 #display {
-  height: 240px !important;
+  height: 240px ;
 }
 
 .size-320x240 #settings {
@@ -69,7 +71,7 @@ body {
 
 
 .size-360x640 #display-container {
-  width: 360px !important;
+  width: 360px ;
 }
 
 .size-360x640 #pageContainer {
@@ -77,7 +79,7 @@ body {
 }
 
 .size-360x640 #display {
-  height: 640px !important;
+  height: 640px ;
 }
 
 .size-360x640 #settings {
@@ -85,7 +87,7 @@ body {
 }
 
 .size-640x360 #display-container {
-  width: 640px !important;
+  width: 640px ;
 }
 
 .size-640x360 #pageContainer {
@@ -93,12 +95,31 @@ body {
 }
 
 .size-640x360 #display {
-  height: 360px !important;
+  height: 360px ;
 }
 
 .size-640x360 #settings {
   height: calc(100% - 360px) !important;
 }
+
+
+.size-no0 #display-container {
+  width: 100%;
+}
+
+.size-no #pageContainer {
+  width: 100% ;
+}
+
+.size-no #display {
+  height: 100% ;
+}
+
+.size-no #settings {
+  height:100% ;
+}
+
+
 /* Float the back button to the bottom right corner */
 #back-button {
   position: absolute;
@@ -134,6 +155,9 @@ button {
   overflow-y: auto;
 }
 
+#main{
+  margin:0 auto;
+}
 #settings section {
   margin: 0;
   border-bottom: 1px solid #ababab;
@@ -358,7 +382,7 @@ button {
   margin: 0;
   padding: 0;
   border: none;
-  background: black;
+  background: white;
 }
 
 .autosize #settings {

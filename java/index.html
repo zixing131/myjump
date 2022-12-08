@@ -10,6 +10,52 @@
     <div style="display:flex">
          
 		 <script type="text/javascript">
+
+			var config = function() {
+				var myInfo = {
+					canvasSize: 4, 
+					gamepadSize: 0,
+					gameresize:0
+				};
+				if (window.localStorage["my"] === undefined) {
+					window.localStorage["my"] = JSON.stringify(myInfo);
+				} else { 
+					var data = JSON.parse(window.localStorage["my"]);
+					for (var key in data) {
+						myInfo[key] = data[key];
+					}
+				}
+				return {
+					//按key从对象中取值
+					getValueByKey(key) {
+						return myInfo[key]
+					},
+					//将键值对保存到对象中
+					setValueByKey() {
+						for (var i = 0; i < arguments.length; i += 2) {
+							myInfo[arguments[i]] = arguments[i + 1];
+						}
+						//将新的数据序列化到本地保存
+						window.localStorage["my"] = JSON.stringify(myInfo);
+					}
+				}
+			}
+
+			var config01 = new config();
+			window.onload=function () { 
+				var csize=config01.getValueByKey("canvasSize");
+				var gsize=config01.getValueByKey("gamepadSize");
+				var gresize=config01.getValueByKey("gameresize");
+				var gamepadSize=document.getElementById('gamepadSize'); 
+				var canvasSize=document.getElementById('canvasSize'); 
+				var gameresize=document.getElementById('gameresize');  
+
+				canvasSize.selectedIndex=csize;
+				gamepadSize.selectedIndex=gsize;
+				gameresize.selectedIndex = gresize;
+				
+        	}
+			
 			function openJar(jarname,midletClassName)
 			{
 				//var mycheck1=document.getElementById('mycheck1'); 
@@ -45,6 +91,17 @@
 				{
 					href+="&canvasSize="+mvalue;
 				}
+				var gameresize=document.getElementById('gameresize');  
+				var gameresizevalue=gameresize.options[gameresize.selectedIndex].value;
+				if(gameresizevalue)
+				{ 
+					href+="&gameresize="+gameresizevalue; 
+				}
+
+				config01.setValueByKey("canvasSize",canvasSize.selectedIndex);
+				config01.setValueByKey("gamepadSize",gamepadSize.selectedIndex);
+				config01.setValueByKey("gameresize",gameresize.selectedIndex);
+
 				window.location.href = href;
 			}
 		 </script>
@@ -77,7 +134,8 @@
 	  <option value="size-240x320">显示尺寸: 240x320</option>
 	  <option value="size-320x240">显示尺寸: 320x240</option>
 	  <option value="size-360x640" >显示尺寸: 360x640</option>
-	  <option value="size-640x360" selected>显示尺寸: 640x360</option>
+	  <option value="size-640x360">显示尺寸: 640x360</option>
+	  <option value="size-no" selected>显示尺寸: 无限制</option>
 	</select>
 	<select id="gamepadSize">
 		<option value="gamepad-0" selected>虚拟键盘-无</option>
@@ -86,6 +144,17 @@
 		<option value="gamepad-3">虚拟键盘-大</option>
 		<option value="gamepad-4">虚拟键盘-特大</option>
 	  </select>
+
+	  <select id="gameresize">
+		<option value="resize-1" selected>无缩放</option>
+		<option value="resize-1x5">缩放1.5倍</option>
+		<option value="resize-2">缩放2倍</option>
+		<option value="resize-2x5">缩放2.5倍</option>
+		<option value="resize-3">缩放3倍</option>
+	  </select>
+	  <button>
+		选择本地jar
+	  </button>
 
 </body>
 </html>
