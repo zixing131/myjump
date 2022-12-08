@@ -3,30 +3,24 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '4097a6599dc38d713182bfe7c8dca0f022a7dc63'
-    oldFile: !uuid '923e18f52947f54db83f733a68ba3fd8ef402626'
+    newFile: !uuid '3bd44e59e21120068b79aa67df91494c0e33d062'
+    oldFile: !uuid '4097a6599dc38d713182bfe7c8dca0f022a7dc63'
   /java/img:
-    newFile: !uuid '58eb87fec4d0dab1d3c6c4e235b10fc57453bba2'
-    oldFile: !uuid '2653b3cd00bc9a86336daab46e96b7c55bcfc029'
-  /java/img/BounceTales.png:
-    newFile: !uuid 'bec5bda9ae4e92d5d6bb1fc5a46beccf04267b3c'
-    oldFile: null
-  /java/img/sldwm.png:
-    newFile: !uuid '6bc94d4736d95c81b3667aa8c036d3694313b698'
+    newFile: !uuid 'accf9a9d512dc5b33f04bc7b1686261de3e98bdf'
+    oldFile: !uuid '58eb87fec4d0dab1d3c6c4e235b10fc57453bba2'
+  /java/img/jxlls.png:
+    newFile: !uuid 'e976e0f124e976695f743711c5e41689d2c4e105'
     oldFile: null
   /java/index.html:
-    newFile: !uuid 'c1035a8d64969a026e5a239ffd981083db819291'
-    oldFile: !uuid 'b400a4685b3c8b45333054a84e8eabaa5056cdd3'
+    newFile: !uuid 'bdb7385daa3de8919f1836ec1c33f9f64dc519a7'
+    oldFile: !uuid 'c1035a8d64969a026e5a239ffd981083db819291'
   /java/jar:
-    newFile: !uuid '19f1fdf85e12d725082b56d1530907b9d5b33c95'
-    oldFile: !uuid '346d97cc4372b5190787fa0d12f51fce58b9bc8b'
-  /java/jar/BounceTales.jar:
-    newFile: !uuid '20e7d3a168de74ad5503069bdfe2652955a91ebe'
+    newFile: !uuid '79f48da02d8bfcc6b5b23cb5d6ef892f2c3c92b2'
+    oldFile: !uuid '19f1fdf85e12d725082b56d1530907b9d5b33c95'
+  /java/jar/jxlls.jar:
+    newFile: !uuid 'f6eb16d772266b125c09e8a1a557e60d3353c1e1'
     oldFile: null
-  /java/jar/sldwm.jar:
-    newFile: !uuid '3f5c0179b7d8d09742b2f25cff575ed3fd0f061d'
-    oldFile: null
-gitCommitId: !uuid '59432f099cfafe5b29c41175215e8f90f6d56420'
+gitCommitId: !uuid 'dead4fb76a83fbf53f67fc477bb6e2afa6d1715d'
 renames: {
   }
-revisionId: 32
+revisionId: 33
