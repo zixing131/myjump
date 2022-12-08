@@ -140,11 +140,13 @@ function handleKeyup(e) {
 window.addEventListener('keydown', handleKeydown);
 window.addEventListener('keyup', handleKeyup);
 
-var SupportsTouches = ("createTouch" in document),//判断是否支持触摸
+var SupportsTouches =('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch;//判断是否支持触摸
 
 StartEvent = SupportsTouches ? "touchstart" : "mousedown",//支持触摸式使用相应的事件替代
 
 EndEvent = SupportsTouches ? "touchend" : "mouseup";
+
+console.log(SupportsTouches,StartEvent,EndEvent);
 
 window.addEventListener(StartEvent, function (e) {
     e = e || window.event; 
