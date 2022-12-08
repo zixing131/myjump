@@ -12837,6 +12837,18 @@ var jvm = new JVM;
 if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
   document.documentElement.classList.add("gamepad");
 }
+
+
+console.log(config.gamepadSize)
+if(config.gamepad)
+{
+  if(config.gamepadSize)
+  {
+    document.getElementById("gamepad").classList = config.gamepadSize; 
+  }
+}
+
+
 var jars = [];
 if (typeof Benchmark !== "undefined") {
   Benchmark.startup.init();
@@ -13059,7 +13071,6 @@ if(config.canvasSize)
 	start();
 }
  
-
 document.getElementById("canvasSize").onchange = function() {
   Array.prototype.forEach.call(document.body.classList, function(c) {
     if (c.indexOf("size-") == 0) {

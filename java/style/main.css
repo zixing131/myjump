@@ -174,13 +174,15 @@ button {
 .log-item-warn:before { content: 'W'; padding-right: 1rem; font-weight: bold; }
 .log-item-error:before { content: 'E'; padding-right: 1rem; font-weight: bold; }
 
-#gamepad { 
+.gamepad-1 { 
+  display: block;
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   margin:0 auto;
   width: 240px;   
+  z-index: 103;
   -moz-user-select: none; 
   -o-user-select:none; 
   -khtml-user-select:none; 
@@ -188,35 +190,151 @@ button {
   -ms-user-select:none; 
   user-select:none;
 } 
-#gamepad #padcontent{
+.gamepad-1 #padcontent{
+  z-index: 103;
   width: 240px; 
   float: left;
 }
-#gamepad #padcontent div{
+.gamepad-1 #padcontent div{
   margin: 1px 1px 1px 1px;
   float: left;
-  z-index: 102;
+  z-index: 103;
   height: 36px;
   width: 36px;
 }
 
-#gamepad button {  
+.gamepad-1 button {   
+  display: block;
   opacity: 0.5;
   margin: 1px 1px 1px 1px;
   float: left;
-  z-index: 102;
+  z-index: 103;
   height: 36px;
   width: 36px;
 } 
 
-.gamepad #display > #gamepad {
+
+.gamepad-2 { 
   display: block;
-  z-index: 102;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin:0 auto;
+  width: 320px;   
+  z-index: 103;
+  -moz-user-select: none; 
+  -o-user-select:none; 
+  -khtml-user-select:none; 
+  -webkit-user-select:none; 
+  -ms-user-select:none; 
+  user-select:none;
+} 
+.gamepad-2 #padcontent{
+  z-index: 103;
+  width: 320px; 
+  float: left;
+}
+.gamepad-2 #padcontent div{
+  margin: 1px 1px 1px 1px;
+  float: left;
+  z-index: 103;
+  height: 48px;
+  width: 48px;
 }
 
-.gamepad #display > #gamepad button {
+.gamepad-2 button {   
   display: block;
+  opacity: 0.5;
+  margin: 1px 1px 1px 1px;
+  float: left;
+  z-index: 103;
+  height: 48px;
+  width: 48px;
+} 
+
+
+.gamepad-3 { 
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin:0 auto;
+  width: 460px;   
+  z-index: 103;
+  -moz-user-select: none; 
+  -o-user-select:none; 
+  -khtml-user-select:none; 
+  -webkit-user-select:none; 
+  -ms-user-select:none; 
+  user-select:none;
+} 
+.gamepad-3 #padcontent{
+  z-index: 103;
+  width: 460px; 
+  float: left;
 }
+.gamepad-3 #padcontent div{
+  margin: 1px 1px 1px 1px;
+  float: left;
+  z-index: 103;
+  height: 60px;
+  width: 60px;
+}
+
+.gamepad-3 button {   
+  display: block;
+  opacity: 0.5;
+  margin: 1px 1px 1px 1px;
+  float: left;
+  z-index: 103;
+  height: 60px;
+  width: 60px;
+} 
+
+
+.gamepad-4 { 
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin:0 auto;
+  width: 580px;   
+  z-index: 103;
+  -moz-user-select: none; 
+  -o-user-select:none; 
+  -khtml-user-select:none; 
+  -webkit-user-select:none; 
+  -ms-user-select:none; 
+  user-select:none;
+} 
+.gamepad-4 #padcontent{
+  z-index: 103;
+  width: 580px; 
+  float: left;
+}
+.gamepad-4 #padcontent div{
+  margin: 1px 1px 1px 1px;
+  float: left;
+  z-index: 103;
+  height: 72px;
+  width: 72px;
+}
+
+.gamepad-4 button {   
+  display: block;
+  opacity: 0.5;
+  margin: 1px 1px 1px 1px;
+  float: left;
+  z-index: 103;
+  height: 72px;
+  width: 72px;
+} 
+
+
+
 
 /* Auto-Size (for devices): Hide everything except the canvas. */
 .autosize body > pre,
