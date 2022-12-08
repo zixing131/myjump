@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @const */ var release = false;
+/** @const */ var release = true;
 /** @const */ var profile = 0;
 /** @const */ var profileFormat = "PLAIN";
-/** @const */ var asmJsTotalMemory = 128 * 1024 * 1024;
+/** @const */ var asmJsTotalMemory = 8192 * 1024 * 1024;
 /*
  * Copyright 2014 Mozilla Foundation
  *
