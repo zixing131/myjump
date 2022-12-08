@@ -6186,8 +6186,6 @@ if (typeof module !== "undefined" && module.exports) {
      
         if(config.gameresize)
         {
-          if(config.gameresize!="resize-1")
-          {
             var sca = 1;
             if(config.gameresize=="resize-1x5")
             {
@@ -6230,10 +6228,7 @@ if (typeof module !== "undefined" && module.exports) {
 
             deviceCanvas.style.top = headerHeight + "px";
             deviceCanvas.dispatchEvent(new Event("canvasresize")); 
-
-          }
-        
-       
+ 
         }
 
     } 
