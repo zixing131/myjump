@@ -3,36 +3,15 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '66bd99a9657bb362f997011acef052c4e900acc8'
-    oldFile: !uuid 'c241a71e1e60e4746a00d5c70ede15bea68babbb'
+    newFile: !uuid '923e18f52947f54db83f733a68ba3fd8ef402626'
+    oldFile: !uuid '66bd99a9657bb362f997011acef052c4e900acc8'
   /java/bld:
-    newFile: !uuid 'b2679bf23a8028685dd4bb206067bc1020fb8a02'
-    oldFile: !uuid '3655bdb8cd9fd3267763eab0a64f52644204dde1'
-  /java/bld/j2me.js:
-    newFile: !uuid 'c15709bd50817758e9e851c4b264b2b7d4b9ee5e'
-    oldFile: !uuid 'bfca600360858ea319a721048cb924b71ae4841b'
-  /java/img:
-    newFile: !uuid '2653b3cd00bc9a86336daab46e96b7c55bcfc029'
-    oldFile: !uuid 'c82cdc63e453220f4a5b09e029801a0c56a5d74c'
-  /java/img/dlls3.png:
-    newFile: !uuid 'c5de804123de18a4510d277aee43081baa5d345c'
-    oldFile: null
-  /java/img/kybc4.png:
-    newFile: !uuid 'e227c06f65b8674d32dac45089f3f1fb4355d8a6'
-    oldFile: null
-  /java/index.html:
-    newFile: !uuid 'b400a4685b3c8b45333054a84e8eabaa5056cdd3'
-    oldFile: !uuid '8734d3fc984a294604b149f7d241376cdc035a73'
-  /java/jar:
-    newFile: !uuid '346d97cc4372b5190787fa0d12f51fce58b9bc8b'
-    oldFile: !uuid 'b4134507922e19257760c87fd8780bb686e5161c'
-  /java/jar/dlls3.jar:
-    newFile: !uuid 'ae6f689309115eb5332a900acd667ef10aef8905'
-    oldFile: null
-  /java/jar/kemulator.cfg:
-    newFile: null
-    oldFile: !uuid 'e5453e3b5ac3b9e93e99b6e67cd9163c719fd9cb'
-gitCommitId: !uuid '8e84902c568d56b959ff45b704250b4984bf33b9'
+    newFile: !uuid '0a13b1b33d1f8d3beedfc639dea015c59a07faef'
+    oldFile: !uuid 'b2679bf23a8028685dd4bb206067bc1020fb8a02'
+  /java/bld/main-all.js:
+    newFile: !uuid '99079acc77a87018d58e0c691ebc2180ad71fbb4'
+    oldFile: !uuid 'f8ac4398e0f10f4eb51f2f28ab3c14a39e98201c'
+gitCommitId: !uuid '4a404438630c8e1f1d4859fb8b3f3e524938eb2a'
 renames: {
   }
-revisionId: 30
+revisionId: 31
