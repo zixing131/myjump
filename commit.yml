@@ -2,25 +2,10 @@
 branches: {
   }
 fileChange:
-  /java:
-    newFile: !uuid 'f1c0e2ae0ba1daeaa53b5f2e85f9cb9aba7f6846'
-    oldFile: !uuid '3bd44e59e21120068b79aa67df91494c0e33d062'
-  /java/img:
-    newFile: !uuid '5d63f5b89cde4dc2690808acab94674d3f645aa6'
-    oldFile: !uuid 'accf9a9d512dc5b33f04bc7b1686261de3e98bdf'
-  /java/img/ddz.png:
-    newFile: !uuid '50865e9ac3a4899a0123a6ee3b65b57678153f2b'
+  /LICENSE:
+    newFile: !uuid '19994c559e9e3e440f7aadef564c657730c49b5c'
     oldFile: null
-  /java/index.html:
-    newFile: !uuid 'fa9260243a1aa90915595dafcacee6fc092051aa'
-    oldFile: !uuid 'bdb7385daa3de8919f1836ec1c33f9f64dc519a7'
-  /java/jar:
-    newFile: !uuid '0e5f1a5b6ec382fd4364b531e1dc9d593bd151da'
-    oldFile: !uuid '79f48da02d8bfcc6b5b23cb5d6ef892f2c3c92b2'
-  /java/jar/ddz.jar:
-    newFile: !uuid 'd04b72bcdcbdc69c0c7e62f54ae1452113916d50'
-    oldFile: null
-gitCommitId: !uuid 'b16d757453a74c9a32465279f7fc0d428cbb9332'
+gitCommitId: !uuid 'dfb5f1cd79ce559d6419ea93961cc977de6ed2f4'
 renames: {
   }
-revisionId: 34
+revisionId: 35
