@@ -2,10 +2,25 @@
 branches: {
   }
 fileChange:
-  /LICENSE:
-    newFile: !uuid '19994c559e9e3e440f7aadef564c657730c49b5c'
+  /java:
+    newFile: !uuid '52c616ad691d33d1a1e40ec78ef44b3e5dc61775'
+    oldFile: !uuid 'f1c0e2ae0ba1daeaa53b5f2e85f9cb9aba7f6846'
+  /java/index2.html:
+    newFile: !uuid 'f6939d9a811f1a08dd3f8ab086e25ab619c89d7e'
+    oldFile: !uuid '49f810975a9547cf328b4b718fac6fde32a33bae'
+  /java/libs:
+    newFile: !uuid 'e2d156b8ec4d512f5141aa38e3a43077dbde782a'
+    oldFile: !uuid '23951a6e107add0a543e6d0ee8115ed21391e5e2'
+  /java/libs/encoding-indexes.js:
+    newFile: !uuid '4f170c3bb24fc8453676bfeb3dfe23dcacf68493'
     oldFile: null
-gitCommitId: !uuid 'dfb5f1cd79ce559d6419ea93961cc977de6ed2f4'
+  /java/libs/encoding.js:
+    newFile: !uuid '13aca2c678ad71d6befca5685d838660f5d423b7'
+    oldFile: null
+  /java/main.html:
+    newFile: !uuid '66238faf5611ee97008d6f1ef1742acb17b48c0a'
+    oldFile: !uuid '15df66b02ccd18a377be06beade500ce25ccdf5b'
+gitCommitId: !uuid 'e00923de60646b741cacdb1085d28b0034015f32'
 renames: {
   }
-revisionId: 35
+revisionId: 36
