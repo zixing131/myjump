@@ -3,24 +3,24 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '52c616ad691d33d1a1e40ec78ef44b3e5dc61775'
-    oldFile: !uuid 'f1c0e2ae0ba1daeaa53b5f2e85f9cb9aba7f6846'
-  /java/index2.html:
-    newFile: !uuid 'f6939d9a811f1a08dd3f8ab086e25ab619c89d7e'
-    oldFile: !uuid '49f810975a9547cf328b4b718fac6fde32a33bae'
+    newFile: !uuid 'fe9762f9dd25d1fdffd729c3fce02665b9324abb'
+    oldFile: !uuid '52c616ad691d33d1a1e40ec78ef44b3e5dc61775'
+  /java/bld:
+    newFile: !uuid '3a6a8448f48920c774f2f415ea2b6138f9490e8b'
+    oldFile: !uuid '0a13b1b33d1f8d3beedfc639dea015c59a07faef'
+  /java/bld/main-all.js:
+    newFile: !uuid '1dcb739d245c5bf4057a2770dca3ec6aa2edbae6'
+    oldFile: !uuid '99079acc77a87018d58e0c691ebc2180ad71fbb4'
+  /java/index.html:
+    newFile: !uuid '24e76c80533c96d023a66f6da1fcbe198f332b48'
+    oldFile: !uuid 'fa9260243a1aa90915595dafcacee6fc092051aa'
   /java/libs:
-    newFile: !uuid 'e2d156b8ec4d512f5141aa38e3a43077dbde782a'
-    oldFile: !uuid '23951a6e107add0a543e6d0ee8115ed21391e5e2'
-  /java/libs/encoding-indexes.js:
-    newFile: !uuid '4f170c3bb24fc8453676bfeb3dfe23dcacf68493'
+    newFile: !uuid '8b78497f84558871b271256fd065ccdbd6a0cbe2'
+    oldFile: !uuid 'e2d156b8ec4d512f5141aa38e3a43077dbde782a'
+  /java/libs/axios.min.js:
+    newFile: !uuid '79aa153b1a49e2f7210f32915d78c906dd024005'
     oldFile: null
-  /java/libs/encoding.js:
-    newFile: !uuid '13aca2c678ad71d6befca5685d838660f5d423b7'
-    oldFile: null
-  /java/main.html:
-    newFile: !uuid '66238faf5611ee97008d6f1ef1742acb17b48c0a'
-    oldFile: !uuid '15df66b02ccd18a377be06beade500ce25ccdf5b'
-gitCommitId: !uuid 'e00923de60646b741cacdb1085d28b0034015f32'
+gitCommitId: !uuid 'f4571cf113da885a563159a6b5cc3e902f4785b4'
 renames: {
   }
-revisionId: 36
+revisionId: 37
