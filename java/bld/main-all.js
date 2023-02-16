@@ -1301,6 +1301,28 @@ if (typeof module === "object") {
       resolve();
     };
   });
+
+  function getAll() {
+    return openDatabase.then(function() {
+      return new Promise(function(resolve, reject) {
+        var transaction = database.transaction(OBJECT_STORE_WITH_UNCOMPRESSED_LEN, "readonly");
+        var objectStore = transaction.objectStore(OBJECT_STORE_WITH_UNCOMPRESSED_LEN);
+        var request = objectStore.getAll();
+        request.onerror = function() {
+          console.error("Error loading " + jarName + ": " + request.error.name);
+          reject(request.error.name);
+        };
+        transaction.oncomplete = function() {
+          if (request.result) { 
+            resolve(request.result);
+          } else {
+            resolve(false);
+          }
+        };
+      });
+    });
+  }
+
   function addBuiltIn(jarName, jarData) {
     var zip = new ZipFile(jarData, false);
     jars.set(jarName, {directory:zip.directory, isBuiltIn:true});
@@ -1308,7 +1330,7 @@ if (typeof module === "object") {
   function installJAR(jarName, jarData, jadData) {
     return openDatabase.then(function() {
       return new Promise(function(resolve, reject) {
-        var zip = new ZipFile(jarData, true);
+        var zip = new ZipFile(jarData, true); 
         var transaction = database.transaction(OBJECT_STORE_WITH_UNCOMPRESSED_LEN, "readwrite");
         var objectStore = transaction.objectStore(OBJECT_STORE_WITH_UNCOMPRESSED_LEN);
         var request = objectStore.put({jarName:jarName, jar:zip.directory, jad:jadData || null});
@@ -1340,7 +1362,7 @@ if (typeof module === "object") {
             if (request.result.jad) {
               jad = request.result.jad;
             }
-            resolve(true);
+            resolve(request.result);
           } else {
             resolve(false);
           }
@@ -1410,7 +1432,7 @@ if (typeof module === "object") {
       };
     });
   }
-  return {addBuiltIn:addBuiltIn, installJAR:installJAR, loadJAR:loadJAR, loadFileFromJAR:loadFileFromJAR, loadFile:loadFile, getJAD:getJAD, clear:clear, deleteDatabase:deleteDatabase};
+  return {getAll:getAll,addBuiltIn:addBuiltIn, installJAR:installJAR, loadJAR:loadJAR, loadFileFromJAR:loadFileFromJAR, loadFile:loadFile, getJAD:getJAD, clear:clear, deleteDatabase:deleteDatabase};
 }();
 if (typeof module === "object") {
   module.exports.JARStore = JARStore;
@@ -5630,7 +5652,8 @@ var DumbPipe = {recipients:{}, nextPipeID:0, open:function(type, message, recipi
     window.nextTickBeforeEvents(this.runSendQueue.bind(this));
   }
 }, runSendQueue:function() {
-  alert(JSON.stringify(this.sendQueue.shift()));
+  this.sendQueue.shift();
+  //alert(JSON.stringify(this.sendQueue.shift()));
   if (this.sendQueue.length > 0) {
     window.nextTickBeforeEvents(this.runSendQueue.bind(this));
   } else {
@@ -12934,11 +12957,38 @@ loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data)
   JARStore.addBuiltIn("java/classes.jar", data);
   CLASSES.initializeBuiltinClasses();
 }));
-jars.forEach(function(jar) {
-  loadingMIDletPromises.push(load(jar, "arraybuffer").then(function(data) {
-    JARStore.addBuiltIn(jar, data);
-  }));
-});
+console.log(config.localjar)
+if(config.localjar)
+{ 
+   JARStore.loadJAR(config.localjar).then(
+    (res)=>{
+      console.log(res);
+      mffile = res.jar['META-INF/MANIFEST.MF'];
+      mfdata=''
+      switch(mffile.compression_method) {
+        case 0:
+          mfdata= mffile.compressed_data;
+        case 8:
+          mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+      }
+      mfdata=new TextDecoder('utf-8').decode(mfdata);
+      console.log(mfdata);
+      processJAD(mfdata);
+      var a=MIDP.manifest['MIDlet-1'];
+      a=a.substr(a.lastIndexOf(',')+1).trim()
+      config.midletClassName = a;
+    });
+   jars=config.localjar; 
+}
+else{
+    jars.forEach(function(jar) {
+    loadingMIDletPromises.push(load(jar, "arraybuffer").then(function(data) {
+      JARStore.addBuiltIn(jar, data);
+    }));
+  });
+}
+
+
 function processJAD(data) {
   data.replace(/\r\n|\r/g, "\n").replace(/\n /g, "").split("\n").forEach(function(entry) {
     if (entry) {
@@ -12948,7 +12998,8 @@ function processJAD(data) {
       MIDP.manifest[key] = val;
     }
   });
-}
+} 
+
 function performDownload(url, callback) {
   showDownloadScreen();
   var progressBar = downloadDialog.querySelector("progress.pack-activity");
@@ -13099,6 +13150,9 @@ function start() {
     }, deferStartup);
   } else {
     run();
+    setTimeout(function() { 
+      run();
+    }, 100); 
   }
   function run() {
     J2ME.Context.setWriters(new J2ME.IndentingWriter);
@@ -13293,7 +13347,7 @@ window.onload = function() {
           setTimeout(tick, 16);
         }
       }
-      setTimeout(tick, 100);
+      setTimeout(tick, 100); 
     }
     setTimeout(sample, 2E3);
   };
