@@ -329,11 +329,6 @@
 			)	
 		}
 
-			window.addEventListener("load", () => {
-				document.getElementById("jarFileupload").addEventListener("change", onUploadFile); 
-				refreshGameList();
-			})
-
 			var config = function() {
 				var myInfo = {
 					canvasSize: 4, 
@@ -364,8 +359,9 @@
 				}
 			}
 
-			var config01 = new config();
-			window.onload=function () { 
+			var config01 = new config(); 
+			window.addEventListener("load", () => {
+				
 				var csize=config01.getValueByKey("canvasSize");
 				var gsize=config01.getValueByKey("gamepadSize");
 				var gresize=config01.getValueByKey("gameresize");
@@ -377,8 +373,12 @@
 				gamepadSize.selectedIndex=gsize;
 				gameresize.selectedIndex = gresize;
 				
-        	}
-			
+				document.getElementById("jarFileupload").addEventListener("change", onUploadFile); 
+				refreshGameList();
+				
+			})
+
+
 			function openLocalJar()
 			{
 				document.getElementById("jarFileupload").click();
