@@ -762,11 +762,11 @@ function flushConsoleBuffer() {
   if (consoleBuffer.length) {
     var temp = consoleBuffer;
     consoleBuffer = "";
-    if(temp.indexOf(temp)<0)
-    { 
+    //if(temp.indexOf(temp)<0)
+    //{ 
       //不输出未实现的提示
       console.info(temp);
-    }
+    //}
   }
 }
 console.print = function(ch) {
@@ -13250,6 +13250,9 @@ if (typeof Benchmark !== "undefined") {
   Benchmark.initUI("benchmark");
 }
 window.onload = function() {
+  CompiledMethodCache.clear().then(function() {
+    console.log("cleared compiled method cache");
+  });
   document.getElementById("deleteDatabases").onclick = function() {
     fs.deleteDatabase().then(function() {
       console.log("Deleted fs database.");

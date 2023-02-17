@@ -3403,7 +3403,7 @@ var J2ME;
             this.set(fp, sp, pc);
             switch (type) {
                 case 1 /* ArrayIndexOutOfBoundsException */:
-                    J2ME.throwArrayIndexOutOfBoundsException(a);
+                    //J2ME.throwArrayIndexOutOfBoundsException(a);
                     break;
                 case 0 /* ArithmeticException */:
                     J2ME.throwArithmeticException();
@@ -3412,7 +3412,7 @@ var J2ME;
                     J2ME.throwNegativeArraySizeException();
                     break;
                 case 3 /* NullPointerException */:
-                    J2ME.throwNullPointerException();
+                    //J2ME.throwNullPointerException();
                     break;
             }
         };
@@ -6551,7 +6551,8 @@ var J2ME;
     }
     J2ME.throwNegativeArraySizeException = throwNegativeArraySizeException;
     function throwNullPointerException() {
-        throw $.newNullPointerException();
+        console.warn('newNullPointerException');
+        //throw $.newNullPointerException();
     }
     J2ME.throwNullPointerException = throwNullPointerException;
     function newObjectArray(size) {
@@ -6613,7 +6614,8 @@ var J2ME;
     }
     J2ME.checkArrayBounds = checkArrayBounds;
     function throwArrayIndexOutOfBoundsException(index) {
-        throw $.newArrayIndexOutOfBoundsException(String(index));
+        console.warn("newArrayIndexOutOfBoundsException "+index)
+        //throw $.newArrayIndexOutOfBoundsException(String(index));
     }
     J2ME.throwArrayIndexOutOfBoundsException = throwArrayIndexOutOfBoundsException;
     function throwArithmeticException() {
@@ -6627,7 +6629,8 @@ var J2ME;
         var arrayClassInfo = J2ME.classIdToClassInfoMap[i32[arrayAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         var valueClassInfo = J2ME.classIdToClassInfoMap[i32[valueAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         if (!isAssignableTo(valueClassInfo, arrayClassInfo.elementClass)) {
-            throw $.newArrayStoreException();
+            //throw $.newArrayStoreException(); 
+            console.warn('newArrayStoreException');
         }
     }
     J2ME.checkArrayStore = checkArrayStore;
@@ -10377,14 +10380,17 @@ var J2ME;
                 this.nativeThread.run();
             }
             catch (e) {
+                console.error(e);
+                /*
                 // The exception was never caught and the thread must be terminated.
                 this.kill();
                 this.clearCurrentContext();
                 // Rethrow so the exception is not silent.
                 if (e.classInfo) {
                     e = e.classInfo.getClassNameSlow() + ": " + J2ME.fromStringAddr(e.detailMessage);
-                }
-                throw e;
+                } 
+                //throw e;
+                */
             }
             release || assert(this.nativeThread.nativeFrameCount === 0, "All native frames should be gone.");
             if (U) {
