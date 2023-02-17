@@ -762,7 +762,11 @@ function flushConsoleBuffer() {
   if (consoleBuffer.length) {
     var temp = consoleBuffer;
     consoleBuffer = "";
-    console.info(temp);
+    if(temp.indexOf(temp)<0)
+    { 
+      //不输出未实现的提示
+      console.info(temp);
+    }
   }
 }
 console.print = function(ch) {
@@ -1302,6 +1306,11 @@ if (typeof module === "object") {
     };
   });
 
+  function getjars()
+  {
+    return jars;
+  }
+
   function getAll() {
     return openDatabase.then(function() {
       return new Promise(function(resolve, reject) {
@@ -1327,6 +1336,24 @@ if (typeof module === "object") {
     var zip = new ZipFile(jarData, false);
     jars.set(jarName, {directory:zip.directory, isBuiltIn:true});
   }
+
+  function deleteJar(jarName)
+  {
+    return openDatabase.then(function() {
+      return new Promise(function(resolve, reject) { 
+        var transaction = database.transaction(OBJECT_STORE_WITH_UNCOMPRESSED_LEN, "readwrite");
+        var objectStore = transaction.objectStore(OBJECT_STORE_WITH_UNCOMPRESSED_LEN);
+        var request = objectStore.delete(jarName);
+        request.onerror = function() { 
+          reject(request.error.name);
+        };
+        transaction.oncomplete = function() { 
+          resolve();
+        };
+      });
+    });
+  }
+
   function installJAR(jarName, jarData, jadData) {
     return openDatabase.then(function() {
       return new Promise(function(resolve, reject) {
@@ -1432,7 +1459,7 @@ if (typeof module === "object") {
       };
     });
   }
-  return {getAll:getAll,addBuiltIn:addBuiltIn, installJAR:installJAR, loadJAR:loadJAR, loadFileFromJAR:loadFileFromJAR, loadFile:loadFile, getJAD:getJAD, clear:clear, deleteDatabase:deleteDatabase};
+  return {deleteJar:deleteJar,getjars:getjars,getAll:getAll,addBuiltIn:addBuiltIn, installJAR:installJAR, loadJAR:loadJAR, loadFileFromJAR:loadFileFromJAR, loadFile:loadFile, getJAD:getJAD, clear:clear, deleteDatabase:deleteDatabase};
 }();
 if (typeof module === "object") {
   module.exports.JARStore = JARStore;
@@ -3162,6 +3189,11 @@ var fs = function() {
       setTimeout(function() {
         setInterval(flushAll, 5E3);
       }, 2E4);
+
+      setTimeout(function() {
+        setInterval(flushAllRms, 1E3);
+      }, 1E3);
+
       initRootDir();
       cb();
     });
@@ -3299,6 +3331,15 @@ var fs = function() {
     }
     syncStore();
   }
+  function flushAllRms() { 
+    for (var entry of openedFiles) {
+      if (entry[1].dirty && entry[1].path.startsWith(RECORD_STORE_BASE))  {
+        flush(entry[0]);
+      }
+    }
+    syncStore();
+  } 
+  
   window.addEventListener("pagehide", flushAll);
   function list(path) {
     path = normalizePath(path);
@@ -6177,7 +6218,7 @@ if (typeof module !== "undefined" && module.exports) {
       deviceCanvas.style.top = headerHeight + "px";
       deviceCanvas.dispatchEvent(new Event("canvasresize"));
     }
-    console.log(config.canvasSize);
+    //console.log(config.canvasSize);
     if(config.canvasSize)
     {
       try{
@@ -12924,7 +12965,7 @@ if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
 }
 
 
-console.log(config.gamepadSize)
+//console.log(config.gamepadSize)
 if(config.gamepad)
 {
   if(config.gamepadSize)
@@ -12957,7 +12998,7 @@ loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data)
   JARStore.addBuiltIn("java/classes.jar", data);
   CLASSES.initializeBuiltinClasses();
 }));
-console.log(config.localjar)
+//console.log(config.localjar)
 if(config.localjar)
 { 
    JARStore.loadJAR(config.localjar).then(
@@ -13148,10 +13189,15 @@ function start() {
       Benchmark.startup.setStartTime(performance.now());
       run();
     }, deferStartup);
-  } else {
-    run();
-    setTimeout(function() { 
-      run();
+  } else {  
+    var interval = setInterval(function() {   
+      if(JARStore.getjars().size>1)
+      {
+        console.log('开始执行jars');
+        run();
+        run();
+        clearInterval(interval);
+      }
     }, 100); 
   }
   function run() {
@@ -13184,7 +13230,7 @@ if(config.canvasSize)
 	document.body.classList.add(config.canvasSize); 
 	MIDP.updatePhysicalScreenSize();
 	MIDP.updateCanvas();
-	start();
+	//start();
 }
  
 document.getElementById("canvasSize").onchange = function() {
@@ -13198,7 +13244,7 @@ document.getElementById("canvasSize").onchange = function() {
   }
   MIDP.updatePhysicalScreenSize();
   MIDP.updateCanvas();
-  start();
+  //start();
 };
 if (typeof Benchmark !== "undefined") {
   Benchmark.initUI("benchmark");

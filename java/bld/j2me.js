@@ -10201,11 +10201,11 @@ var J2ME;
             ctx.threadAddress = runtime.mainThread = J2ME.allocObject(J2ME.CLASSES.java_lang_Thread);
             J2ME.setNative(ctx.threadAddress, ctx);
             var thread = J2ME.getHandle(ctx.threadAddress);
-            // XXX thread.pid seems to be unused, so remove it.
+            // XXX thread.pid seems to be unused, so remove it. 
             thread.pid = util.id();
             thread.nativeAlive = true;
             // The constructor will set the real priority, however one is needed for the scheduler.
-            thread.priority = J2ME.NORMAL_PRIORITY;
+            thread.priority = J2ME.NORMAL_PRIORITY; 
             runtime.preInitializeClasses(ctx);
             return ctx;
         };

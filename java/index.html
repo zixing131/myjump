@@ -279,10 +279,17 @@
 						for(var i=0;i<files.length;i++)
 						{
 							var f=files[i];
-							console.log(f.jarName);
+							//console.log(f.jarName);
 							//JARStore.loadJAR(f.jarName);
 							localjars.options.add(new Option(f.jarName));
+						} 
+						var gameindex=config01.getValueByKey("gameindex"); 
+						var localjars=document.getElementById('localjars');
+						if(gameindex>=files.length)
+						{
+							gameindex=files.length-1;
 						}
+						localjars.selectedIndex = gameindex;
 					},
 					(err)=>{
 						alert(err);
@@ -310,12 +317,49 @@
 				
 			}
 
-			const onUploadFile = async (e) => {
+			
+			function deleteLocalJar()
+			{
+				
+				var localjars=document.getElementById('localjars');
+				if(localjars.options.length==0)
+				{
+					alert("没有要删除的jar!");
+					return;
+				}
+				if(localjars.selectedIndex<0 || localjars.selectedIndex>=localjars.options.length)
+				{
+					alert("请选择jar名称!");
+					return;
+				}
+				var jarname = localjars.options[localjars.selectedIndex].innerText;
+				console.log(jarname);
+				let res = confirm('确定删除 '+jarname+' ？');
+				if(res)
+				{
+					JARStore.deleteJar(jarname).then
+				(
+					()=>{ 
+						alert(jarname+"删除成功！"); 
+						refreshGameList();
+				},  
+					(errname)=>{
+						alert(errname+"删除失败！"); 
+					}
+					); 
+				} 
+			} 
+			var onUploadFile = async (e) => {
 				const _files = e.target.files;
 				if (_files.length == 0) {
 					return;
 				}
-				const _file = _files[0];
+				const _file = _files[0];  
+				if(!_file.name.toLowerCase().endsWith('.jar'))
+				{
+					alert("只能上传jar格式!");
+					return;
+				}
 				//fs.createUniqueFile("/Phone",_file.name,_file);
 				JARStore.installJAR(_file.name,await _file.arrayBuffer()).then
 				(
@@ -326,14 +370,16 @@
 					(errname)=>{
 						alert(errname+"安装失败！"); 
 					}
-			)	
+					);	
+			document.getElementById("jarFileupload").value= null;
 		}
 
 			var config = function() {
 				var myInfo = {
 					canvasSize: 4, 
 					gamepadSize: 0,
-					gameresize:0
+					gameresize:0,
+					gameindex:0,
 				};
 				if (window.localStorage["my"] === undefined) {
 					window.localStorage["my"] = JSON.stringify(myInfo);
@@ -365,14 +411,16 @@
 				var csize=config01.getValueByKey("canvasSize");
 				var gsize=config01.getValueByKey("gamepadSize");
 				var gresize=config01.getValueByKey("gameresize");
+				
 				var gamepadSize=document.getElementById('gamepadSize'); 
 				var canvasSize=document.getElementById('canvasSize'); 
 				var gameresize=document.getElementById('gameresize');  
 
+				
 				canvasSize.selectedIndex=csize;
 				gamepadSize.selectedIndex=gsize;
 				gameresize.selectedIndex = gresize;
-				
+ 
 				document.getElementById("jarFileupload").addEventListener("change", onUploadFile); 
 				refreshGameList();
 				
@@ -431,9 +479,12 @@
 					href+="&gameresize="+gameresizevalue; 
 				}
 
+				var localjars=document.getElementById('localjars');  
+
 				config01.setValueByKey("canvasSize",canvasSize.selectedIndex);
 				config01.setValueByKey("gamepadSize",gamepadSize.selectedIndex);
 				config01.setValueByKey("gameresize",gameresize.selectedIndex);
+				config01.setValueByKey("gameindex",localjars.selectedIndex)
 
 				window.location.href = href;
 			}
@@ -525,6 +576,18 @@
 	  <button onclick="loadLocalJar()">
 		运行本地jar
 	  </button>
+
+	  <button onclick="deleteLocalJar()">
+		删除本地jar
+	  </button>
+
+	</br>
+</br>
+</br>
+<a href="updatelog.html">
+	更新日志
+	</a>
+</br>
 
 </body>
 </html>
