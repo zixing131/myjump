@@ -3,31 +3,42 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '9735e6bab1cf1677c8a0b625cdd207aeea7d3919'
-    oldFile: !uuid 'e547e8deae7ecb8492df5da247e89718c3fd5a86'
+    newFile: !uuid '451cf9ed4bb3c4266d7ea580361f7f9f137a268b'
+    oldFile: !uuid '9735e6bab1cf1677c8a0b625cdd207aeea7d3919'
+  /java/bld:
+    newFile: !uuid '5a35e4fdc559d367ed23e7420df1da558738b575'
+    oldFile: !uuid 'd2d675f4a741b5eb5c6fe35eb20a9dd86a4a3702'
+  /java/bld/j2me.js:
+    newFile: !uuid '46b56f5e32fc179fbf4a2455d2ed82d2d73c823e'
+    oldFile: !uuid '8f13ba4887258a305de243ae3ad3dc5af646a616'
+  /java/bld/main-all.js:
+    newFile: !uuid '39cc3e547e4e1d6c71a778e395085a01d1bf8ea1'
+    oldFile: !uuid '1127943fac93d6f78d70b98653ccc00039586cf2'
   /java/img:
-    newFile: !uuid 'e888b7c2550cafda5d1e23e75e9143c59508cc27'
-    oldFile: !uuid '12c4eed1591c0b653f64e5a7e7de0ce12473f187'
-  /java/img/gta.png:
-    newFile: !uuid 'fe0c34b7e879b14317563d19858fa47cfa8bfe24'
+    newFile: !uuid '1d7e35b3ccbe9aafdd8069f319338ef7c43c5480'
+    oldFile: !uuid 'e888b7c2550cafda5d1e23e75e9143c59508cc27'
+  /java/img/tyty.png:
+    newFile: !uuid 'b4f21157da406986cc9f1d04be5140c438851fdf'
     oldFile: null
-  /java/img/gta5.png:
-    newFile: null
-    oldFile: !uuid 'fe0c34b7e879b14317563d19858fa47cfa8bfe24'
   /java/index.html:
-    newFile: !uuid 'f8d79c0ff92ea003077f6d03f4ea6dec4075368f'
-    oldFile: !uuid '89254f0baa822d9204c127b2cd1517111b079752'
+    newFile: !uuid '03d4399dff6947bf4e6eef1d62a43ae12e2f27dd'
+    oldFile: !uuid 'f8d79c0ff92ea003077f6d03f4ea6dec4075368f'
   /java/jar:
-    newFile: !uuid '2d5cb0066a73f1db1353fc1d3e89cb54ced7ea0d'
-    oldFile: !uuid 'ae371b28598a728c232a8c3fbf12e85c371f3fac'
-  /java/jar/gta.jar:
-    newFile: !uuid 'cd78540f5ae55a79b6d486088b0b6ce5f22af6b1'
+    newFile: !uuid '46a25a1b8d90dc73dcf3b587f50a011776cd41f6'
+    oldFile: !uuid '2d5cb0066a73f1db1353fc1d3e89cb54ced7ea0d'
+  /java/jar/tyty.jar:
+    newFile: !uuid 'b427e9fb7beda2f01ce860beb9d2c7a20a1936fa'
     oldFile: null
-  /java/jar/gta5.jar:
-    newFile: null
-    oldFile: !uuid 'cd78540f5ae55a79b6d486088b0b6ce5f22af6b1'
-gitCommitId: !uuid '4513a09f3226ad6188fbf1c128a2290af75e6a46'
-renames:
-  /java/img/gta.png: /java/img/gta5.png
-  /java/jar/gta.jar: /java/jar/gta5.jar
-revisionId: 42
+  /java/java:
+    newFile: !uuid 'a6644284d5b38ea100c02418b5e1874b1dbc2be3'
+    oldFile: !uuid '2c2e39ce0dd733fe2acc8fc0c05afc3b2b5d030c'
+  /java/java/classes.jar:
+    newFile: !uuid 'eeb0775231a956d725469fc6de62206db6fa2e7d'
+    oldFile: !uuid '48a634f0a1d15180911eccfb81257ee27923418a'
+  /java/updatelog.html:
+    newFile: !uuid '6f210c395ba6d3bbf69027058f16997589d9fe79'
+    oldFile: !uuid '5bd5d6a620d798b38c56c78d7539563db1da93bb'
+gitCommitId: !uuid '2a6cd65d516a1b66e955b5d2214c305ce84ad9d7'
+renames: {
+  }
+revisionId: 43
