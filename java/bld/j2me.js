@@ -10028,7 +10028,7 @@ var J2ME;
     var Scheduler = (function () {
         function Scheduler() {
         }
-        Scheduler.enqueue = function (ctx, directExecution) {
+        Scheduler.enqueue = function (ctx, directExecution) { 
             if (ctx.virtualRuntime === 0) {
                 // Ensure the new thread doesn't dominate.
                 ctx.virtualRuntime = minVirtualRuntime;
@@ -10226,7 +10226,7 @@ var J2ME;
             }
             J2ME.unsetUncollectable(arrayAddr);
             ctx.nativeThread.frame.setParameter(8 /* Reference */, 1, arrayAddr);
-            ctx.start();
+            ctx.start(); 
             release || J2ME.Debug.assert(!U, "Unexpected unwind during isolate initialization.");
         };
         JVM.prototype.startIsolate = function (isolateAddr) {

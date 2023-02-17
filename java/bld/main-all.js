@@ -13193,8 +13193,7 @@ function start() {
     var interval = setInterval(function() {   
       if(JARStore.getjars().size>1)
       {
-        console.log('开始执行jars');
-        run();
+        console.log('开始执行jars'); 
         run();
         clearInterval(interval);
       }
@@ -13205,20 +13204,17 @@ function start() {
     profile === 1 && profiler.start(2E3, false);
     bigBang = performance.now();
     profile === 2 && startTimeline();
-    jvm.startIsolate0(config.main, config.args);
+    jvm.startIsolate0(config.main, config.args);  
+    jvm.startIsolate0(config.main, config.args); 
   }
 }
 if (!config.midletClassName) {
   loadingPromises = loadingPromises.concat(loadingMIDletPromises);
 }
-Promise.all(loadingPromises).then(start, function(reason) {
-  console.error('Loading failed: "' + reason + '"');
-});
+
 document.getElementById("start").onclick = function() {
   start();
 };
-
-
 
 if(config.canvasSize)
 {
@@ -13253,6 +13249,11 @@ window.onload = function() {
   CompiledMethodCache.clear().then(function() {
     console.log("cleared compiled method cache");
   });
+
+  Promise.all(loadingPromises).then(start, function(reason) {
+    console.error('Loading failed: "' + reason + '"');
+  });
+
   document.getElementById("deleteDatabases").onclick = function() {
     fs.deleteDatabase().then(function() {
       console.log("Deleted fs database.");
