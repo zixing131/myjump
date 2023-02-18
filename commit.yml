@@ -3,12 +3,27 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '5071760df33bca34634232bb1cbfe6ab45c26a33'
-    oldFile: !uuid 'afaf7e40ee3e9ff5250ab12f663011bed33dbb28'
+    newFile: !uuid 'a69303486d6aafa249c1e4a3bbd3c0e9b7ea4f17'
+    oldFile: !uuid '5071760df33bca34634232bb1cbfe6ab45c26a33'
+  /java/bld:
+    newFile: !uuid 'b2dc240502e2e602b3611ece4c91fe419e62e7eb'
+    oldFile: !uuid '1861f6ef09b53ce86bcba6076e22ea021ad032cc'
+  /java/bld/main-all.js:
+    newFile: !uuid '9b0f6589805f42035e3290dcc974e551a7e6c2d8'
+    oldFile: !uuid 'e56a2584e0e85a1c21c914987c08381ad92c9b98'
+  /java/libs:
+    newFile: !uuid '1b6b589b8a28fac4dd77e8c34ad2a272d0bebf5d'
+    oldFile: !uuid '9059ac317a97c063c40a68026ab7a5a0ad958105'
+  /java/libs/webaudio-tinysynth.js:
+    newFile: !uuid '7cc225d70580db34b202c6f17b6c7621a1b80dcf'
+    oldFile: null
+  /java/main.html:
+    newFile: !uuid 'aa4ad45f70ee97d92842f399edebf30b9d4546c4'
+    oldFile: !uuid 'd527437422142a337a94c6abe1b984ca6f87fa8f'
   /java/updatelog.html:
-    newFile: !uuid '3b03c81ac93acac12e0c881f8149d2c9ea727d21'
-    oldFile: !uuid '6f210c395ba6d3bbf69027058f16997589d9fe79'
-gitCommitId: !uuid 'daafdc98b19cd58a2321ef7960705416eafcb5bd'
+    newFile: !uuid '76299d56135daa13a4eea503c395c3d4f53e779c'
+    oldFile: !uuid '3b03c81ac93acac12e0c881f8149d2c9ea727d21'
+gitCommitId: !uuid '25d70f01d19fa5f675f07b66f288bb2dcf3ea68f'
 renames: {
   }
-revisionId: 47
+revisionId: 48
