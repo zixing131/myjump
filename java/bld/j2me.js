@@ -6551,7 +6551,7 @@ var J2ME;
     }
     J2ME.throwNegativeArraySizeException = throwNegativeArraySizeException;
     function throwNullPointerException() {
-        console.warn('newNullPointerException');
+        console.log('newNullPointerException');
         //throw $.newNullPointerException();
     }
     J2ME.throwNullPointerException = throwNullPointerException;
@@ -6614,7 +6614,7 @@ var J2ME;
     }
     J2ME.checkArrayBounds = checkArrayBounds;
     function throwArrayIndexOutOfBoundsException(index) {
-        console.warn("newArrayIndexOutOfBoundsException "+index)
+        //console.log("newArrayIndexOutOfBoundsException ");
         //throw $.newArrayIndexOutOfBoundsException(String(index));
     }
     J2ME.throwArrayIndexOutOfBoundsException = throwArrayIndexOutOfBoundsException;
@@ -6630,7 +6630,7 @@ var J2ME;
         var valueClassInfo = J2ME.classIdToClassInfoMap[i32[valueAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         if (!isAssignableTo(valueClassInfo, arrayClassInfo.elementClass)) {
             //throw $.newArrayStoreException(); 
-            console.warn('newArrayStoreException');
+            console.log('newArrayStoreException');
         }
     }
     J2ME.checkArrayStore = checkArrayStore;

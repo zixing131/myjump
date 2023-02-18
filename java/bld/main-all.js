@@ -352,6 +352,7 @@ Native["java/lang/System.arraycopy.(Ljava/lang/Object;ILjava/lang/Object;II)V"] 
 var stubProperties = {"com.nokia.multisim.slots":"1", "com.nokia.mid.imsi":"000000000000000", "com.nokia.mid.imei":""};
 Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] = function(addr, keyAddr) {
   var key = J2ME.fromStringAddr(keyAddr);
+  console.log("System.getProperty0",key)
   var value;
   switch(key) {
     case "microedition.encoding":
@@ -446,9 +447,14 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       break;
     case "com.nokia.keyboard.type":
       value = "None";
-      break;
+      break; 
     case "com.nokia.mid.batterylevel":
-      value = Math.floor(navigator.battery.level * 100).toString();
+      try{ 
+        value = Math.floor(navigator.battery.level * 100).toString();
+      }catch(err)
+      {
+        value="100";
+      }
       break;
     case "com.nokia.mid.ui.version":
       value = "1.7";
@@ -488,6 +494,9 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
     case "video.snapshot.encodings":
       value = "encoding=jpeg&quality=80&progressive=true&type=jfif&width=400&height=400";
       break;
+    case "wireless.messaging.sms.smsc":
+      value = "+8610086";
+      break;
     default:
       if (MIDP.additionalProperties[key]) {
         value = MIDP.additionalProperties[key];
@@ -501,6 +510,7 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       }
       break;
   }
+  console.log(value);
   return J2ME.newString(value);
 };
 Native["java/lang/System.currentTimeMillis.()J"] = function(addr) {
@@ -773,6 +783,10 @@ function flushConsoleBuffer() {
     //if(temp.indexOf(temp)<0)
     //{ 
       //不输出未实现的提示
+      if(temp.indexOf("DeviceControl::setLights")>-1)
+      {
+        return;
+      }
       console.info(temp);
     //}
   }
@@ -7042,9 +7056,13 @@ if (typeof module !== "undefined" && module.exports) {
   Native["javax/microedition/lcdui/KeyConverter.getKeyName.(I)Ljava/lang/String;"] = function(addr, keyCode) {
     return J2ME.newString(keyCode in keyNames ? keyNames[keyCode] : String.fromCharCode(keyCode));
   };
-  var gameKeys = {119:1, 97:2, 115:6, 100:5, 32:8, 113:9, 101:10, 122:11, 99:12};
+  var gameKeys = {119:1, 97:2, 115:6, 100:5, 32:8, 113:9, 101:10, 122:11, 99:12 , "-1":1, "-2":6, "-3":2, "-4":5, "-5":8, "-6":11};
   Native["javax/microedition/lcdui/KeyConverter.getGameAction.(I)I"] = function(addr, keyCode) {
+    //console.log(keyCode);
     return gameKeys[keyCode] || 0;
+    //return keyCode;
+    //游戏键盘？？屏蔽
+    //return gameKeys[keyCode] || 0;
   };
   Native["javax/microedition/lcdui/game/GameCanvas.setSuppressKeyEvents.(Ljavax/microedition/lcdui/Canvas;Z)V"] = function(addr, canvasAddr, shouldSuppress) {
     suppressKeyEvents = shouldSuppress;
@@ -8096,7 +8114,7 @@ var currentlyFocusedTextEditor;
     }
     var ctx = $.ctx;
     window.requestAnimationFrame(function() {
-      MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height);
+      MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height); 
       J2ME.Scheduler.enqueue(ctx);
     });
     $.pause(refreshStr);
@@ -8525,9 +8543,11 @@ var currentlyFocusedTextEditor;
     region[1] = info.clipY1 - info.transY;
     region[2] = info.clipX2 - info.transX;
     region[3] = info.clipY2 - info.transY;
+    //console.log("getClip",region)
   };
   Native["javax/microedition/lcdui/Graphics.clipRect.(IIII)V"] = function(addr, x, y, width, height) {
     var info = NativeMap.get(addr);
+    //console.log("clipRect",x, y, width, height, info.clipX1, info.clipY1, info.clipX2, info.clipY2)
     info.setClip(x, y, width, height, info.clipX1, info.clipY1, info.clipX2, info.clipY2);
   };
   var TYPE_USHORT_4444_ARGB = 4444;
@@ -8565,6 +8585,7 @@ var currentlyFocusedTextEditor;
     converterFunc(abgrData, pixels, width, height, offset, scanlength);
   };
   Native["com/nokia/mid/ui/DirectGraphicsImp.drawPixels.([SZIIIIIIII)V"] = function(addr, pixelsAddr, transparency, offset, scanlength, x, y, width, height, manipulation, format) {
+    console.log("DirectGraphicsImp",x, y, width, height)
     var self = getHandle(addr);
     var pixels = J2ME.getArrayFromAddr(pixelsAddr);
     if (!pixels) {
@@ -8576,6 +8597,7 @@ var currentlyFocusedTextEditor;
     } else {
       throw $.newIllegalArgumentException("Format unsupported");
     }
+    
     tempContext.canvas.width = width;
     tempContext.canvas.height = height;
     var imageData = tempContext.createImageData(width, height);
@@ -8587,6 +8609,62 @@ var currentlyFocusedTextEditor;
     tempContext.canvas.width = 0;
     tempContext.canvas.height = 0;
   };
+
+function transRgba(arr) { 
+
+    for (let i = 0; i < arr.length; i++) {
+        arr[i] = trans10to16(arr[i]);
+    }
+    return '#'+arr.join('');
+}
+function trans10to16(num10) { //十进制转十六进制
+    let rusult = 0;
+    result = num10.toString(16);
+    if(result.length==1){
+      result="0"+result;
+    }
+    return result;
+}
+
+  Native["com/nokia/mid/ui/DirectGraphicsImp.fillPolygon.([II[IIII)V"] = function(addr, xPointsAddr,  xOffset,  yPointsAddr,  yOffset,  nPoints,  argbColor) {
+    var self = getHandle(addr);
+    var  xPoints = J2ME.getArrayFromAddr(xPointsAddr);
+    if (!xPoints) {
+      throw $.newNullPointerException("xPoints array is null");
+    }
+    var  yPoints = J2ME.getArrayFromAddr(yPointsAddr);
+    if (!yPoints) {
+      throw $.newNullPointerException("yPoints array is null");
+    }  
+    //console.log(xPoints.length,yPoints.length)
+    tempContext.canvas.width = xPoints.length;
+    tempContext.canvas.height = yPoints.length;
+
+    var jg = new jsGraphics(tempContext.canvas);
+    jg.clear();
+    
+    //console.log(jg)
+
+    var alpha = argbColor >>> 24;
+    var red = argbColor >>> 16 & 255;
+    var green = argbColor >>> 8 & 255;
+    var blue = argbColor & 255;
+    var color = transRgba([alpha,red,green,blue]);
+
+    jg.setColor(color);
+    jg.fillPolygon(xPoints,yPoints);
+     
+    var c = NativeMap.get(self.graphics).getGraphicsContext();
+
+    //console.log(jg)
+
+    //c.drawImage(tempContext.canvas, xOffset+xPoints.length/2, yOffset+yPoints.length/2); 
+    
+    c.drawImage(tempContext.canvas, xOffset, yOffset); 
+    
+  };
+ 
+
   Native["javax/microedition/lcdui/Graphics.render.(Ljavax/microedition/lcdui/Image;III)Z"] = function(addr, imageAddr, x, y, anchor) {
     var image = getHandle(imageAddr);
     renderRegion(NativeMap.get(addr).getGraphicsContext(), NativeMap.get(image.imageData).context.canvas, 0, 0, image.width, image.height, TRANS_NONE, x, y, anchor);
@@ -8597,14 +8675,16 @@ var currentlyFocusedTextEditor;
       throw $.newNullPointerException("src image is null");
     }
     var src = getHandle(srcAddr);
+    //console.log(addr, srcAddr, x_src, y_src, width, height, transform, x_dest, y_dest, anchor)
     renderRegion(NativeMap.get(addr).getGraphicsContext(), NativeMap.get(src.imageData).context.canvas, x_src, y_src, width, height, transform, x_dest, y_dest, anchor);
   };
-  Native["javax/microedition/lcdui/Graphics.drawImage.(Ljavax/microedition/lcdui/Image;III)V"] = function(addr, imageAddr, x, y, anchor) {
+  Native["javax/microedition/lcdui/Graphics.drawImage.(Ljavax/microedition/lcdui/Image;III)V"] = function(addr, imageAddr, x, y, anchor) { 
     if (imageAddr === J2ME.Constants.NULL) {
       throw $.newNullPointerException("image is null");
     }
     var image = getHandle(imageAddr);
     var imageData = getHandle(image.imageData);
+    //console.log(imageData,x, y)
     renderRegion(NativeMap.get(addr).getGraphicsContext(), NativeMap.get(image.imageData).context.canvas, 0, 0, imageData.width, imageData.height, TRANS_NONE, x, y, anchor);
   };
   function GraphicsInfo(contextInfo) {
@@ -8817,6 +8897,7 @@ var currentlyFocusedTextEditor;
     var c = NativeMap.get(addr).getGraphicsContext();
     w = w || 1;
     h = h || 1;
+    //console.log("fillRect",x, y, w, h);
     c.fillRect(x, y, w, h);
   };
   Native["javax/microedition/lcdui/Graphics.fillRoundRect.(IIIIII)V"] = function(addr, x, y, w, h, arcWidth, arcHeight) {
@@ -8840,6 +8921,7 @@ var currentlyFocusedTextEditor;
     c.beginPath();
     createEllipticalArc(c, x, y, width / 2, height / 2, startRad, endRad, false);
     c.stroke();
+    //console.log("drawArc",addr, x, y, width, height, startAngle, arcAngle);
   };
   Native["javax/microedition/lcdui/Graphics.fillArc.(IIIIII)V"] = function(addr, x, y, width, height, startAngle, arcAngle) {
     if (width <= 0 || height <= 0) {
@@ -8989,7 +9071,7 @@ var currentlyFocusedTextEditor;
     c.stroke();
     c.closePath();
   };
-  Native["javax/microedition/lcdui/Graphics.drawRGB.([IIIIIIIZ)V"] = function(addr, rgbDataAddr, offset, scanlength, x, y, width, height, processAlpha) {
+  Native["javax/microedition/lcdui/Graphics.drawRGB.([IIIIIIIZ)V"] = function(addr, rgbDataAddr, offset, scanlength, x, y, width, height, processAlpha) { 
     var rgbData = J2ME.getArrayFromAddr(rgbDataAddr);
     tempContext.canvas.height = height;
     tempContext.canvas.width = width;
@@ -9000,6 +9082,7 @@ var currentlyFocusedTextEditor;
     } else {
       ARGBTo1BGR(rgbData, abgrData, width, height, offset, scanlength);
     }
+    
     tempContext.putImageData(imageData, 0, 0);
     var c = NativeMap.get(addr).getGraphicsContext();
     c.drawImage(tempContext.canvas, x, y);
@@ -11877,6 +11960,7 @@ function PlayerContainer(url, pId) {
   this.contentType = "";
   this.wholeContentSize = -1;
   this.contentSize = 0;
+  this.loadSize = 0;
   this.data = null;
   this.player = null;
   window.AudioContext = window.AudioContext || window.webkitAudioContext
@@ -11889,6 +11973,7 @@ function PlayerContainer(url, pId) {
   else if(midimode==2){
     this.tinysynth= new WebAudioTinySynth();
   }
+  //this.amr = new BenzAMRRecorder();
   console.log("PlayerContainer",this.pId);
 }
 PlayerContainer.DEFAULT_BUFFER_SIZE = 1024 * 1024;
@@ -11966,8 +12051,14 @@ PlayerContainer.prototype.realize = function(contentType) {
 };
 PlayerContainer.prototype.close = function() {
   this.data = null;
-  if(this.getMediaFormat()=='wav') 
+  if(this.getMediaFormat()!='mid') 
   {
+    if(this.getMediaFormat()=='amr')
+    {
+
+      this.amr.stop();   
+      return;
+    }
     this.source.stop();
     return;
   }
@@ -11983,12 +12074,64 @@ PlayerContainer.prototype.close = function() {
     }
   }
   else if(midimode==2){
-    this.tinysynth.stopMIDI();
+    if(this.tinysynth)
+    { 
+      this.tinysynth.stopMIDI();
+    }
   } 
 };
-PlayerContainer.prototype.getMediaTime = function() {
-  return this.player.getMediaTime();
+PlayerContainer.prototype.getMediaTime = function() { 
+ 
+  if(this.getMediaFormat()=='amr')
+  { 
+    return this.amr.getCurrentPosition()*100*10000; 
+  }  
+  if(midimode==2)
+  {
+    //console.log(this.tinysynth.getAudioContext().currentTime);
+    if(this.tinysynth){ 
+      return this.tinysynth.getAudioContext().currentTime*100*10000;;
+    }
+  } 
+
+  //console.log("this.audioCtx.currentTime",this.audioCtx.currentTime); 
+  return this.audioCtx.currentTime*100*10000;;
+  //return this.player.getMediaTime();
 };
+
+PlayerContainer.prototype.setMediaTime = function(longtime) {
+   console.log('setMediaTime ',longtime)
+   
+   if(this.getMediaFormat()=='amr')
+   { 
+      console.log(longtime/100/10000)
+       this.amr.setPosition(longtime/100/10000); 
+       return longtime;
+  }  
+  if(midimode==2)
+  {
+    //console.log(this.tinysynth.getAudioContext().currentTime);
+    if(this.tinysynth){ 
+        this.tinysynth.getAudioContext().currentTime=longtime;
+        return this.tinysynth.getAudioContext().currentTime;
+    }
+  }
+  //console.log(this.audioCtx.currentTime);
+
+  //  this.source = this.audioCtx.createBufferSource();  
+  //   this.source.buffer = this.wavBuffer;
+  //   // connect到扬声器
+  //   this.source.connect(this.audioCtx.destination); 
+  if(this.source)
+  { 
+    this.source.stop();
+  }
+    this.audioCtx = new AudioContext()
+    console.log(this.audioCtx.currentTime)
+    return longtime;
+    //  console.log('  this.audioCtx.currentTime ',  this.audioCtx.currentTime)
+  //return this.player.getMediaTime();
+}; 
 PlayerContainer.prototype.getBufferSize = function() {
   return this.wholeContentSize === -1 ? PlayerContainer.DEFAULT_BUFFER_SIZE : this.wholeContentSize;
 };
@@ -12033,11 +12176,42 @@ function convertDataURIToBinary(base64data) {   //编码转换
   }
   return array;
 }
+var context = new AudioContext();
+function concatenateAudioBuffers(buffer1, buffer2) {
+  if(!buffer1)
+  {
+    return buffer2;
+  }
+  if (!buffer1 || !buffer2) {
+      console.log("no buffers!");
+      return null;
+  }
+
+  if (buffer1.numberOfChannels != buffer2.numberOfChannels) {
+      console.log("number of channels is not the same!");
+      return null;
+  }
+
+  if (buffer1.sampleRate != buffer2.sampleRate) {
+      console.log("sample rates don't match!");
+      return null;
+  }
+
+  var tmp = context.createBuffer(buffer1.numberOfChannels, buffer1.length + buffer2.length, buffer1.sampleRate);
+
+  for (var i=0; i<tmp.numberOfChannels; i++) {
+      var data = tmp.getChannelData(i);
+      data.set(buffer1.getChannelData(i));
+      data.set(buffer2.getChannelData(i),buffer1.length);
+  }
+  return tmp;
+};
+
 // 播放音频
 PlayerContainer.prototype.playSound = function(buffer) {
-  this.wavBuffer = buffer;
-  console.log("this.wavBuffer ",this.wavBuffer )
-  
+  this.wavBuffer = concatenateAudioBuffers(this.wavBuffer,buffer);
+  console.log("this.wavBuffer ",this.wavBuffer ) 
+  this.loadSize+= parseInt(buffer.length);
   // var source = context.createBufferSource();
 
   // // 设置数据
@@ -12045,36 +12219,6 @@ PlayerContainer.prototype.playSound = function(buffer) {
   // // connect到扬声器
   // source.connect(context.destination);
   // source.start();
-}
-
-var context = new AudioContext();
-function playByteArray( bytes ) {
-  
-  context.decodeAudioData(bytes, play);
-}
-
-function play( audioBuffer ) {
-    var source = context.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect( context.destination );
-    this.$source.start(0);
-}
-
-function playByteArray2(byteArray) { 
-  sampleRate = 48000; 
-
-  var audioContext = new AudioContext();
-
-  var buffer = audioContext.createBuffer(1, 2, sampleRate);
-  var buf = buffer.getChannelData(0);
-  for (i = 0; i < byteArray.length; ++i) {
-      buf[i] = byteArray[i];
-  }
-
-  var source = audioContext.createBufferSource();
-  source.buffer = buffer;
-  source.connect(audioContext.destination);
-  source.start(0);
 }
 
 function base64ToUint8Array(base64String) {
@@ -12087,28 +12231,54 @@ function base64ToUint8Array(base64String) {
   return outputArray;
 }
 
-PlayerContainer.prototype.writeBuffer = function(buffer) {
+ 
+
+PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
+  try{
+  console.log("writeBuffer");
   if (this.contentSize === 0) {
     this.data = new Int8Array(this.getBufferSize());
   }
   this.data.set(buffer, this.contentSize);
   this.contentSize += buffer.length;
-
   var uint8 = new Uint8Array(buffer).buffer;
-  
-  if(this.getMediaFormat()=='wav')
+  console.log("buffer.length",buffer.length,bufferSize)
+
+  if(this.getMediaFormat()!='mid')
   {  
-    // playByteArray2(uint8);
-    // return;
-     //uint8 = base64ToUint8Array("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1v/d/93//P/8/xkAGQAeAB4AZwBnAHEAcQD3//f/5//n/9j/2P+v/6//1P/U/w0ADQAEAAQADQANAEgASAB/AH8APwA/ACUAJQAOAA4Az//P/+j/6P/w//D/2//b/8f/x//Y/9j//f/9/wsACwAqACoADgAOAN//3/8ZABkAXwBfAFYAVgAJAAkA6v/q//P/8//8//z/MgAyAEcARwANAA0A5//n/9//3/8MAAwAKQApAO//7/+Z/5n/eP94/6v/q//a/9r/8//z//v/+/8CAAIACAAIABkAGQAVABUAGQAZAAwADAABAAEAGQAZABwAHAABAAEABQAFADYANgCgAKAArwCvAGkAaQBEAEQAxv/G/5T/lP+j/6P/sP+w/3H/cf8h/yH/F/8X/2z/bP+l/6X/xf/F/wYABgBTAFMAXQBdAEEAQQA5ADkAQABAACsAKwALAAsAEQARADYANgAoACgA5v/m/5H/kf+c/5z/pv+m/+j/6P/w//D/2f/Z/9L/0v/l/+X/MQAxAFAAUABHAEcALQAtABYAFgA5ADkATABMACQAJAAfAB8AIwAjADAAMABEAEQAIwAjAPP/8//t/+3/8//z//j/+P/z//P/7//v/wsACwDV/9X/nv+e/9D/0P/8//z/9//3/xwAHAAqACoAFAAUABAAEAAbABsA6v/q/8f/x/+N/43/hf+F/7b/tv/w//D/RgBGAGgAaABeAF4ACQAJAND/0P+x/7H/zf/N/wgACAAQABAA3//f/8z/zP/G/8b/wf/B/+P/4/8TABMADQANAAcABwD4//j/1v/W/+L/4v/2//b/6//r//z//P8oACgAVQBVACEAIQAZABkAIAAgABoAGgALAAsA/P/8//j/+P/1//X/6v/q/wEAAQAJAAkAHAAcAC0ALQArACsAFQAVAAEAAQDp/+n//////xQAFAAcABwACwALACcAJwA7ADsABQAFAKD/oP+t/63/7P/s//j/+P/u/+7/LwAvACcAJwAvAC8ARABEAP3//f+7/7v/s/+z/7v/u/+0/7T/0//T//D/8P8AAAAAGAAYABQAFAAQABAA/////yIAIgAmACYAEAAQABwAHAA8ADwAFQAVAPD/8P+7/7v/if+J/5D/kP/P/8//CwALAAMAAwDu/+7/NAA0AIkAiQCUAJQAdQB1AH8AfwCHAIcAUQBRAB8AHwAZABkAEwATAA4ADgDZ/9n/4P/g/83/zf+w/7D/wP/A/7v/u/+l/6X/0f/R/+7/7v/z//P/0f/R/7v/u//e/97/9v/2/wMAAwDv/+//+v/6/xcAFwADAAMABgAGAB0AHQAOAA4A9v/2//n/+f8IAAgAKwArAE0ATQA3ADcAFAAUAPz//P/v/+//8//z/wQABAAbABsAOwA7AH0AfQCGAIYAXABcABYAFgD6//r/z//P/9f/1//e/97/5P/k/9//3//u/+7//P/8/wkACQD+//7/z//P/8n/yf/m/+b/CwALAMz/zP+h/6H/qf+p/9v/2//u/+7//////w4ADgAcABwAEAAQAAQABAAsACwAHAAcANP/0//d/93/5//n/wAAAAA2ADYALwAvABAAEADz//P/+P/4/yMAIwBAAEAAMAAwAAUABQDo/+j/+P/4/y0ALQAXABcABAAEAP/////6//r//v/+/9//3//j/+P/9f/1//L/8v/j/+P/8P/w/+n/6f/9//3/JgAmAEMAQwAeAB4ABgAGAPD/8P/V/9X/0f/R/8H/wf+5/7n/4v/i//////8jACMAOwA7AFEAUQBGAEYAUQBRAFMAUwAnACcA+v/6/93/3f/t/+3/8f/x/+3/7f/i/+L/7P/s//X/9f8WABYALAAsACEAIQD5//n/3//f/6r/qv+x/7H/BAAEACYAJgBFAEUAYgBiAFkAWQBhAGEAaABoADsAOwDw//D/0f/R/4//j/+X/5f/vv++/9P/0//n/+f/4f/h/wYABgAxADEAFAAUAM//z/+z/7P/7v/u/yUAJQA6ADoAQABAAEYARgBWAFYAKgAqAA0ADQDp/+n/vv++/9v/2/8KAAoAEAAQAOj/6P/4//j//P/8/9T/1P/k/+T/GQAZABIAEgDl/+X/9v/2//H/8f/Z/9n/1f/V/wAAAAAoACgAGQAZAAsACwAGAAYAIgAiADsAOwAqACoACgAKAP3//f/6//r//f/9//T/9P/r/+v//////xUAFQAdAB0AHwAfABMAEwAZABkALwAvACcAJwD+//7/1v/W/+X/5f/z//P/5//n/9v/2//m/+b/7//v/8L/wv/J/8n/2v/a//T/9P8WABYAEgASABUAFQAZABkAAgACAAUABQAuAC4ANAA0ADkAOQAqACoAFQAVAAEAAQDS/9L/zP/M/+n/6f/j/+P/yf/J/9f/1/8QABAAGAAYAB8AHwAMAAwAHQAdACIAIgAeAB4APAA8ADkAOQARABEAIQAhACUAJQAhACEABQAFAN3/3f/t/+3/BQAFAOf/5//b/9v/2P/Y/9X/1f/M/8z/tP+0/9H/0f/t/+3/+P/4/wgACAAQABAAHgAeABIAEgADAAMAEQARACkAKQAmACYAEgASAPr/+v/d/93/4P/g//L/8v/v/+///v/+/wYABgAXABcAIQAhABMAEwAvAC8AMgAyAC8ALwAsACwACwALAO3/7f/Z/9n/+v/6//7//v/6//r/DAAMABUAFQAYABgAEAAQABwAHAAeAB4AFQAVAAEAAQDz//P/7P/s//f/9//t/+3/9v/2/w8ADwAhACEAFwAXAOv/6//Y/9j/9f/1/+X/5f/D/8P/0P/Q//P/8/8BAAEA9f/1/9n/2f/P/8//3//f/wsACwAeAB4AOwA7AEAAQAAyADIAJQAlAAoACgDp/+n/9v/2/wEAAQATABMAAwADAOL/4v/M/8z/4P/g/xYAFgAtAC0AJgAmABMAEwAZABkACQAJACEAIQAVABUAEQARAEAAQABTAFMANgA2ABwAHAD6//r/5P/k/8j/yP/M/8z/4v/i/wMAAwAHAAcABAAEAPL/8v/P/8//rf+t/6D/oP+c/5z/0v/S//n/+f8cABwAFgAWADMAMwBNAE0AUQBRADsAOwA4ADgAHwAfAAIAAgANAA0AAwADAOz/7P/Y/9j/wP/A/4//j/96/3r/pv+m/9v/2//+//7/BAAEACEAIQAmACYAKgAqACYAJgAxADEANQA1AEUARQBOAE4ANgA2AAsACwDM/8z/w//D/+r/6v8NAA0ABwAHAN//3//a/9r/1v/W/9r/2v/d/93/BQAFAPX/9f/x//H//v/+/wkACQAUABQACwALAPb/9v/T/9P/1//X/+T/5P/n/+f/8v/y/+//7//y//L/FQAVACMAIwAfAB8AHAAcAAoACgDz//P/8P/w/wgACAAGAAYAFQAVACIAIgAbABsA+v/6/+z/7P8UABQABAAEAOL/4v/v/+//GgAaAAkACQD6//r//v/+/wIAAgANAA0AGAAYACEAIQAZABkA8P/w/9P/0//t/+3/BQAFAAEAAQDt/+3//////w8ADwASABIA9P/0/+D/4P/k/+T/BwAHABUAFQD/////6//r/9r/2v/R/9H/yP/I/9D/0P/E/8T/vv++/9z/3P8MAAwAHwAfACUAJQAVABUAEQARAB4AHgASABIA+v/6/+n/6f/s/+z///////3//f/u/+7/8P/w/9//3//V/9X/8//z/wkACQAdAB0AKAAoACUAJQAQABAA+P/4/wgACAALAAsA+P/4//r/+v8BAAEAAgACAAcABwACAAIAFQAVACgAKAANAA0A7f/t/+D/4P/r/+v/9v/2//P/8//2//b//v/+//f/9//1//X/AwADAAgACAAJAAkACwALAP7//v/2//b/BgAGABUAFQAUABQAFQAVAA0ADQD6//r/7f/t/+H/4f/w//D/8f/x//D/8P/r/+v/3f/d/9j/2P/N/83/z//P/+T/5P8EAAQAEQARABUAFQAKAAoAEwATABYAFgAjACMAKgAqAC0ALQAeAB4ABgAGAPD/8P/z//P/6//r/+3/7f8BAAEACAAIAAYABgAEAAQAEgASAAkACQD+//7/CAAIAAkACQD3//f/0//T/9j/2P/k/+T/8P/w//r/+v/4//j/6f/p/9b/1v/K/8r/0P/Q/9b/1v/m/+b/AgACAB4AHgAhACEAJAAkAC0ALQAvAC8ALQAtACIAIgAUABQAAAAAAO3/7f/r/+v/7f/t/wMAAwASABIACgAKABEAEQD5//n/8P/w/+f/5//v/+//8f/x/+L/4v/Y/9j/2v/a//P/8//9//3/+v/6//L/8v/0//T/+//7/wYABgAHAAcA/v/+//P/8//0//T/+//7//r/+v/1//X/5f/l/9v/2//k/+T/7v/u/+n/6f/t/+3/7v/u/+v/6//u/+7/6//r//H/8f/6//r/AwADAP3//f/+//7/9f/1//v/+/8EAAQAAQABAPn/+f/u/+7/5//n/+L/4v/r/+v/8P/w//r/+v8JAAkAFAAUABkAGQAbABsAFgAWABoAGgATABMACwALAAgACAABAAEA9f/1/+3/7f/r/+v/8//z//b/9v/1//X/9v/2//z//P//////8//z/97/3v/b/9v/0//T/9v/2//d/93/3v/e/+7/7v/5//n/+P/4//n/+f/6//r/BAAEABEAEQAMAAwACwALABIAEgARABEAEgASABEAEQALAAsABgAGAP7//v/0//T/5P/k/+P/4//s/+z/7v/u/+//7//w//D/8P/w//j/+P/6//r/8P/w/+D/4P/f/9//6//r//D/8P/y//L/7v/u/+7/7v/u/+7/7f/t//j/+P8EAAQACQAJAAsACwAJAAkABAAEAAEAAQD6//r/BAAEAAgACAD+//7/9P/0//j/+P/z//P/6f/p/+T/5P/o/+j/6f/p//D/8P/2//b//////wgACAAFAAUA/v/+//////8DAAMADQANAAYABgDz//P/9f/1/wYABgANAA0AEgASABQAFAAPAA8AEwATAA8ADwAQABAACAAIAPz//P8")
-     
-     that=this;
-     console.log(uint8)
-      this.audioCtx.decodeAudioData(uint8, function(buffer) {
+    if(this.getMediaFormat()=='amr')
+    {
+      this.amr = new BenzAMRRecorder();
+      this.amr.initWithArrayBuffer(uint8).then(()=>{ 
+        resolve(bufferSize);
+      }); 
+      return;
+    }
+    //非mid播放器
+    this.tinysynth = null; 
+    var that=this;  
+     this.audioCtx.decodeAudioData(uint8, function(buffer) {
+              console.log('1231231231231')
+              console.log(buffer.length)
               that.playSound(buffer);
+              // if(that.wholeContentSize<=that.contentSize)
+              // { 
+                resolve(that.contentSize);
+              // }
           }, function() {
               console.log('error');
-          });
+              resolve(that.contentSize);
+          }
+          ); 
+    // while(true)
+    // {
+    //   //伪同步
+    //   if(this.wavBuffer)
+    //   {
+    //     break;
+    //   }
+    //   sleep(1);
+    // }
       return;
   }
   if(midimode==1)
@@ -12117,22 +12287,38 @@ PlayerContainer.prototype.writeBuffer = function(buffer) {
     this.pAudio.initStatus();
     var parseData = this.pAudio.parseSMF(smfData); 
     this.pAudio.setData(parseData); 
+    resolve(bufferSize);
   }
   else if(midimode==2){
-    this.tinysynth.loadMIDI(uint8);
+    if(this.tinysynth)
+    { 
+      this.tinysynth.loadMIDI(uint8);
+      resolve(bufferSize);
+    }
+  }  
+}
+  catch(err)
+  {
+    console.log(err);
+    resolve(bufferSize);
   } 
-  
 };
 PlayerContainer.prototype.start = function() {
-  console.log("播放音乐");
-  if(this.getMediaFormat()=='wav') 
+  try{
+  //console.log("播放音乐");
+  if(this.getMediaFormat()!='mid') 
   { 
+    if(this.getMediaFormat()=='amr')
+    { 
+      this.amr.playOrPauseOrResume();
+      return;
+    }
     // 设置数据 
     this.source = this.audioCtx.createBufferSource();  
     this.source.buffer = this.wavBuffer;
     // connect到扬声器
     this.source.connect(this.audioCtx.destination);
-    this.source.start();
+    this.source.start(0);
     return;
   }
   this.player.start();
@@ -12144,33 +12330,59 @@ PlayerContainer.prototype.start = function() {
     }
   }
   else if(midimode==2){
-    this.tinysynth.playMIDI();
+    if(this.tinysynth)
+    { 
+      this.tinysynth.playMIDI();
+    }
+  } 
+  }catch(err)
+  {
+    console.log(err);
   } 
 };
 PlayerContainer.prototype.pause = function() {
-  console.log("播放音乐");
-  if(this.getMediaFormat()=='wav') 
-  {
-    this.source.stop();
-    return;
-  }
-  this.player.pause();
-  if(midimode==1)
-  {  
-    if(this.pAudio)
+  try{
+  //console.log("播放音乐");
+    if(this.getMediaFormat()!='mid') 
     {
-      this.pAudio.pause();
+      if(this.getMediaFormat()=='amr')
+      { 
+        this.amr.playOrPauseOrResume();
+        return;
+      }
+      this.source.pause();
+      return;
     }
-  }
-  else if(midimode==2){
-    this.tinysynth.stopMIDI();
+    //this.player.pause();
+    if(midimode==1)
+    {  
+      if(this.pAudio)
+      {
+        this.pAudio.pause();
+      }
+    }
+    else if(midimode==2){
+      if(this.tinysynth)
+      { 
+        this.tinysynth.stopMIDI();
+      }
+    } 
+  }catch(err)
+  {
+    console.log(err);
   } 
 };
 PlayerContainer.prototype.resume = function() {
-  console.log("播放音乐");
-  if(this.getMediaFormat()=='wav') 
+  try{
+  //console.log("播放音乐");
+  if(this.getMediaFormat()!='mid') 
   {
-    this.source.resume();
+    if(this.getMediaFormat()=='amr')
+    { 
+      this.amr.playOrPauseOrResume();
+      return;
+    }
+    this.source.play();
     return;
   }
   this.player.resume();
@@ -12178,12 +12390,19 @@ PlayerContainer.prototype.resume = function() {
   {  
     if(this.pAudio)
     {
-      this.pAudio.pause();
+      this.pAudio.resume();
     }
   }
   else if(midimode==2){
-    this.tinysynth.playMIDI();
+    if(this.tinysynth)
+    { 
+      this.tinysynth.getAudioContext().play();
+    }
   } 
+}catch(err)
+{
+  console.log(err);
+} 
 };
 PlayerContainer.prototype.getVolume = function() {
   console.log("播放音乐");
@@ -12194,7 +12413,7 @@ PlayerContainer.prototype.getVolume = function() {
   return this.player.getVolume();
 };
 PlayerContainer.prototype.setVolume = function(level) {
-  console.log("播放音乐");
+   //console.log("播放音乐");
   if(this.pAudio)
   {
      this.pAudio.setMasterVolume(level);
@@ -12202,45 +12421,45 @@ PlayerContainer.prototype.setVolume = function(level) {
   this.player.setVolume(level);
 };
 PlayerContainer.prototype.getMute = function() {
-  console.log("播放音乐");
+  //console.log("播放音乐");
   return this.player.getMute();
 };
 PlayerContainer.prototype.setMute = function(mute) {
-  console.log("播放音乐");
+  //console.log("播放音乐");
   return this.player.setMute(mute);
 };
 PlayerContainer.prototype.getWidth = function() {
-  console.log("播放音乐");
+  //console.log("播放音乐");
   return this.player.getWidth();
 };
 PlayerContainer.prototype.getHeight = function() {
-  console.log("播放音乐");
+  //console.log("播放音乐");
   return this.player.getHeight();
 };
 PlayerContainer.prototype.setLocation = function(x, y, w, h) {
-  console.log("播放音乐");
+    //console.log("播放音乐");
   this.player.setLocation(x, y, w, h);
 };
 PlayerContainer.prototype.setVisible = function(visible) {
-  console.log("播放音乐");
+  //console.log("播放音乐");
   this.player.setVisible(visible);
 };
 PlayerContainer.prototype.getRecordedSize = function() {
-  console.log("播放音乐");
+   //console.log("播放音乐");
   return this.audioRecorder.data.byteLength;
 };
 PlayerContainer.prototype.getRecordedData = function(offset, size, buffer) {
-  console.log("播放音乐");
+   //console.log("播放音乐");
   var toRead = size < this.audioRecorder.data.length ? size : this.audioRecorder.data.byteLength;
   buffer.set(this.audioRecorder.data.subarray(0, toRead), offset);
   this.audioRecorder.data = new Int8Array(this.audioRecorder.data.buffer.slice(toRead));
 };
 PlayerContainer.prototype.startSnapshot = function(imageType) {
-  console.log("播放音乐");
+    //console.log("播放音乐");
   this.player.startSnapshot(imageType);
 };
 PlayerContainer.prototype.getSnapshotData = function() {
-  console.log("播放音乐");
+  //console.log("播放音乐");
   var arr = this.player.getSnapshotData();
   if (!arr) {
     return Constants.NULL;
@@ -12249,13 +12468,23 @@ PlayerContainer.prototype.getSnapshotData = function() {
   J2ME.getArrayFromAddr(retArr).set(arr);
   return retArr;
 };
-PlayerContainer.prototype.getDuration = function() {
-  console.log("播放音乐");
-  if(this.pAudio)
-  {
-    return this.pAudio.getMasterVolume();
+PlayerContainer.prototype.getDuration = function() {  
+  if(this.getMediaFormat()=='amr')
+  { 
+    return this.amr.getDuration()*100*10000; 
   }
-  return this.player.getDuration();
+  //console.log("播放音乐");
+  if(this.tinysynth)
+  {
+    return this.tinysynth.getAudioContext().duration*100*10000;
+  }
+  if(this.wavBuffer)
+  { 
+    return this.wavBuffer.duration*100*10000;
+  }
+  
+  return 4*100*10000;
+  //return this.audioCtx.duration*100*10000;
 };
 var AudioRecorder = function(aMimeType) {
   this.mimeType = aMimeType || "audio/3gpp";
@@ -12369,6 +12598,8 @@ AudioRecorder.prototype.close = function() {
     return result;
   }.bind(this));
 };
+ 
+
 Native["com/sun/mmedia/PlayerImpl.nInit.(IILjava/lang/String;)I"] = function(addr, appId, pId, URIAddr) {
   var url = J2ME.fromStringAddr(URIAddr);
   var id = pId + (appId << 15);
@@ -12431,7 +12662,9 @@ Native["com/sun/mmedia/MediaDownload.nGetJavaBufferSize.(I)I"] = function(addr, 
 };
 Native["com/sun/mmedia/MediaDownload.nGetFirstPacketSize.(I)I"] = function(addr, handle) {
   var player = Media.PlayerCache[handle];
-  return player.getBufferSize() >>> 1;
+  //不要获取一半，一次获取整个流
+  //return player.getBufferSize() >>> 1; 
+  return player.getBufferSize();
 };
 
 function arrayBufferToBase64(buffer) {
@@ -12444,7 +12677,7 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
-Native["com/sun/mmedia/MediaDownload.nBuffering.(I[BII)I"] = function(addr, handle, bufferAddr, offset, size) {
+Native["com/sun/mmedia/MediaDownload.nBuffering.(I[BII)I"] =   function(addr, handle, bufferAddr, offset, size) {
 
   var player = Media.PlayerCache[handle];
   var bufferSize = player.getBufferSize();
@@ -12452,25 +12685,16 @@ Native["com/sun/mmedia/MediaDownload.nBuffering.(I[BII)I"] = function(addr, hand
     return bufferSize >>> 1;
   }
   var buffer = J2ME.getArrayFromAddr(bufferAddr);
-  player.writeBuffer(buffer.subarray(offset, offset + size));
-  
-  // var bf=buffer.subarray(offset, offset + size);
-  // console.log("com/sun/mmedia/MediaDownload.nBuffering.(I[BII)I",bf); 
-  // var smfData = new Uint8Array(bf);
-  // console.log(smfData)
-  // pAudio.initStatus();
-  // var parseData = pAudio.parseSMF(smfData); 
-  // pAudio.setData(parseData);
 
-  
-  //pAudio.play();
-  //bf = 'data:audio/midi;base64,'+arrayBufferToBase64(bf); 
-   
-  return bufferSize >>> 1;
+  asyncImpl("I", new Promise(function(resolve, reject) {
+    setTimeout(function() { 
+        player.writeBuffer(buffer.subarray(offset, offset + size),resolve,bufferSize);
+    });
+  }));  
 };
 Native["com/sun/mmedia/MediaDownload.nNeedMoreDataImmediatelly.(I)Z"] = function(addr, handle) {
   console.warn("com/sun/mmedia/MediaDownload.nNeedMoreDataImmediatelly.(I)Z not implemented");
-  return 1;
+  return 0;
 };
 Native["com/sun/mmedia/MediaDownload.nSetWholeContentSize.(IJ)V"] = function(addr, handle, contentSizeLow, contentSizeHigh) {
   var player = Media.PlayerCache[handle];
@@ -12510,11 +12734,31 @@ function getPlayer(handle)
     }
   });
   return ret;
-}
+} 
+
+
+Native["com/sun/mmedia/DirectMIDI.ndoGetDuration.(I)J"] = function(addr, handle1) { 
+  var player1 = getPlayer(handle1); 
+  var time1 = player1.getDuration();
+  return J2ME.returnLongValue(time1);
+};
+
+Native["com/sun/mmedia/DirectMIDI.ndoGetMediaTime.(I)J"] =  function(addr, handle) {
+  var player = getPlayer(handle); 
+  var time =  player.getMediaTime();
+  //console.log("getMediaTime:",time);
+  return J2ME.returnLongValue(time);
+};
+
+Native["com/sun/mmedia/DirectMIDI.ndoSetMediaTime.(IJ)J"] = function(addr, handle,lndataL,lndataLH) {
+  var player = getPlayer(handle); 
+  var t = ( player.setMediaTime(J2ME.longToNumber(lndataL, lndataLH)));;
+  return J2ME.returnLongValue(t);
+};
 
 Native["com/sun/mmedia/DirectMIDI.nStart.(I)V"] = function(addr,handle) {
   var player = getPlayer(handle);
-  console.log("nStart",addr);
+  //console.log("nStart",addr);
   player.start();
   //pAudio.play();
 };
@@ -12527,7 +12771,13 @@ Native["com/sun/mmedia/DirectMIDI.nStop.(I)V"] = function(addr,handle) {
 
 Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,count) {
   var player = getPlayer(handle);
-  console.log('com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V '+count);
+  //console.log('com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V '+count);
+   
+  if(player.getMediaFormat()=='amr')
+  { 
+    return player.amr.getCurrentPosition()*100*10000; 
+    return;
+  } 
   
   if(midimode==2)
   {
@@ -12538,16 +12788,28 @@ Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,c
     if(player.pAudio)
     {  
       player.pAudio.setLoop(true);
-    }
-    if(player.audioElement)
-    {
-      player.audioElement.loop=true
-      return;
-    }
-  }
-  
+    } 
+
+  } 
 };
 
+Native["javax/microedition/io/file/FileSystemEventHandlerBase.registerListener.()V"] = function(addr) {
+  console.warn("javax/microedition/io/file/FileSystemEventHandlerBase.registerListener.()V not implementation");
+};
+
+Native["com/sun/mmedia/DirectPlayer.nIsMetaDataControlSupported.(I)Z"] = function(addr, handle) {
+  return 0;
+};
+
+Native["com/sun/mmedia/DirectPlayer.nIsPitchControlSupported.(I)Z"] = function(addr, handle) {
+  return 0;
+};
+Native["com/sun/mmedia/DirectPlayer.nIsRateControlSupported.(I)Z"] = function(addr, handle) {
+  return 0;
+};
+Native["com/sun/mmedia/DirectPlayer.nIsTempoControlSupported.(I)Z"] = function(addr, handle) {
+  return 0;
+};
 
 Native["com/sun/mmedia/DirectPlayer.nIsVideoControlSupported.(I)Z"] = function(addr, handle) {
   return Media.PlayerCache[handle].isVideoControlSupported() ? 1 : 0;
@@ -12603,7 +12865,7 @@ Native["com/sun/mmedia/DirectPlayer.nGetMediaTime.(I)I"] = function(addr, handle
 };
 Native["com/sun/mmedia/DirectPlayer.nSetMediaTime.(IJ)I"] = function(addr, handle, msLow, msHigh) {
   var container = Media.PlayerCache[handle];
-  return container.player.setMediaTime(J2ME.longToNumber(msLow, msHigh));
+  return container.setMediaTime(J2ME.longToNumber(msLow, msHigh));
 };
 Native["com/sun/mmedia/DirectPlayer.nStart.(I)Z"] = function(addr, handle) {
   var player = Media.PlayerCache[handle];
