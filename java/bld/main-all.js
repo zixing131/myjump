@@ -2,6 +2,10 @@
 //var pAudio;
 //var pAudioList = {};
 
+//1是pAudio
+//2是webaudio-tinysynth
+var midimode=2;
+
 if (inBrowser && !HTMLCanvasElement.prototype.toBlob) {
   Object.defineProperty(HTMLCanvasElement.prototype, "toBlob", {value:function(callback, type, quality) {
     var binStr = atob(this.toDataURL(type, quality).split(",")[1]), len = binStr.length, arr = new Uint8Array(len);
@@ -11877,9 +11881,14 @@ function PlayerContainer(url, pId) {
   this.player = null;
   window.AudioContext = window.AudioContext || window.webkitAudioContext
   this.audioCtx = new AudioContext()
-  
-  this.pAudio = new PicoAudio({debug: true}); // debug
-  this.pAudio.init();
+  if(midimode==1)
+  {  
+    this.pAudio = new PicoAudio({debug: true}); // debug
+    this.pAudio.init(); 
+  }
+  else if(midimode==2){
+    this.tinysynth= new WebAudioTinySynth();
+  }
   console.log("PlayerContainer",this.pId);
 }
 PlayerContainer.DEFAULT_BUFFER_SIZE = 1024 * 1024;
@@ -11965,10 +11974,17 @@ PlayerContainer.prototype.close = function() {
   if (this.player) {
     this.player.close();
   }
-  if(this.pAudio)
-  {
-    this.pAudio.pause();
+
+  if(midimode==1)
+  {  
+    if(this.pAudio)
+    {
+      this.pAudio.pause();
+    }
   }
+  else if(midimode==2){
+    this.tinysynth.stopMIDI();
+  } 
 };
 PlayerContainer.prototype.getMediaTime = function() {
   return this.player.getMediaTime();
@@ -12095,12 +12111,17 @@ PlayerContainer.prototype.writeBuffer = function(buffer) {
           });
       return;
   }
+  if(midimode==1)
+  {  
+    var smfData = new Uint8Array(buffer); 
+    this.pAudio.initStatus();
+    var parseData = this.pAudio.parseSMF(smfData); 
+    this.pAudio.setData(parseData); 
+  }
+  else if(midimode==2){
+    this.tinysynth.loadMIDI(uint8);
+  } 
   
-  var smfData = new Uint8Array(buffer);
-  console.log('setdata');
-  this.pAudio.initStatus();
-  var parseData = this.pAudio.parseSMF(smfData); 
-  this.pAudio.setData(parseData); 
 };
 PlayerContainer.prototype.start = function() {
   console.log("播放音乐");
@@ -12115,7 +12136,16 @@ PlayerContainer.prototype.start = function() {
     return;
   }
   this.player.start();
-  this.pAudio.play();
+  if(midimode==1)
+  {  
+    if(this.pAudio)
+    {
+      this.pAudio.play();
+    }
+  }
+  else if(midimode==2){
+    this.tinysynth.playMIDI();
+  } 
 };
 PlayerContainer.prototype.pause = function() {
   console.log("播放音乐");
@@ -12125,7 +12155,16 @@ PlayerContainer.prototype.pause = function() {
     return;
   }
   this.player.pause();
-  this.pAudio.pause();
+  if(midimode==1)
+  {  
+    if(this.pAudio)
+    {
+      this.pAudio.pause();
+    }
+  }
+  else if(midimode==2){
+    this.tinysynth.stopMIDI();
+  } 
 };
 PlayerContainer.prototype.resume = function() {
   console.log("播放音乐");
@@ -12135,7 +12174,16 @@ PlayerContainer.prototype.resume = function() {
     return;
   }
   this.player.resume();
-  this.pAudio.resume();
+  if(midimode==1)
+  {  
+    if(this.pAudio)
+    {
+      this.pAudio.pause();
+    }
+  }
+  else if(midimode==2){
+    this.tinysynth.playMIDI();
+  } 
 };
 PlayerContainer.prototype.getVolume = function() {
   console.log("播放音乐");
@@ -12481,6 +12529,10 @@ Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,c
   var player = getPlayer(handle);
   console.log('com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V '+count);
   
+  if(midimode==2)
+  {
+    player.tinysynth.setLoop(count);
+  }
   if(count==-1)
   {
     if(player.pAudio)
@@ -12493,6 +12545,7 @@ Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,c
       return;
     }
   }
+  
 };
 
 
