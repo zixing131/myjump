@@ -3,18 +3,39 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid 'b080a7b18ea1ac187157f7af26497f2b95a66ef7'
-    oldFile: !uuid 'a69303486d6aafa249c1e4a3bbd3c0e9b7ea4f17'
+    newFile: !uuid '1bc2ae6a7dcc125f08b6305052ecbf4939e24df6'
+    oldFile: !uuid 'b080a7b18ea1ac187157f7af26497f2b95a66ef7'
+  /java/bld:
+    newFile: !uuid '11591799b6813695679d47b895afa8ac5dbe9e24'
+    oldFile: !uuid 'b2dc240502e2e602b3611ece4c91fe419e62e7eb'
+  /java/bld/j2me.js:
+    newFile: !uuid 'a77acb0daef5031c1d73aa99889544ae1e722dbc'
+    oldFile: !uuid '19a6737b22c599be17ae0dbba08e04e0ef0c8d47'
+  /java/bld/main-all.js:
+    newFile: !uuid '330599ef768b8e5e9a69b16fc95d178e321a4861'
+    oldFile: !uuid '9b0f6589805f42035e3290dcc974e551a7e6c2d8'
   /java/java:
-    newFile: !uuid '13a670e7ee96199f64dda3b7aae44422af11a885'
-    oldFile: !uuid '57a3c4dedbd8496f836a3ffa36a6e8685f4c3470'
+    newFile: !uuid '550e17f697510cbebb853d9dfbc8d8e1206e622f'
+    oldFile: !uuid '13a670e7ee96199f64dda3b7aae44422af11a885'
   /java/java/classes.jar:
-    newFile: !uuid '64429c32de568bd9e75c7847a5dff0ad76b75c9c'
-    oldFile: !uuid 'c3d17e5f414e73c3c08714d5840a4ed6fb1e6886'
+    newFile: !uuid '4fbcb9763f06eba8aeb5e07595c77ca40ad36803'
+    oldFile: !uuid '64429c32de568bd9e75c7847a5dff0ad76b75c9c'
+  /java/libs:
+    newFile: !uuid 'a702655d934a1a4d37223aabff2845cda0af17d6'
+    oldFile: !uuid '1b6b589b8a28fac4dd77e8c34ad2a272d0bebf5d'
+  /java/libs/BenzAMRRecorder.js:
+    newFile: !uuid '2a54ff2fb4b8b924f1c78552b9e43330018a6c1d'
+    oldFile: null
+  /java/libs/jsgraphics.js:
+    newFile: !uuid '352ced89bfedb660ad426add4928f9c627fcc7e8'
+    oldFile: null
+  /java/main.html:
+    newFile: !uuid '1fdc3bfedf014382399cab4acbd584cf908995e2'
+    oldFile: !uuid 'aa4ad45f70ee97d92842f399edebf30b9d4546c4'
   /java/updatelog.html:
-    newFile: !uuid '1faf1500ca75d930fad486f689a756a27180e1c3'
-    oldFile: !uuid '76299d56135daa13a4eea503c395c3d4f53e779c'
-gitCommitId: !uuid 'f8f92633caf5be684206a9fb631aabad3889796b'
+    newFile: !uuid '65788b28a63eea306e45eb6cd0758bd00018fb3e'
+    oldFile: !uuid '1faf1500ca75d930fad486f689a756a27180e1c3'
+gitCommitId: !uuid '41850a9c29824c357e304937d450cd28acb45b29'
 renames: {
   }
-revisionId: 49
+revisionId: 50
