@@ -3,51 +3,12 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid 'afaf7e40ee3e9ff5250ab12f663011bed33dbb28'
-    oldFile: !uuid '3b07a7641f74fd09adfff3d2fd474fdeeb6a8f9f'
-  /java/bld:
-    newFile: !uuid '1861f6ef09b53ce86bcba6076e22ea021ad032cc'
-    oldFile: !uuid '8b51a7011d321c032c63bfabbf77a9878906220f'
-  /java/bld/j2me.js:
-    newFile: !uuid '19a6737b22c599be17ae0dbba08e04e0ef0c8d47'
-    oldFile: !uuid 'b2885ba805bda705f786ca7b3f6170bc0ec870d5'
-  /java/bld/main-all.js:
-    newFile: !uuid 'e56a2584e0e85a1c21c914987c08381ad92c9b98'
-    oldFile: !uuid '2301ab37e30dfb110407c19d690d1a008df847ca'
-  /java/config:
-    newFile: !uuid '87e8d8dfdc5df8581cc23fdffa2c8415bb5c210e'
-    oldFile: !uuid '515f5b1aaadb5841990ffa392ce7fb4d23c20254'
-  /java/config/build.js:
-    newFile: !uuid '6efda73761d07f089ba1309385a1d61977a6ea4f'
-    oldFile: !uuid 'cda66b6cd6fe281287ac959141d84919e1a23ed0'
-  /java/java:
-    newFile: !uuid '57a3c4dedbd8496f836a3ffa36a6e8685f4c3470'
-    oldFile: !uuid 'a6644284d5b38ea100c02418b5e1874b1dbc2be3'
-  /java/java/classes.jar:
-    newFile: !uuid 'c3d17e5f414e73c3c08714d5840a4ed6fb1e6886'
-    oldFile: !uuid 'eeb0775231a956d725469fc6de62206db6fa2e7d'
-  /java/js:
-    newFile: !uuid '665eb204e2c47a41f73e709039f6b4d576c27664'
-    oldFile: null
-  /java/js/midi:
-    newFile: !uuid 'c9f92dab81a5c0f687fa82c18363a1f838fb622c'
-    oldFile: null
-  /java/js/midi/loader.js:
-    newFile: !uuid '02136f66bb44b0fe903cb4cd4745529b5cfd2c34'
-    oldFile: null
-  /java/libs:
-    newFile: !uuid '9059ac317a97c063c40a68026ab7a5a0ad958105'
-    oldFile: !uuid '8b78497f84558871b271256fd065ccdbd6a0cbe2'
-  /java/libs/PicoAudio.js:
-    newFile: !uuid 'c6aa04f49f155de3c5c9bdd39e26ea8eb5b08994'
-    oldFile: null
-  /java/libs/webaudio.js:
-    newFile: !uuid '420c14c00d243e8f8bbceb705bc13d79d02797f8'
-    oldFile: null
-  /java/main.html:
-    newFile: !uuid 'd527437422142a337a94c6abe1b984ca6f87fa8f'
-    oldFile: !uuid '66238faf5611ee97008d6f1ef1742acb17b48c0a'
-gitCommitId: !uuid '2374cb8ab4fbaf45f28079457df32bf9bb9c4468'
+    newFile: !uuid '5071760df33bca34634232bb1cbfe6ab45c26a33'
+    oldFile: !uuid 'afaf7e40ee3e9ff5250ab12f663011bed33dbb28'
+  /java/updatelog.html:
+    newFile: !uuid '3b03c81ac93acac12e0c881f8149d2c9ea727d21'
+    oldFile: !uuid '6f210c395ba6d3bbf69027058f16997589d9fe79'
+gitCommitId: !uuid 'daafdc98b19cd58a2321ef7960705416eafcb5bd'
 renames: {
   }
-revisionId: 46
+revisionId: 47
