@@ -3,27 +3,27 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '312fadec10d2df49ef6c98ec5f37673238221dd7'
-    oldFile: !uuid '17f160a2cd6424fc79dad2600af2915c8b6bdcf5'
-  /java/bld:
-    newFile: !uuid '7af3ab2f7bcf26ae924f4ca6a3673b4801e66f2e'
-    oldFile: !uuid '813847e2a58258c4522501d82c2cf5c40d65e8fd'
-  /java/bld/j2me.js:
-    newFile: !uuid 'f6076e3a3f0b9d9e4490a47a438a9d200d49f236'
-    oldFile: !uuid '5b49b67fc9157daa771d38f2dfce8dd9c00973ae'
-  /java/bld/main-all.js:
-    newFile: !uuid '49c30fa8150dff0c44dc71a4080f1eaf935995ab'
-    oldFile: !uuid '04ca0442f6e82caedfcba2011c9af7023503ebf9'
-  /java/java:
-    newFile: !uuid '9822674b39214a90ebc20eb5328d820dad498c24'
-    oldFile: !uuid '550e17f697510cbebb853d9dfbc8d8e1206e622f'
-  /java/java/classes.jar:
-    newFile: !uuid '3d468b83548c855f31771f1f4a229f689d587c1e'
-    oldFile: !uuid '4fbcb9763f06eba8aeb5e07595c77ca40ad36803'
+    newFile: !uuid '5f3315914182ab2de042208145c19a8c85c93e32'
+    oldFile: !uuid '312fadec10d2df49ef6c98ec5f37673238221dd7'
+  /java/img:
+    newFile: !uuid 'cc4e62f55a03c4faa17f34640dd300d9a2ba4e8c'
+    oldFile: !uuid '1d7e35b3ccbe9aafdd8069f319338ef7c43c5480'
+  /java/img/kybc6.png:
+    newFile: !uuid '12bc6dc1451280e2516ce6db8ebc272b3687bc64'
+    oldFile: null
+  /java/index.html:
+    newFile: !uuid '2222860c7f06012c17776734b401ee74f1bcf925'
+    oldFile: !uuid '03d4399dff6947bf4e6eef1d62a43ae12e2f27dd'
+  /java/jar:
+    newFile: !uuid '4e32862450c5373a8499138aae450074f12b5a0b'
+    oldFile: !uuid '46a25a1b8d90dc73dcf3b587f50a011776cd41f6'
+  /java/jar/kybc6.jar:
+    newFile: !uuid 'd3ce5fcb7140163167d87b9312951851b279c7d6'
+    oldFile: null
   /java/updatelog.html:
-    newFile: !uuid 'db67480a781d92a0f6fead8c3b86e0265a7923fd'
-    oldFile: !uuid '65788b28a63eea306e45eb6cd0758bd00018fb3e'
-gitCommitId: !uuid 'c732420ae7c6225139ed2404686e7699fdca05ce'
+    newFile: !uuid '4d9d1fbaa62fe519a8936189fcadea49be8b0d19'
+    oldFile: !uuid 'db67480a781d92a0f6fead8c3b86e0265a7923fd'
+gitCommitId: !uuid 'f7ce8567a1f9a8727e9f965d5949a49188aaf44b'
 renames: {
   }
-revisionId: 52
+revisionId: 53
