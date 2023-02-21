@@ -5535,6 +5535,7 @@ var J2ME;
             this.initialized[classId] = 1;
         };
         RuntimeTemplate.prototype.getClassObjectAddress = function (classInfo) {
+            try{
             var id = classInfo.id;
             if (!this.classObjectAddresses[classInfo.id]) {
                 var addr = allocUncollectableObject(J2ME.CLASSES.java_lang_Class);
@@ -5555,6 +5556,11 @@ var J2ME;
                 }
             }
             return this.classObjectAddresses[id];
+        }catch(err)
+        {
+            console.error(err);
+            return 0;
+        }
         };
         /**
          * Generates a new hash code for the specified |object|.
@@ -5649,6 +5655,7 @@ var J2ME;
             return $.ctx.createException("java/lang/ArithmeticException", str);
         };
         RuntimeTemplate.prototype.newClassNotFoundException = function (str) {
+            return null;
             return $.ctx.createException("java/lang/ClassNotFoundException", str);
         };
         RuntimeTemplate.prototype.newIllegalArgumentException = function (str) {
@@ -5667,6 +5674,7 @@ var J2ME;
             return $.ctx.createException("javax/microedition/media/MediaException", str);
         };
         RuntimeTemplate.prototype.newInstantiationException = function (str) {
+            return null;
             return $.ctx.createException("java/lang/InstantiationException", str);
         };
         RuntimeTemplate.prototype.newException = function (str) {
@@ -9187,12 +9195,14 @@ var J2ME;
             var bytes = JARStore.loadFile(fileName);
             //console.log(bytes)
             if (!bytes) {
-                J2ME.loadWriter && J2ME.loadWriter.leave("< ClassNotFoundException");
-                throw new (J2ME.ClassNotFoundException)(fileName);
+                console.warn("ClassNotFoundException"+fileName);
+                //J2ME.loadWriter && J2ME.loadWriter.leave("< ClassNotFoundException");
+                //throw new (J2ME.ClassNotFoundException)(fileName);
+                return;
             }
             var self = this;
             var classInfo = this.loadClassBytes(bytes);
-            console.log(classInfo)
+            //console.log(classInfo)
             if (classInfo.superClassName) {
                 classInfo.superClass = this.loadClass(classInfo.superClassName);
                 classInfo.depth = classInfo.superClass.depth + 1;

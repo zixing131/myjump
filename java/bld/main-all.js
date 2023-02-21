@@ -359,6 +359,9 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
  //console.log("System.getProperty0",key)
   var value;
   switch(key) {
+    case "microedition.configuration":
+      value = "CLDC-1.1";
+      break;
     case "microedition.encoding":
       value = "UTF-8";
       break;
@@ -589,56 +592,70 @@ Native["java/lang/Class.getName.()Ljava/lang/String;"] = function(addr) {
 Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAddr) {
   var classInfo = null;
   
-  console.warn("nameAddr ",nameAddr,J2ME.fromStringAddr(nameAddr));
+  //console.warn("nameAddr ",nameAddr,J2ME.fromStringAddr(nameAddr));
   if(nameAddr>=0xffffff)
   {
     console.warn("ClassNotFoundException");
-    throw $.newClassNotFoundException("'" + e.message + "' not found.");
+    //throw $.newClassNotFoundException("'" + e.message + "' not found.");
     return;
   } 
   try {
     
     if (nameAddr === J2ME.Constants.NULL) {
-      throw new J2ME.ClassNotFoundException;
+      //throw new J2ME.ClassNotFoundException;
+      console.warn('ClassNotFoundException');
+      return;
     }
     var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/"); 
-    console.log(className)
+    //console.log(className)
     classInfo = CLASSES.getClass(className); 
     //console.log(classInfo)
 
   } catch (e) {
     if (e instanceof J2ME.ClassNotFoundException) {
-      throw $.newClassNotFoundException("'" + e.message + "' not found.");
+      console.warn("'" + e.message + "' not found.")
+      //throw $.newClassNotFoundException("'" + e.message + "' not found.");
+      return;
     }
     console.error(e);
-    throw e;
+    //throw e;
   } 
-  J2ME.classInitCheck(classInfo);
+  //J2ME.classInitCheck(classInfo);
   if (U) {
     $.nativeBailout(J2ME.Kind.Void, J2ME.Bytecode.Bytecodes.INVOKESTATIC);
   }
 };
 Native["java/lang/Class.forName1.(Ljava/lang/String;)Ljava/lang/Class;"] = function(addr, nameAddr) {
-  if(nameAddr>=0xffffff)
+  try{
+    if(nameAddr>=0xffffff)
+    {
+      console.warn("ClassNotFoundException")
+      return J2ME.Constants.NULL;
+    }
+    var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/");
+    var classInfo = CLASSES.getClass(className); 
+    var address = $.getClassObjectAddress(classInfo);
+    //console.log("forName1",className)
+    return address;
+  }catch(err)
   {
-    console.warn("ClassNotFoundException")
+    console.error(err);
     return J2ME.Constants.NULL;
   }
-  var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/");
-  var classInfo = CLASSES.getClass(className); 
-  var address = $.getClassObjectAddress(classInfo);
-  console.log("forName1",className)
-  return address;
 };
 Native["java/lang/Class.newInstance0.()Ljava/lang/Object;"] = function(addr) {
   //console.log("newInstance0",addr)
   var self = getHandle(addr);
   var classInfo = J2ME.classIdToClassInfoMap[self.vmClass];
   if (classInfo.isInterface || classInfo.isAbstract) {
-    throw $.newInstantiationException("Can't instantiate interfaces or abstract classes");
+    console.error("Can't instantiate interfaces or abstract classes");
+    //throw $.newInstantiationException("Can't instantiate interfaces or abstract classes");
+    return;
   }
   if (classInfo instanceof J2ME.ArrayClassInfo) {
-    throw $.newInstantiationException("Can't instantiate array classes");
+    //throw $.newInstantiationException("Can't instantiate array classes");
+    console.error("Can't instantiate array classes");
+     return
   }
   return J2ME.allocObject(classInfo);
 };
@@ -646,7 +663,9 @@ Native["java/lang/Class.newInstance1.(Ljava/lang/Object;)V"] = function(addr, oA
   var classInfo = J2ME.getClassInfo(oAddr);
   var methodInfo = classInfo.getLocalMethodByNameString("<init>", "()V", false);
   if (!methodInfo) {
-    throw $.newInstantiationException("Can't instantiate classes without a nullary constructor");
+    //throw $.newInstantiationException("Can't instantiate classes without a nullary constructor");
+    console.error("Can't instantiate classes without a nullary constructor");
+    return;
   }
   J2ME.getLinkedMethod(methodInfo)(oAddr);
   if (U) {
