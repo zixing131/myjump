@@ -430,8 +430,8 @@ var J2ME;
             this._tab = " ";
             this._padding = "";
             this._suppressOutput = suppressOutput;
-            this._out = out || IndentingWriter.stdout;
-            this._outNoNewline = out || IndentingWriter.stdoutNoNewline;
+            this._out = console.log;
+            this._outNoNewline =  console.log;
         }
         IndentingWriter.prototype.write = function (str, writePadding) {
             if (str === void 0) { str = ""; }
@@ -583,9 +583,9 @@ var J2ME;
         IndentingWriter.BOLD_RED = '\033[1;91m';
         IndentingWriter.ENDC = '\033[0m';
         IndentingWriter.logLevel = 31 /* All */;
-        IndentingWriter.stdout = inBrowser ? console.info.bind(console) : print;
+        IndentingWriter.stdout = inBrowser ? console.log : print;
         IndentingWriter.stdoutNoNewline = inBrowser ? console.info.bind(console) : putstr;
-        IndentingWriter.stderr = inBrowser ? console.error.bind(console) : printErr;
+        IndentingWriter.stderr = inBrowser ? console.err : printErr;
         return IndentingWriter;
     })();
     J2ME.IndentingWriter = IndentingWriter;
@@ -8176,7 +8176,7 @@ var J2ME;
             this.depth = 0;
             this.display = null;
             this.accessFlags = 0;
-            this.vTable = null;
+            this.vTable = [];
             // This is not really a table per se, but rather a map.
             this.iTable = Object.create(null);
             // Custom hash map to make vTable name lookups quicker. It maps utf8 method names to indices in
@@ -8307,11 +8307,11 @@ var J2ME;
         };
         ClassInfo.prototype.complete = function () {
             this.createAbstractMethods();
-            if (!this.isInterface) {
+            //if (!this.isInterface) {
                 this.buildVTable();
                 this.buildITable();
                 this.buildFTable();
-            }
+            //}
             // Notify the runtime so it can perform and necessary setup.
             if (J2ME.RuntimeTemplate) {
                 J2ME.RuntimeTemplate.classInfoComplete(this);
@@ -9182,14 +9182,17 @@ var J2ME;
             return classInfo;
         };
         ClassRegistry.prototype.loadClassFile = function (fileName) {
+            console.log("Loading Class File: "+fileName);
             J2ME.loadWriter && J2ME.loadWriter.enter("> Loading Class File: " + fileName);
             var bytes = JARStore.loadFile(fileName);
+            //console.log(bytes)
             if (!bytes) {
                 J2ME.loadWriter && J2ME.loadWriter.leave("< ClassNotFoundException");
                 throw new (J2ME.ClassNotFoundException)(fileName);
             }
             var self = this;
             var classInfo = this.loadClassBytes(bytes);
+            console.log(classInfo)
             if (classInfo.superClassName) {
                 classInfo.superClass = this.loadClass(classInfo.superClassName);
                 classInfo.depth = classInfo.superClass.depth + 1;
@@ -9302,7 +9305,7 @@ var J2ME;
 (function (J2ME) {
     var Bindings = {
         "java/lang/Object": {
-            native: {
+            native: { 
                 "hashCode.()I": function () {
                     var self = this;
                     if (self._hashCode) {

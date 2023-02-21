@@ -273,6 +273,10 @@ Native["java/lang/System.arraycopy.(Ljava/lang/Object;ILjava/lang/Object;II)V"] 
   }
   var srcClassInfo = J2ME.getClassInfo(srcAddr);
   var dstClassInfo = J2ME.getClassInfo(dstAddr);
+  // if(length==1)
+  // {
+  //   console.log("srcClassInfo",srcClassInfo,dstClassInfo)
+  // } 
   if (!(srcClassInfo instanceof J2ME.ArrayClassInfo) || !(dstClassInfo instanceof J2ME.ArrayClassInfo)) {
     throw $.newArrayStoreException("Can only copy to/from array types.");
   }
@@ -352,7 +356,7 @@ Native["java/lang/System.arraycopy.(Ljava/lang/Object;ILjava/lang/Object;II)V"] 
 var stubProperties = {"com.nokia.multisim.slots":"1", "com.nokia.mid.imsi":"000000000000000", "com.nokia.mid.imei":""};
 Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] = function(addr, keyAddr) {
   var key = J2ME.fromStringAddr(keyAddr);
-  console.log("System.getProperty0",key)
+ //console.log("System.getProperty0",key)
   var value;
   switch(key) {
     case "microedition.encoding":
@@ -510,7 +514,7 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       }
       break;
   }
-  console.log(value);
+  //console.log(value);
   return J2ME.newString(value);
 };
 Native["java/lang/System.currentTimeMillis.()J"] = function(addr) {
@@ -545,6 +549,7 @@ Native["com/sun/cldchi/jvm/JVM.monotonicTimeMillis.()J"] = function(addr) {
   return J2ME.returnLongValue(performance.now());
 };
 Native["java/lang/Object.getClass.()Ljava/lang/Class;"] = function(addr) {
+  //console.log("getClass ",addr,J2ME.getClassInfo(addr))
   return $.getClassObjectAddress(J2ME.getClassInfo(addr));
 };
 Native["java/lang/Class.getSuperclass.()Ljava/lang/Class;"] = function(addr) {
@@ -583,29 +588,50 @@ Native["java/lang/Class.getName.()Ljava/lang/String;"] = function(addr) {
 };
 Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAddr) {
   var classInfo = null;
+  
+  console.warn("nameAddr ",nameAddr,J2ME.fromStringAddr(nameAddr));
+  if(nameAddr>=0xffffff)
+  {
+    console.warn("ClassNotFoundException");
+    throw $.newClassNotFoundException("'" + e.message + "' not found.");
+    return;
+  } 
   try {
+    
     if (nameAddr === J2ME.Constants.NULL) {
       throw new J2ME.ClassNotFoundException;
     }
-    var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/");
-    classInfo = CLASSES.getClass(className);
+    var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/"); 
+    console.log(className)
+    classInfo = CLASSES.getClass(className); 
+    //console.log(classInfo)
+
   } catch (e) {
     if (e instanceof J2ME.ClassNotFoundException) {
       throw $.newClassNotFoundException("'" + e.message + "' not found.");
     }
+    console.error(e);
     throw e;
-  }
+  } 
   J2ME.classInitCheck(classInfo);
   if (U) {
     $.nativeBailout(J2ME.Kind.Void, J2ME.Bytecode.Bytecodes.INVOKESTATIC);
   }
 };
 Native["java/lang/Class.forName1.(Ljava/lang/String;)Ljava/lang/Class;"] = function(addr, nameAddr) {
+  if(nameAddr>=0xffffff)
+  {
+    console.warn("ClassNotFoundException")
+    return J2ME.Constants.NULL;
+  }
   var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/");
-  var classInfo = CLASSES.getClass(className);
-  return $.getClassObjectAddress(classInfo);
+  var classInfo = CLASSES.getClass(className); 
+  var address = $.getClassObjectAddress(classInfo);
+  console.log("forName1",className)
+  return address;
 };
 Native["java/lang/Class.newInstance0.()Ljava/lang/Object;"] = function(addr) {
+  //console.log("newInstance0",addr)
   var self = getHandle(addr);
   var classInfo = J2ME.classIdToClassInfoMap[self.vmClass];
   if (classInfo.isInterface || classInfo.isAbstract) {
@@ -681,7 +707,12 @@ Native["java/lang/Runtime.freeMemory.()J"] = function(addr) {
 Native["java/lang/Runtime.gc.()V"] = function(addr) {
   asyncImpl("V", new Promise(function(resolve, reject) {
     setTimeout(function() {
-      ASM._forceCollection();
+      try{ 
+        ASM._forceCollection();
+      }catch(err)
+      {
+        console.log("gc error"+err);
+      }
       resolve();
     });
   }));
@@ -7182,6 +7213,18 @@ if (typeof module !== "undefined" && module.exports) {
     regentry[str.length] = 0;
     return 0;
   };
+
+  
+  Native["java/lang/Object.LogName.(Ljava/lang/String;)V"] = function(addr, classNameAddr) {
+    try{ 
+    console.log(classNameAddr);
+    console.log("LogName "+ J2ME.fromStringAddr(classNameAddr) );
+    }catch(err)
+    {
+
+    }
+  };
+
   Native["com/sun/midp/io/j2me/push/ConnectionRegistry.checkInByMidlet0.(ILjava/lang/String;)V"] = function(addr, suiteId, classNameAddr) {
     console.warn("ConnectionRegistry.checkInByMidlet0.(IL...String;)V not implemented (" + suiteId + ", " + J2ME.fromStringAddr(classNameAddr) + ")");
   };
@@ -13140,6 +13183,7 @@ var Content = function() {
   });
   Native["com/sun/j2me/content/InvocationStore.get0.(Lcom/sun/j2me/content/InvocationImpl;ILjava/lang/String;IZ)I"] = function(addr, invocAddr, suiteId, classNameAddr, mode, shouldBlock) {
     var invoc = getHandle(invocAddr);
+    console.log(invocation)
     getInvocationCalled = true;
     if (!invocation) {
       return 0;
@@ -13155,8 +13199,32 @@ var Content = function() {
     invocation = null;
     return 1;
   };
+  
+  Native["com/sun/j2me/content/InvocationStore.size0.()I"] = function(addr) { 
+    if (!invocation) {
+      return 0;
+    }
+    return 1;
+  };
+  
   addUnimplementedNative("com/sun/j2me/content/InvocationStore.setCleanup0.(ILjava/lang/String;Z)V");
-  addUnimplementedNative("com/sun/j2me/content/InvocationStore.getByTid0.(Lcom/sun/j2me/content/InvocationImpl;II)I", 0);
+  Native["com/sun/j2me/content/InvocationStore.getByTid0.(Lcom/sun/j2me/content/InvocationImpl;II)I"] = function(addr, invocAddr, tid, mode) {
+    var invoc = getHandle(invocAddr);
+    getInvocationCalled = true;
+    if (!invocation) {
+      return 0;
+    }
+    var invocArguments = J2ME.getArrayFromAddr(invoc.arguments);
+    if (invocArguments.length != 1) {
+      invoc.argsLen = 1;
+      return -1;
+    }
+    invocArguments[0] = J2ME.newString(invocation.argument);
+    invoc.action = J2ME.newString(invocation.action);
+    invoc.status = 2;
+    invocation = null;
+    return 1;
+  }; 
   addUnimplementedNative("com/sun/j2me/content/InvocationStore.resetFlags0.(I)V");
   return {addInvocation:addInvocation};
 }();
@@ -13735,6 +13803,7 @@ if(config.localjar)
       var a=MIDP.manifest['MIDlet-1'];
       a=a.substr(a.lastIndexOf(',')+1).trim()
       config.midletClassName = a;
+      console.log("load main class :",config.midletClassName);
     });
    jars=config.localjar; 
 }
