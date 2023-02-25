@@ -13279,6 +13279,7 @@ document.getElementById("fire").onmouseup = function() {
   MIDP.sendKeyRelease(32);
 };
 */
+
 var Location = {};
 Location.PROVIDER_NAME = "browser";
 Location.Providers = {};
@@ -13397,6 +13398,7 @@ var createLongArrayFromDoubles = function() {
 }();
 AccelerometerSensor.channels = [{scale:0, name:"axis_x", unit:"m/s^2", dataType:1, accuracy:1, mrangeArray:createLongArrayFromDoubles([-19.6, 19.6, .153])}, {scale:0, name:"axis_y", unit:"m/s^2", dataType:1, accuracy:1, mrangeArray:createLongArrayFromDoubles([-19.6, 19.6, .153])}, {scale:0, name:"axis_z", unit:"m/s^2", dataType:1, accuracy:1, mrangeArray:createLongArrayFromDoubles([-19.6, 19.6, .153])}];
 AccelerometerSensor.simulator = {_intervalId:-1, start:function() {
+   
   var currentMouseX = -1;
   var currentMouseY = -1;
   var c = MIDP.deviceContext.canvas;
@@ -14242,6 +14244,7 @@ perfWriterCheckbox.addEventListener("change", function() {
     J2ME.writers &= !J2ME.WriterFlags.Perf;
   }
 });
+ 
 var profiler = profile === 1 ? function() {
   var elPageContainer = document.getElementById("pageContainer");
   elPageContainer.classList.add("profile-mode");
@@ -14327,3 +14330,4 @@ var profiler = profile === 1 ? function() {
 }() : undefined;
 
 //# sourceMappingURL=main-all.js.map
+ 
