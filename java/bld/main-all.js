@@ -4019,7 +4019,7 @@ var initFS = (new Promise(function(resolve, reject) {
   define = function(ids, factory) {
     deps = typeof ids === "string" ? factory.slice(2) : ids.slice(2);
     if (nodeJS) {
-      delete define;
+      //delete define;
       return tmpDefine.apply(null, Array.prototype.slice.call(arguments, 0));
     }
     define = tmpDefine;
@@ -4202,7 +4202,7 @@ var initFS = (new Promise(function(resolve, reject) {
   define = function(ids, factory) {
     deps = typeof ids === "string" ? factory.slice(2) : ids.slice(2);
     if (nodeJS) {
-      delete define;
+      //delete define;
       return tmpDefine.apply(null, Array.prototype.slice.call(arguments, 0));
     }
     define = tmpDefine;

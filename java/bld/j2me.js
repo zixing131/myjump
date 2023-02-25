@@ -12,8 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/** @const */ var release = false;
+ */ 
+/** @const */ var release = true;
 /** @const */ var profile = 0;
 /** @const */ var profileFormat = "PLAIN";
 /** @const */ var asmJsTotalMemory = 8192 * 1024 * 1024;
@@ -9190,7 +9190,7 @@ var J2ME;
             return classInfo;
         };
         ClassRegistry.prototype.loadClassFile = function (fileName) {
-            console.log("Loading Class File: "+fileName);
+            //console.log("Loading Class File: "+fileName);
             J2ME.loadWriter && J2ME.loadWriter.enter("> Loading Class File: " + fileName);
             var bytes = JARStore.loadFile(fileName);
             //console.log(bytes)

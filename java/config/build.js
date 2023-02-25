@@ -1,4 +1,4 @@
 // generated, build-specific configuration
 
-config.release = false;
+config.release = true;
 config.version = "1659142910";
