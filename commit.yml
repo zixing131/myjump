@@ -3,27 +3,39 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid '65d77df72443bdbcc2ba0da3a761ccf309cb27a2'
-    oldFile: !uuid '5f3315914182ab2de042208145c19a8c85c93e32'
-  /java/img:
-    newFile: !uuid '602dfc64b6b4c66501f44da5124ec28903924dc4'
-    oldFile: !uuid 'cc4e62f55a03c4faa17f34640dd300d9a2ba4e8c'
-  /java/img/pvz.png:
-    newFile: !uuid '8d8c961a4696464ca30b11a5f59625524bb323ee'
-    oldFile: null
+    newFile: !uuid '10a0ea845d46c38bd252f26892735f8ebfe93acc'
+    oldFile: !uuid '65d77df72443bdbcc2ba0da3a761ccf309cb27a2'
+  /java/bld:
+    newFile: !uuid '45e3d5a42f91b250085f6a37c2ee4d4b428ba072'
+    oldFile: !uuid '7af3ab2f7bcf26ae924f4ca6a3673b4801e66f2e'
+  /java/bld/j2me.js:
+    newFile: !uuid 'a2f5b959087e6d538f2c8504e678e931ccc5cecd'
+    oldFile: !uuid 'f6076e3a3f0b9d9e4490a47a438a9d200d49f236'
+  /java/bld/main-all.js:
+    newFile: !uuid '6f232af53c9f69ceef94b2291a2d78de0559b1b9'
+    oldFile: !uuid '49c30fa8150dff0c44dc71a4080f1eaf935995ab'
+  /java/config:
+    newFile: !uuid '515f5b1aaadb5841990ffa392ce7fb4d23c20254'
+    oldFile: !uuid '87e8d8dfdc5df8581cc23fdffa2c8415bb5c210e'
+  /java/config/build.js:
+    newFile: !uuid 'cda66b6cd6fe281287ac959141d84919e1a23ed0'
+    oldFile: !uuid '6efda73761d07f089ba1309385a1d61977a6ea4f'
   /java/index.html:
-    newFile: !uuid '774cb6f8c9cbc9dde35aa9d07e2bd128b4e241df'
-    oldFile: !uuid '2222860c7f06012c17776734b401ee74f1bcf925'
-  /java/jar:
-    newFile: !uuid '512d0b39ea8e90d109d34940d59ece481a9fc3df'
-    oldFile: !uuid '4e32862450c5373a8499138aae450074f12b5a0b'
-  /java/jar/pvz.jar:
-    newFile: !uuid 'e6ee58f2c201607070a39ec8e22053ead4b603f8'
-    oldFile: null
+    newFile: !uuid '8152f50a3d25904663818d03625ed77d0a6dc3c8'
+    oldFile: !uuid '774cb6f8c9cbc9dde35aa9d07e2bd128b4e241df'
+  /java/libs:
+    newFile: !uuid '9858c3ac8acc8b488d2f81c8286b2efed4911fd2'
+    oldFile: !uuid 'a702655d934a1a4d37223aabff2845cda0af17d6'
+  /java/libs/axios.min.js:
+    newFile: null
+    oldFile: !uuid '79aa153b1a49e2f7210f32915d78c906dd024005'
+  /java/manifest.webapp:
+    newFile: !uuid '6e04e65e013a34b7d54d773c9b281079b56626c0'
+    oldFile: !uuid '2877c9fd6392f4450413bf6b7e80a75ce0ed3bbc'
   /java/updatelog.html:
-    newFile: !uuid '6d939798a5101808a392ba03536b78871ffdb927'
-    oldFile: !uuid '4d9d1fbaa62fe519a8936189fcadea49be8b0d19'
-gitCommitId: !uuid '450608574a5821bf51030ef06ccd1a88281a0540'
+    newFile: !uuid '23c44fe38ad21ad57bb955ed63a260e029aaeec3'
+    oldFile: !uuid '6d939798a5101808a392ba03536b78871ffdb927'
+gitCommitId: !uuid '2f0f4e9a23269d49999f753fd862e8e7ea136c81'
 renames: {
   }
-revisionId: 54
+revisionId: 55
