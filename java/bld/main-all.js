@@ -5,6 +5,13 @@
 //1是pAudio
 //2是webaudio-tinysynth
 var midimode=2;
+window.AudioContext = window.AudioContext || window.webkitAudioContext
+if(!window.AudioContext)
+{
+  window.AudioContext = function(){
+
+  };
+} 
 
 if (inBrowser && !HTMLCanvasElement.prototype.toBlob) {
   Object.defineProperty(HTMLCanvasElement.prototype, "toBlob", {value:function(callback, type, quality) {
@@ -12025,7 +12032,6 @@ function PlayerContainer(url, pId) {
   this.loadSize = 0;
   this.data = null;
   this.player = null;
-  window.AudioContext = window.AudioContext || window.webkitAudioContext
   this.audioCtx = new AudioContext()
   if(midimode==1)
   {  
