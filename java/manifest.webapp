@@ -1,5 +1,5 @@
 {
-  "name": "PluotSorbet",
+  "name": "J2ME",
   "description": "a J2ME-compatible virtual machine written in JavaScript",
   "launch_path": "/index.html",
   "origin": "app://pluotsorbet.mozilla.org",

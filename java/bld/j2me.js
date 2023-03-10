@@ -12,11 +12,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
-/** @const */ var release = true;
+ */
+/** @const */ var release = false;
 /** @const */ var profile = 0;
 /** @const */ var profileFormat = "PLAIN";
-/** @const */ var asmJsTotalMemory = 8192 * 1024 * 1024;
+/** @const */ var asmJsTotalMemory = 2 * 1024 * 1024 * 1024;
 /*
  * Copyright 2014 Mozilla Foundation
  *
@@ -78,7 +78,8 @@ var J2ME;
     var Debug;
     (function (Debug) {
         function error(message) {
-            throw new Error(message);
+            console.error(message);
+			//throw new Error(message);
         }
         Debug.error = error;
         function assert(condition, message) {
@@ -430,8 +431,8 @@ var J2ME;
             this._tab = " ";
             this._padding = "";
             this._suppressOutput = suppressOutput;
-            this._out = console.log;
-            this._outNoNewline =  console.log;
+            this._out = out || IndentingWriter.stdout;
+            this._outNoNewline = out || IndentingWriter.stdoutNoNewline;
         }
         IndentingWriter.prototype.write = function (str, writePadding) {
             if (str === void 0) { str = ""; }
@@ -583,9 +584,9 @@ var J2ME;
         IndentingWriter.BOLD_RED = '\033[1;91m';
         IndentingWriter.ENDC = '\033[0m';
         IndentingWriter.logLevel = 31 /* All */;
-        IndentingWriter.stdout = inBrowser ? console.log : print;
+        IndentingWriter.stdout = inBrowser ? console.info.bind(console) : print;
         IndentingWriter.stdoutNoNewline = inBrowser ? console.info.bind(console) : putstr;
-        IndentingWriter.stderr = inBrowser ? console.err : printErr;
+        IndentingWriter.stderr = inBrowser ? console.error.bind(console) : printErr;
         return IndentingWriter;
     })();
     J2ME.IndentingWriter = IndentingWriter;
@@ -3403,7 +3404,7 @@ var J2ME;
             this.set(fp, sp, pc);
             switch (type) {
                 case 1 /* ArrayIndexOutOfBoundsException */:
-                    //J2ME.throwArrayIndexOutOfBoundsException(a);
+                    J2ME.throwArrayIndexOutOfBoundsException(a);
                     break;
                 case 0 /* ArithmeticException */:
                     J2ME.throwArithmeticException();
@@ -3412,7 +3413,7 @@ var J2ME;
                     J2ME.throwNegativeArraySizeException();
                     break;
                 case 3 /* NullPointerException */:
-                    //J2ME.throwNullPointerException();
+                    J2ME.throwNullPointerException();
                     break;
             }
         };
@@ -5535,7 +5536,6 @@ var J2ME;
             this.initialized[classId] = 1;
         };
         RuntimeTemplate.prototype.getClassObjectAddress = function (classInfo) {
-            try{
             var id = classInfo.id;
             if (!this.classObjectAddresses[classInfo.id]) {
                 var addr = allocUncollectableObject(J2ME.CLASSES.java_lang_Class);
@@ -5556,11 +5556,6 @@ var J2ME;
                 }
             }
             return this.classObjectAddresses[id];
-        }catch(err)
-        {
-            console.error(err);
-            return 0;
-        }
         };
         /**
          * Generates a new hash code for the specified |object|.
@@ -5655,7 +5650,6 @@ var J2ME;
             return $.ctx.createException("java/lang/ArithmeticException", str);
         };
         RuntimeTemplate.prototype.newClassNotFoundException = function (str) {
-            return null;
             return $.ctx.createException("java/lang/ClassNotFoundException", str);
         };
         RuntimeTemplate.prototype.newIllegalArgumentException = function (str) {
@@ -5674,7 +5668,6 @@ var J2ME;
             return $.ctx.createException("javax/microedition/media/MediaException", str);
         };
         RuntimeTemplate.prototype.newInstantiationException = function (str) {
-            return null;
             return $.ctx.createException("java/lang/InstantiationException", str);
         };
         RuntimeTemplate.prototype.newException = function (str) {
@@ -6559,8 +6552,7 @@ var J2ME;
     }
     J2ME.throwNegativeArraySizeException = throwNegativeArraySizeException;
     function throwNullPointerException() {
-        console.log('newNullPointerException');
-        //throw $.newNullPointerException();
+        throw $.newNullPointerException();
     }
     J2ME.throwNullPointerException = throwNullPointerException;
     function newObjectArray(size) {
@@ -6622,8 +6614,7 @@ var J2ME;
     }
     J2ME.checkArrayBounds = checkArrayBounds;
     function throwArrayIndexOutOfBoundsException(index) {
-        //console.log("newArrayIndexOutOfBoundsException ");
-        //throw $.newArrayIndexOutOfBoundsException(String(index));
+        throw $.newArrayIndexOutOfBoundsException(String(index));
     }
     J2ME.throwArrayIndexOutOfBoundsException = throwArrayIndexOutOfBoundsException;
     function throwArithmeticException() {
@@ -6637,8 +6628,7 @@ var J2ME;
         var arrayClassInfo = J2ME.classIdToClassInfoMap[i32[arrayAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         var valueClassInfo = J2ME.classIdToClassInfoMap[i32[valueAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         if (!isAssignableTo(valueClassInfo, arrayClassInfo.elementClass)) {
-            //throw $.newArrayStoreException(); 
-            console.log('newArrayStoreException');
+            throw $.newArrayStoreException();
         }
     }
     J2ME.checkArrayStore = checkArrayStore;
@@ -8184,7 +8174,7 @@ var J2ME;
             this.depth = 0;
             this.display = null;
             this.accessFlags = 0;
-            this.vTable = [];
+            this.vTable = null;
             // This is not really a table per se, but rather a map.
             this.iTable = Object.create(null);
             // Custom hash map to make vTable name lookups quicker. It maps utf8 method names to indices in
@@ -8315,11 +8305,11 @@ var J2ME;
         };
         ClassInfo.prototype.complete = function () {
             this.createAbstractMethods();
-            //if (!this.isInterface) {
+            if (!this.isInterface) {
                 this.buildVTable();
                 this.buildITable();
                 this.buildFTable();
-            //}
+            }
             // Notify the runtime so it can perform and necessary setup.
             if (J2ME.RuntimeTemplate) {
                 J2ME.RuntimeTemplate.classInfoComplete(this);
@@ -8767,6 +8757,294 @@ var J2ME;
     })(ArrayClassInfo);
     J2ME.PrimitiveArrayClassInfo = PrimitiveArrayClassInfo;
 })(J2ME || (J2ME = {}));
+/*
+ * Copyright 2014 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Option and Argument Management
+ *
+ * Options are configuration settings sprinkled throughout the code. They can be grouped into sets of
+ * options called |OptionSets| which can form a hierarchy of options. For instance:
+ *
+ * var set = new OptionSet();
+ * var opt = set.register(new Option("v", "verbose", "boolean", false, "Enables verbose logging."));
+ *
+ * creates an option set with one option in it. The option can be changed directly using |opt.value = true| or
+ * automatically using the |ArgumentParser|:
+ *
+ * var parser = new ArgumentParser();
+ * parser.addBoundOptionSet(set);
+ * parser.parse(["-v"]);
+ *
+ * The |ArgumentParser| can also be used directly:
+ *
+ * var parser = new ArgumentParser();
+ * argumentParser.addArgument("h", "help", "boolean", {parse: function (x) {
+ *   printUsage();
+ * }});
+ */
+var J2ME;
+(function (J2ME) {
+    var Options;
+    (function (Options) {
+        var isObject = J2ME.isObject;
+        var assert = J2ME.Debug.assert;
+        var Argument = (function () {
+            function Argument(shortName, longName, type, options) {
+                this.shortName = shortName;
+                this.longName = longName;
+                this.type = type;
+                options = options || {};
+                this.positional = options.positional;
+                this.parseFn = options.parse;
+                this.value = options.defaultValue;
+            }
+            Argument.prototype.parse = function (value) {
+                if (this.type === "boolean") {
+                    release || assert(typeof value === "boolean", "bad value type in Options.parse");
+                    this.value = value;
+                }
+                else if (this.type === "number") {
+                    release || assert(!isNaN(value), value + " is not a number");
+                    this.value = parseInt(value, 10);
+                }
+                else {
+                    this.value = value;
+                }
+                if (this.parseFn) {
+                    this.parseFn(this.value);
+                }
+            };
+            return Argument;
+        })();
+        Options.Argument = Argument;
+        var ArgumentParser = (function () {
+            function ArgumentParser() {
+                this.args = [];
+            }
+            ArgumentParser.prototype.addArgument = function (shortName, longName, type, options) {
+                var argument = new Argument(shortName, longName, type, options);
+                this.args.push(argument);
+                return argument;
+            };
+            ArgumentParser.prototype.addBoundOption = function (option) {
+                var options = { parse: function (x) {
+                        option.value = x;
+                    } };
+                this.args.push(new Argument(option.shortName, option.longName, option.type, options));
+            };
+            ArgumentParser.prototype.addBoundOptionSet = function (optionSet) {
+                var self = this;
+                optionSet.options.forEach(function (x) {
+                    if (x instanceof OptionSet) {
+                        self.addBoundOptionSet(x);
+                    }
+                    else {
+                        release || assert(x instanceof Option, "bad option type in ArgumentParser.addBoundOptionSet");
+                        self.addBoundOption(x);
+                    }
+                });
+            };
+            ArgumentParser.prototype.getUsage = function () {
+                var str = "";
+                this.args.forEach(function (x) {
+                    if (!x.positional) {
+                        str += "[-" + x.shortName + "|--" + x.longName + (x.type === "boolean" ? "" : " " + x.type[0].toUpperCase()) + "]";
+                    }
+                    else {
+                        str += x.longName;
+                    }
+                    str += " ";
+                });
+                return str;
+            };
+            ArgumentParser.prototype.parse = function (args) {
+                var nonPositionalArgumentMap = {};
+                var positionalArgumentList = [];
+                this.args.forEach(function (x) {
+                    if (x.positional) {
+                        positionalArgumentList.push(x);
+                    }
+                    else {
+                        nonPositionalArgumentMap["-" + x.shortName] = x;
+                        nonPositionalArgumentMap["--" + x.longName] = x;
+                    }
+                });
+                var leftoverArguments = [];
+                while (args.length) {
+                    var argString = args.shift();
+                    var argument = null, value = argString;
+                    if (argString == '--') {
+                        leftoverArguments = leftoverArguments.concat(args);
+                        break;
+                    }
+                    else if (argString.slice(0, 1) == '-' || argString.slice(0, 2) == '--') {
+                        argument = nonPositionalArgumentMap[argString];
+                        // release || assert(argument, "Argument " + argString + " is unknown.");
+                        if (!argument) {
+                            continue;
+                        }
+                        if (argument.type !== "boolean") {
+                            if (argument.type.indexOf("[]") > 0) {
+                                value = [];
+                                while (args.length && args[0][0] != '-') {
+                                    value.push(args.shift());
+                                }
+                            }
+                            else {
+                                value = args.shift();
+                            }
+                            release || assert(value !== "-" && value !== "--", "Argument " + argString + " must have a value.");
+                        }
+                        else {
+                            value = true;
+                        }
+                    }
+                    else if (positionalArgumentList.length) {
+                        argument = positionalArgumentList.shift();
+                    }
+                    else {
+                        leftoverArguments.push(value);
+                    }
+                    if (argument) {
+                        argument.parse(value);
+                    }
+                }
+                release || assert(positionalArgumentList.length === 0, "Missing positional arguments.");
+                return leftoverArguments;
+            };
+            return ArgumentParser;
+        })();
+        Options.ArgumentParser = ArgumentParser;
+        var OptionSet = (function () {
+            function OptionSet(name, settings) {
+                if (settings === void 0) { settings = null; }
+                this.open = false;
+                this.name = name;
+                this.settings = settings || {};
+                this.options = [];
+            }
+            OptionSet.prototype.register = function (option) {
+                if (option instanceof OptionSet) {
+                    // check for duplicate option sets (bail if found)
+                    for (var i = 0; i < this.options.length; i++) {
+                        var optionSet = this.options[i];
+                        if (optionSet instanceof OptionSet && optionSet.name === option.name) {
+                            return optionSet;
+                        }
+                    }
+                }
+                this.options.push(option);
+                if (this.settings) {
+                    if (option instanceof OptionSet) {
+                        var optionSettings = this.settings[option.name];
+                        if (isObject(optionSettings)) {
+                            option.settings = optionSettings.settings;
+                            option.open = optionSettings.open;
+                        }
+                    }
+                    else {
+                        // build_bundle chokes on this:
+                        // if (!isNullOrUndefined(this.settings[option.longName])) {
+                        if (typeof this.settings[option.longName] !== "undefined") {
+                            switch (option.type) {
+                                case "boolean":
+                                    option.value = !!this.settings[option.longName];
+                                    break;
+                                case "number":
+                                    option.value = +this.settings[option.longName];
+                                    break;
+                                default:
+                                    option.value = this.settings[option.longName];
+                                    break;
+                            }
+                        }
+                    }
+                }
+                return option;
+            };
+            OptionSet.prototype.trace = function (writer) {
+                writer.enter(this.name + " {");
+                this.options.forEach(function (option) {
+                    option.trace(writer);
+                });
+                writer.leave("}");
+            };
+            OptionSet.prototype.getSettings = function () {
+                var settings = {};
+                this.options.forEach(function (option) {
+                    if (option instanceof OptionSet) {
+                        settings[option.name] = {
+                            settings: option.getSettings(),
+                            open: option.open
+                        };
+                    }
+                    else {
+                        settings[option.longName] = option.value;
+                    }
+                });
+                return settings;
+            };
+            OptionSet.prototype.setSettings = function (settings) {
+                if (!settings) {
+                    return;
+                }
+                this.options.forEach(function (option) {
+                    if (option instanceof OptionSet) {
+                        if (option.name in settings) {
+                            option.setSettings(settings[option.name].settings);
+                        }
+                    }
+                    else {
+                        if (option.longName in settings) {
+                            option.value = settings[option.longName];
+                        }
+                    }
+                });
+            };
+            return OptionSet;
+        })();
+        Options.OptionSet = OptionSet;
+        var Option = (function () {
+            // config:
+            //  { range: { min: 1, max: 5, step: 1 } }
+            //  { list: [ "item 1", "item 2", "item 3" ] }
+            //  { choices: { "choice 1": 1, "choice 2": 2, "choice 3": 3 } }
+            function Option(shortName, longName, type, defaultValue, description, config) {
+                if (config === void 0) { config = null; }
+                this.longName = longName;
+                this.shortName = shortName;
+                this.type = type;
+                this.defaultValue = defaultValue;
+                this.value = defaultValue;
+                this.description = description;
+                this.config = config;
+            }
+            Option.prototype.parse = function (value) {
+                this.value = value;
+            };
+            Option.prototype.trace = function (writer) {
+                writer.writeLn(("-" + this.shortName + "|--" + this.longName).padRight(" ", 30) +
+                    " = " + this.type + " " + this.value + " [" + this.defaultValue + "]" +
+                    " (" + this.description + ")");
+            };
+            return Option;
+        })();
+        Options.Option = Option;
+    })(Options = J2ME.Options || (J2ME.Options = {}));
+})(J2ME || (J2ME = {}));
 var J2ME;
 (function (J2ME) {
     var assert = J2ME.Debug.assert;
@@ -9190,19 +9468,14 @@ var J2ME;
             return classInfo;
         };
         ClassRegistry.prototype.loadClassFile = function (fileName) {
-            //console.log("Loading Class File: "+fileName);
             J2ME.loadWriter && J2ME.loadWriter.enter("> Loading Class File: " + fileName);
             var bytes = JARStore.loadFile(fileName);
-            //console.log(bytes)
             if (!bytes) {
-                console.warn("ClassNotFoundException"+fileName);
-                //J2ME.loadWriter && J2ME.loadWriter.leave("< ClassNotFoundException");
-                //throw new (J2ME.ClassNotFoundException)(fileName);
-                return;
+                J2ME.loadWriter && J2ME.loadWriter.leave("< ClassNotFoundException");
+                throw new (J2ME.ClassNotFoundException)(fileName);
             }
             var self = this;
             var classInfo = this.loadClassBytes(bytes);
-            //console.log(classInfo)
             if (classInfo.superClassName) {
                 classInfo.superClass = this.loadClass(classInfo.superClassName);
                 classInfo.depth = classInfo.superClass.depth + 1;
@@ -9315,7 +9588,7 @@ var J2ME;
 (function (J2ME) {
     var Bindings = {
         "java/lang/Object": {
-            native: { 
+            native: {
                 "hashCode.()I": function () {
                     var self = this;
                     if (self._hashCode) {
@@ -10041,7 +10314,7 @@ var J2ME;
     var Scheduler = (function () {
         function Scheduler() {
         }
-        Scheduler.enqueue = function (ctx, directExecution) { 
+        Scheduler.enqueue = function (ctx, directExecution) {
             if (ctx.virtualRuntime === 0) {
                 // Ensure the new thread doesn't dominate.
                 ctx.virtualRuntime = minVirtualRuntime;
@@ -10217,11 +10490,11 @@ var J2ME;
             ctx.threadAddress = runtime.mainThread = J2ME.allocObject(J2ME.CLASSES.java_lang_Thread);
             J2ME.setNative(ctx.threadAddress, ctx);
             var thread = J2ME.getHandle(ctx.threadAddress);
-            // XXX thread.pid seems to be unused, so remove it. 
+            // XXX thread.pid seems to be unused, so remove it.
             thread.pid = util.id();
             thread.nativeAlive = true;
             // The constructor will set the real priority, however one is needed for the scheduler.
-            thread.priority = J2ME.NORMAL_PRIORITY; 
+            thread.priority = J2ME.NORMAL_PRIORITY;
             runtime.preInitializeClasses(ctx);
             return ctx;
         };
@@ -10239,7 +10512,7 @@ var J2ME;
             }
             J2ME.unsetUncollectable(arrayAddr);
             ctx.nativeThread.frame.setParameter(8 /* Reference */, 1, arrayAddr);
-            ctx.start(); 
+            ctx.start();
             release || J2ME.Debug.assert(!U, "Unexpected unwind during isolate initialization.");
         };
         JVM.prototype.startIsolate = function (isolateAddr) {
@@ -10393,17 +10666,14 @@ var J2ME;
                 this.nativeThread.run();
             }
             catch (e) {
-                console.error(e);
-                /*
                 // The exception was never caught and the thread must be terminated.
                 this.kill();
                 this.clearCurrentContext();
                 // Rethrow so the exception is not silent.
                 if (e.classInfo) {
                     e = e.classInfo.getClassNameSlow() + ": " + J2ME.fromStringAddr(e.detailMessage);
-                } 
-                //throw e;
-                */
+                }
+                throw e;
             }
             release || assert(this.nativeThread.nativeFrameCount === 0, "All native frames should be gone.");
             if (U) {
@@ -13136,6 +13406,7 @@ var J2ME;
 ///<reference path='int.ts' />
 ///<reference path='vm/runtime.ts' />
 ///<reference path='vm/parser.ts' />
+///<reference path='options.ts' />
 ///<reference path='types.ts' />
 ///<reference path='vm/classRegistry.ts' />
 ///<reference path='bindings.ts' />
@@ -13148,4 +13419,4 @@ var J2ME;
 ///<reference path='jit/analyze.ts' />
 ///<reference path='jit/baseline.ts' />
 ///<reference path='jit/compiler.ts' />
-//# sourceMappingURL=j2me.js.map
+//# sourceMappingURL=j2me-jsc.js.map
