@@ -80,10 +80,21 @@ function loadRecommend() {
             playCount = convertToWan(playCount)
             var id= arr[index].id;
             
-            var html = '<div class="item" onclick="clickitem('+total+')" tabIndex="' + total + '" data-id="' + id + '"><img class="pic" src="' + replaceHttpsUrl(arr[index].picUrl) + '?param=75y75&quality=100" />' 
-            + '</p><p class="playCount">' + playCount + '</p> <div class="divright"> <div class="divrighttext"> '+name+' </div> <div class="divrightcount"> '+trackCount+' </div>  </div> </div>';
-            $('.items').append(html);
-            total++;
+           var html = '<div class="item" onclick="clickitem('+total
+		   +')" tabIndex="' + total
+			+ '" data-id="' 
+		   + id + '"><div class="imgcontainter"><img class="pic" src="' +
+            replaceHttpsUrl(arr[index].picUrl) +
+             '?param=75y75&quality=100" /></div>' 
+           + '</p><p class="playCount">' + 
+           playCount
+            + '</p> <div class="divright"> <div class="divrighttext"> '
+            +name
+            +' </div> <div class="divrightcount"> '
+            +trackCount
+            +' </div>  </div> </div>';
+           $('.items').append(html);
+           total++;
         } 
         var items = document.querySelectorAll('.item');
         $(items[0]).addClass("itemfocus")
