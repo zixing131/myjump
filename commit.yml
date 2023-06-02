@@ -3,15 +3,18 @@ branches: {
   }
 fileChange:
   /symbian:
-    newFile: !uuid '6bb715e32cabb47917b4c532a557ead34867af9d'
-    oldFile: !uuid 'adb38b5fe3da6a66f62a8f40ed20528f990edda2'
+    newFile: !uuid 'fa06e557c51622780b4cc87fd1279ba6677dee84'
+    oldFile: !uuid '6bb715e32cabb47917b4c532a557ead34867af9d'
   /symbian/musicspeed:
-    newFile: !uuid 'd676436d3fd932652d7c2cffdd50df52da5facce'
-    oldFile: !uuid '5717e3b9d2d74c0e6a6189f4decf4ccb0e777be3'
-  /symbian/musicspeed/index.css:
-    newFile: !uuid 'ab8910c555f4b441217136644f3c89069b5aac2a'
-    oldFile: !uuid 'f4d93572e6d09d15bb1c4230d5e39c0a90e244e8'
-gitCommitId: !uuid '28590c782e3d44f6629aef0cb4aefef406f6d5ef'
+    newFile: !uuid '1dc3ffa70495bd9c83335b873bd7ab239af3ad12'
+    oldFile: !uuid 'd676436d3fd932652d7c2cffdd50df52da5facce'
+  /symbian/musicspeed/js:
+    newFile: !uuid '0ff9a60931466d7e7b9700ed988cb1f97aaff86a'
+    oldFile: !uuid 'b794f8e6d27ab86b356e39d9768ba78cfe962fbc'
+  /symbian/musicspeed/js/detail.js:
+    newFile: !uuid 'fa000e01dd4977a6efe57ffefae00daa92498ca5'
+    oldFile: null
+gitCommitId: !uuid 'faa8d8d6e6c171d992932d8277bc366dd0db84a4'
 renames: {
   }
-revisionId: 63
+revisionId: 64
