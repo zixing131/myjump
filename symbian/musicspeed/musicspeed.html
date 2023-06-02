@@ -1,0 +1,53 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="./index.css" />
+    <link rel="stylesheet" type="text/css" href="./lib/common.css" /> 
+    <title>云音乐极速版</title>
+	<script src="./lib/json3.min.js"></script>
+    <script src="./js/desktop.js"></script>
+    <script src="./lib/jquery.min.js"></script>
+    <script src="./lib/jquery.cookie.min.js"></script>
+    <script src="./lib/md5.min.js"></script>  
+    <script src="./lib/loading.js"></script>
+    <script src="./app.js"></script>
+    <script src="./index.js"></script> 
+    <script src="./js/utils.js"></script>
+</head>
+ 
+<body>
+    <div id="splash" style="position:fixed;width:100%;height:100%;z-index:9999;background-color: db2c1f;">
+        <div id="splash1" style="width:100%;height:70%;background:url(img/splash1.png) no-repeat center center;z-index:9999;"></div> 
+        <div id="splash1" style="width:100%;height:30%;background:url(img/splash2.png) no-repeat center center;z-index:9999;"></div>
+    </div> 
+    <div id="menu" style="z-index:100">
+        <ul id="menucontainer">
+            <li class="menuitem" tabIndex="0">用户</li>
+            <li class="menuitem" tabIndex="1">关于</li>
+            <li class="menuitem" tabIndex="2">退出</li>
+        </ul>
+    </div> 
+    <div class="tab">
+        <ul>
+            <li tabIndex="0" onclick="tabClick(0)">用户</li>
+            <li tabIndex="1" onclick="tabClick(1)" class="focustab">动态</li>
+            <li tabIndex="2" onclick="tabClick(2)" >推荐</li>
+            <li tabIndex="3" onclick="tabClick(3)" >最新</li> 
+        </ul>
+    </div>
+
+    <div class="items">
+        
+    </div>
+    
+    <div id="softkeys">
+        <div id="softkeyleft" onclick="leftmenuclick()">菜单</div>
+        <div id="softkeycenter"></div>
+        <div id="softkeyright" onclick="rightmenuclick()">播放器</div>
+    </div> 
+    <script src="./js/splash.js"></script>
+</body>
+
+</html>
