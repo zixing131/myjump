@@ -2,25 +2,88 @@
 branches: {
   }
 fileChange:
-  /java:
-    newFile: !uuid '2719353ca1ffd00b09550d29b78fe528f059382b'
-    oldFile: !uuid '8ccd603dbd68bdb712b6bd6ad14de785aa1b08c2'
-  /java/bld:
-    newFile: !uuid '6b719931d09cc525ecc85496e7b4d8ec8e6f3d41'
-    oldFile: !uuid 'f4408cac3323258c21f42661f3c657db2a614d88'
-  /java/bld/j2me.js:
-    newFile: !uuid 'e3ef7755b5a06fc5ed9a2010563737296874ee31'
-    oldFile: !uuid 'a2f5b959087e6d538f2c8504e678e931ccc5cecd'
-  /java/bld/main-all.js:
-    newFile: !uuid '96ee8163f791b77a60607b637b17992eccd4af23'
-    oldFile: !uuid '4f22a13a56424919aebafd14d791afc26966953a'
-  /java/manifest.webapp:
-    newFile: !uuid '197f56c3d1cd3d545e94a9c4418a5d5f86d014a2'
-    oldFile: !uuid '6e04e65e013a34b7d54d773c9b281079b56626c0'
-  /java/updatelog.html:
-    newFile: !uuid 'd7768a42f61d62d974cbc4ab07f40e5d3a11b0c1'
-    oldFile: !uuid '4f274ea93979889a39c0577d19635e2bc02b16a8'
-gitCommitId: !uuid '506fdc5404f4eead9a0318c24a4493022b94dd91'
+  /symbian:
+    newFile: !uuid 'f69006a0adf6207861b93d0f02113ad89f7d5055'
+    oldFile: !uuid '6548cc9e3cc6d465415390d3b75bc3e8a538c211'
+  /symbian/musicspeed:
+    newFile: !uuid '7f17e89cf9d560526fce6de1bc7e0338ea8cdfc8'
+    oldFile: null
+  /symbian/musicspeed/Icon.png:
+    newFile: !uuid 'cf45627c1591c3e5d2fd40abce19648d4ee9a0bf'
+    oldFile: null
+  /symbian/musicspeed/Info.plist:
+    newFile: !uuid '10557967a728ae4ffd410f1db402d0bd5cc3c552'
+    oldFile: null
+  /symbian/musicspeed/app.js:
+    newFile: !uuid '8b958e5fee441fddeff73d06c9e6f8692b295769'
+    oldFile: null
+  /symbian/musicspeed/css:
+    newFile: !uuid 'be7d303fc9f2152e1a9afbd61d0b03ed9f2e1a0f'
+    oldFile: null
+  /symbian/musicspeed/css/global.css:
+    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
+    oldFile: null
+  /symbian/musicspeed/img:
+    newFile: !uuid 'bd2c19835dd835b21e51cded6148c858d7243214'
+    oldFile: null
+  /symbian/musicspeed/img/splash1.png:
+    newFile: !uuid '6acb9e393e13c3a637a081925f38852eba1bfeb9'
+    oldFile: null
+  /symbian/musicspeed/img/splash2.png:
+    newFile: !uuid 'b4a6a94aea5b483f718c17f23ffc80b19474b9e5'
+    oldFile: null
+  /symbian/musicspeed/img/transparent.png:
+    newFile: !uuid '34b62a454f296bd55e3cb81b5cb966d684a6157e'
+    oldFile: null
+  /symbian/musicspeed/index.css:
+    newFile: !uuid '180204bec2189f6f84bdbd7b5c3b38fcc24e1e6a'
+    oldFile: null
+  /symbian/musicspeed/index.js:
+    newFile: !uuid '3a7d159548616dbd3a441203720cd4b2fc2a1a8a'
+    oldFile: null
+  /symbian/musicspeed/js:
+    newFile: !uuid 'b794f8e6d27ab86b356e39d9768ba78cfe962fbc'
+    oldFile: null
+  /symbian/musicspeed/js/desktop.js:
+    newFile: !uuid '521ca0d04249d66faa41f844e90b439b4a1680c8'
+    oldFile: null
+  /symbian/musicspeed/js/splash.js:
+    newFile: !uuid '411900ba7f84bfaeacc677dac1cf28d509d1ffb5'
+    oldFile: null
+  /symbian/musicspeed/js/utils.js:
+    newFile: !uuid '47d0e41f948ef0179b8f8d3c72c5c19e5a14b50a'
+    oldFile: null
+  /symbian/musicspeed/lib:
+    newFile: !uuid 'd060354f6e1338e39e9f089fbe2f02e78c111d46'
+    oldFile: null
+  /symbian/musicspeed/lib/common.css:
+    newFile: !uuid '1ee54d8c3d175aa6f521515ab9cb2cd919bdf2be'
+    oldFile: null
+  /symbian/musicspeed/lib/jquery.cookie.min.js:
+    newFile: !uuid '33a201d410c9614cb09e46c5e340d6256a35a557'
+    oldFile: null
+  /symbian/musicspeed/lib/jquery.indexedDB.js:
+    newFile: !uuid 'f19a86941570fc60bf9b429e4d724c9bcb89e944'
+    oldFile: null
+  /symbian/musicspeed/lib/jquery.min.js:
+    newFile: !uuid '0a1f4130a1385edf1d0d884e5f68c84ff413aabf'
+    oldFile: null
+  /symbian/musicspeed/lib/json3.min.js:
+    newFile: !uuid 'c4567f87edae6d25be4cf3cc7d6180373ac2ca2c'
+    oldFile: null
+  /symbian/musicspeed/lib/loading.js:
+    newFile: !uuid '7c9821c56cb83c6d2b547674188924ceacb13b8f'
+    oldFile: null
+  /symbian/musicspeed/lib/md5.min.js:
+    newFile: !uuid '89d3026483873bafae49a400d921f7b0a8230e6b'
+    oldFile: null
+  /symbian/musicspeed/musicspeed.html:
+    newFile: !uuid '100610c5ebb31c3667f6890bd664357bf8005d57'
+    oldFile: null
+  /symbian/packNeteasemusicSpeed-C500.cmd:
+    newFile: !uuid '0471b0eb9df277f6cdea49f1f39bf3851cc25f87'
+    oldFile: null
+gitCommitId: !uuid '26e8a0cb920e488a26b9eca05e1d88dd2021690d'
 renames: {
   }
-revisionId: 60
+revisionId: 61
