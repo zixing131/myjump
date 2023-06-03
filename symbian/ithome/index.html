@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>  
+	
+	<meta charset="utf-8">
+
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+
+	<title>IT之家</title>
+
+   	<!--引用样式文件--> 
+
+	<link rel="stylesheet" href="css/global.css" />  
+
+	
+	
+	<script type="text/javascript" src="js/desktop.js"></script>  
+
+	<script type="text/javascript" src="js/json3.min.js"></script>  
+
+	<script type="text/javascript" src="js/crypto-js.min.js"></script> 
+	
+	<script type="text/javascript" src="js/ithomecrypto.js"></script> 
+
+
+  </head>
+  	<body id='mainbody' bgcolor="#AE0018" style="position:absolute;width: 100%;height:100%;margin: 0px;left: 0;top: 0;">
+		
+		<div id="splash" style="position:fixed;width:100%;height:100%;z-index:9999;left: 0;top: 0;">
+			<div id="splash1" style="z-index:9999;width:100%;height:100%;background:url(img/splash.png) no-repeat center center;z-index:9999;left: 0;top: 0;"></div>  
+		</div> 
+ 
+		<div id="app" style="width:100%;height:100%;">
+			 
+			<div>
+				<!-- 
+				<iframe id="mainframe" style="width:100%;height:100%;" src="pages/newslist.html"  frameborder="no" border="0" marginwidth="0" marginheight="0" scrolling="no" allowtransparency="yes"></iframe>
+				-->
+				
+				<div id="maincontent" style="width:100%;height:100%;display:block">
+					
+					<div style="width: 100%;height: 100%;display:none;" id="article">
+					    <header><h1 id="topic">IT之家</h1></header>
+					    <!--新闻正文-->
+					    <div class="info"><span id="dateline"></span><span id="author"></span><span id="comment_num"></span></div>
+					    <div id="content"></div>
+					    <div class="bottom">我们是有底线的</div>
+					</div>
+					<script src="./pages/article.js"></script>
+					
+					<div style="width: 100%;height: 100%;display:none;" id="aboutdiv">
+					    
+					</div>
+					<script src="./pages/about.js"></script>
+					 
+					<div style="width: 100%;height: 100%;" id="newslist">
+					    <ul id="listinnewslist" style="width: 100%;height: 100%;" ></ul><!--新闻列表--> 
+					</div> 
+					<script src="./pages/newslist.js"></script>
+					 
+					 <div style="width: 100%;height: 100%;display:none;" id="home">
+					     <div style="width: 100px;height: 100px;background-color: red;"></div>
+					 </div>
+					 
+					 <script src="./pages/home.js"></script>
+					 
+					 <div style="width: 100%;height: 100%;display:none;" id="quanzi">
+					      
+					 </div>
+					 
+					 <script src="./pages/quanzi.js"></script>
+					 
+					 
+				</div>
+				
+				<link rel="stylesheet" href="./pages/menubar.css" />   
+				
+				<div class="navbarclass" >
+					<div class="navclass" onclick="ClickMenu('newslist')">
+						<img id="nav1img" src="./img/nav_ithome_hover.png" class="navimgclass"></img>
+						<p id="nav1text" class="navtextclassclick">
+							资讯
+						</p> 
+					</div>
+					<div class="navclass" onclick="ClickMenu('quanzi')">
+						<img id="nav2img" src="./img/nav_quan.png" class="navimgclass" ></img>
+						<p id="nav2text" class="navtextclass" >
+							圈子
+						</p>
+					</div>
+					<div class="navclass" onclick="ClickMenu('home')">
+						<img id="nav3img" src="./img/nav_me.png" class="navimgclass"></img>
+						<p id="nav3text" class="navtextclass">
+							我
+						</p>
+					</div> 
+				</div>  
+				<script type="text/javascript" src="./pages/menubar.js"></script>
+				
+			</div>
+			
+			<!--菜单-->
+			<div id="menu" style="position:fixed; display: none;left: 0;top: 0;width:100%;height:100%;background:url(img/transparent.png);">
+
+			</div>
+
+			<!--toast弹窗-->
+			<div id='toast' style="position:fixed;display:none;width: 90%;height: auto; left: 5%; bottom:15%;z-index: 9999;">
+				<div style="text-align:center;">
+					<div id='toasttext' style="color: white;display:inline-block;background:url(img/transparent.png);padding: 3px;border-radius: 15px ;z-index: 9999;word-wrap:break-word;  word-break:break-all;  overflow: hidden;">
+						tips
+					</div>
+				</div>
+			</div>
+
+			<div id='loading' style="position: fixed; display: none; width: 100%; height:100%;left:0;top:0 ;background: url(img/transparent.png);z-index: 99999; ">
+				<div style="text-align:center;margin-top:50%;" >
+					<div id='loadingtext' style="color: white;display:inline-block;padding: 3px;border-radius: 15px ;z-index: 99999;word-wrap:break-word;  word-break:break-all;  overflow: hidden;">
+						loading
+					</div>
+				</div>
+			</div>
+			
+		</div>
+	
+		<script type="text/javascript" src="js/utils.js"></script> 
+		
+		<script type="text/javascript" src="js/splash.js"></script>   
+		
+		
+		<script type="text/javascript" src="js/keymap.js"></script> 
+		
+		<script type="text/javascript" src="./index.js"></script> 
+		
+		<!--引用脚本文件-->
+ 
+  	</body>
+</html>

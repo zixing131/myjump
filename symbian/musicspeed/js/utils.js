@@ -232,13 +232,13 @@ var desktopBind = function() {
 				}
 				e.preventDefault();
 			}
-		}
+		} 
 		if(isdesk)
 		{ 
-			document.activeElement.addEventListener('keydown', handleKeydown);
+			document.addEventListener('keydown', handleKeydown);
 		}
 		else{
-			document.activeElement.addEventListener('keypress', handleKeydown);
+			document.addEventListener('keypress', handleKeydown);   
 		}
 	//}
 }
