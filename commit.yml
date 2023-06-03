@@ -3,18 +3,153 @@ branches: {
   }
 fileChange:
   /symbian:
-    newFile: !uuid 'fa06e557c51622780b4cc87fd1279ba6677dee84'
-    oldFile: !uuid '6bb715e32cabb47917b4c532a557ead34867af9d'
-  /symbian/musicspeed:
-    newFile: !uuid '1dc3ffa70495bd9c83335b873bd7ab239af3ad12'
-    oldFile: !uuid 'd676436d3fd932652d7c2cffdd50df52da5facce'
-  /symbian/musicspeed/js:
-    newFile: !uuid '0ff9a60931466d7e7b9700ed988cb1f97aaff86a'
-    oldFile: !uuid 'b794f8e6d27ab86b356e39d9768ba78cfe962fbc'
-  /symbian/musicspeed/js/detail.js:
-    newFile: !uuid 'fa000e01dd4977a6efe57ffefae00daa92498ca5'
+    newFile: !uuid '210fa4985b1e5e0a840ec7653a7d2952e45cd36b'
+    oldFile: !uuid 'fa06e557c51622780b4cc87fd1279ba6677dee84'
+  /symbian/ithome:
+    newFile: !uuid 'db427dd2ab584a0e907cfc6853380b23a23981e9'
     oldFile: null
-gitCommitId: !uuid 'faa8d8d6e6c171d992932d8277bc366dd0db84a4'
+  /symbian/ithome/Info.plist:
+    newFile: !uuid '6fad348cc8055c36d20894d408b05547564dd955'
+    oldFile: null
+  /symbian/ithome/css:
+    newFile: !uuid '86a112cd6702afee799e55cc6967f99714b74db6'
+    oldFile: null
+  /symbian/ithome/css/global.css:
+    newFile: !uuid '23aae95c8411513b5c4b54f67868dfa8dce8124a'
+    oldFile: null
+  /symbian/ithome/icon.png:
+    newFile: !uuid 'd4b38bca100665772362793bd5e1d0dc21d83e5c'
+    oldFile: null
+  /symbian/ithome/img:
+    newFile: !uuid '12732e1b5ab63ac6821ac4212fcbabf2f1bf2a9c'
+    oldFile: null
+  /symbian/ithome/img/avatar_default_rect.png:
+    newFile: !uuid 'a8ca6f8225c76cedec61014cf1207327133c0abc'
+    oldFile: null
+  /symbian/ithome/img/nav_ithome.png:
+    newFile: !uuid '53208ef8ff5444f7d0f5e0c2ba78bb25bd2f8afb'
+    oldFile: null
+  /symbian/ithome/img/nav_ithome_hover.png:
+    newFile: !uuid 'a0696cbecfddd313ca090458591b4e1a922b8478'
+    oldFile: null
+  /symbian/ithome/img/nav_me.png:
+    newFile: !uuid 'e08fad43e3d984ddff12aba301e32b4a03b69203'
+    oldFile: null
+  /symbian/ithome/img/nav_me_hover.png:
+    newFile: !uuid '5c88b3b49dd61fc8fdc9184f18d2d1471b64f99e'
+    oldFile: null
+  /symbian/ithome/img/nav_quan.png:
+    newFile: !uuid 'dc9886cd5124581745e99d4bcb54f325721242a7'
+    oldFile: null
+  /symbian/ithome/img/nav_quan_hover.png:
+    newFile: !uuid 'f6719578fa2ac734c3d28d58ec52ac976050680f'
+    oldFile: null
+  /symbian/ithome/img/splash.png:
+    newFile: !uuid 'bfeea4c0f8fec231eb399037e19a6c6566d683d1'
+    oldFile: null
+  /symbian/ithome/img/transparent.png:
+    newFile: !uuid '34b62a454f296bd55e3cb81b5cb966d684a6157e'
+    oldFile: null
+  /symbian/ithome/index.html:
+    newFile: !uuid '5a26b035a58554c946a882cc9e9a94899788ca9b'
+    oldFile: null
+  /symbian/ithome/index.js:
+    newFile: !uuid '919bbc28f8ff059583a004b9f595000c6d8f3f41'
+    oldFile: null
+  /symbian/ithome/js:
+    newFile: !uuid '297c57abbcb26d2078ba36b499cf5f4f4bb4cb0e'
+    oldFile: null
+  /symbian/ithome/js/crypto-js.min.js:
+    newFile: !uuid '67c3e2143b0d18881aace5df6b051e67dbdbdbfe'
+    oldFile: null
+  /symbian/ithome/js/desktop.js:
+    newFile: !uuid '521ca0d04249d66faa41f844e90b439b4a1680c8'
+    oldFile: null
+  /symbian/ithome/js/ithomecrypto.js:
+    newFile: !uuid 'e06ec92d75f5e48322073d911993b03ceaad0b80'
+    oldFile: null
+  /symbian/ithome/js/json3.min.js:
+    newFile: !uuid 'c4567f87edae6d25be4cf3cc7d6180373ac2ca2c'
+    oldFile: null
+  /symbian/ithome/js/keymap.js:
+    newFile: !uuid '4a50906243e73277a1aea5bc208fd6cb6f2e93de'
+    oldFile: null
+  /symbian/ithome/js/splash.js:
+    newFile: !uuid '4942241965a9105c594c2a6576a8400447fdd6cc'
+    oldFile: null
+  /symbian/ithome/js/utils.js:
+    newFile: !uuid '4f7f5d3425e1b1d4ca1000ac9d70064b41dad6dc'
+    oldFile: null
+  /symbian/ithome/pages:
+    newFile: !uuid '6855748b6938547f9a7523fcfb24fc149ceeefd5'
+    oldFile: null
+  /symbian/ithome/pages/about.html:
+    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
+    oldFile: null
+  /symbian/ithome/pages/about.js:
+    newFile: !uuid '4a91ce8253d4c230133cba406cd7b6d94a5e8b51'
+    oldFile: null
+  /symbian/ithome/pages/article.html:
+    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
+    oldFile: null
+  /symbian/ithome/pages/article.js:
+    newFile: !uuid '341248e3c3efe158d3447fe39f5c6215f3839dea'
+    oldFile: null
+  /symbian/ithome/pages/comment.html:
+    newFile: !uuid '05d3ef5b58856b0e85214f4341063ac61e0e08e4'
+    oldFile: null
+  /symbian/ithome/pages/comment.js:
+    newFile: !uuid 'd9e437ff94b6b2e4ced01b4a3aaa6508546ddc20'
+    oldFile: null
+  /symbian/ithome/pages/home.html:
+    newFile: !uuid '3d9b76442c8a72bf191f7e54fe3c26c0b136908f'
+    oldFile: null
+  /symbian/ithome/pages/home.js:
+    newFile: !uuid '065b6f46d944ed77cf722cfa0fa0e7283af43b2c'
+    oldFile: null
+  /symbian/ithome/pages/menu.html:
+    newFile: !uuid '5e6a6a7b5afd27577fa545cea94a4ea5b6cf4681'
+    oldFile: null
+  /symbian/ithome/pages/menu.js:
+    newFile: !uuid '476060dd0df0cc1654e4a25abcdb023727fe7c55'
+    oldFile: null
+  /symbian/ithome/pages/menubar.css:
+    newFile: !uuid '99eb0eaebe123d7b908b22edf9e72e3726a3e2c0'
+    oldFile: null
+  /symbian/ithome/pages/menubar.js:
+    newFile: !uuid '098eccf45028b503e7e9ee7f40a88dcb345ea8b9'
+    oldFile: null
+  /symbian/ithome/pages/newslist.html:
+    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
+    oldFile: null
+  /symbian/ithome/pages/newslist.js:
+    newFile: !uuid '0880f5416d4d710aafe3d03bc2cb49318320fac5'
+    oldFile: null
+  /symbian/ithome/pages/quanzi.html:
+    newFile: !uuid '4516565b9020ac9fe4f6a949b1422995bef8b44c'
+    oldFile: null
+  /symbian/ithome/pages/quanzi.js:
+    newFile: !uuid 'c27d7c56f0afa8f2f4323bd162d2b8de5d83b1ba'
+    oldFile: null
+  /symbian/ithome/pages/quanziarticle.html:
+    newFile: !uuid '987445a7b94e1b9d3c77260e9fb70f40c692f061'
+    oldFile: null
+  /symbian/ithome/pages/quanziarticle.js:
+    newFile: !uuid 'bd2dc66d763da2a026f08052349cd072c159f07e'
+    oldFile: null
+  /symbian/musicspeed:
+    newFile: !uuid 'a7aac86d13ba8d4065da773eaa3aa9310d085e1c'
+    oldFile: !uuid '1dc3ffa70495bd9c83335b873bd7ab239af3ad12'
+  /symbian/musicspeed.wgz:
+    newFile: !uuid '1f935ea1ed92beaab2ac9d8cb60c69414638dc0c'
+    oldFile: null
+  /symbian/musicspeed/js:
+    newFile: !uuid '59ba797bb71851082f0677fc4242f71c4e8f9dd3'
+    oldFile: !uuid '0ff9a60931466d7e7b9700ed988cb1f97aaff86a'
+  /symbian/musicspeed/js/utils.js:
+    newFile: !uuid '37c3d1e4b9f20e926f3e11fe4374bdd58c5268c1'
+    oldFile: !uuid '47d0e41f948ef0179b8f8d3c72c5c19e5a14b50a'
+gitCommitId: !uuid 'e3a5bd077797314d5b18f1f8c2a2dbbb5490d0a1'
 renames: {
   }
-revisionId: 64
+revisionId: 65
