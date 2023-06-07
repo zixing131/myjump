@@ -2,154 +2,802 @@
 branches: {
   }
 fileChange:
-  /symbian:
-    newFile: !uuid '210fa4985b1e5e0a840ec7653a7d2952e45cd36b'
-    oldFile: !uuid 'fa06e557c51622780b4cc87fd1279ba6677dee84'
-  /symbian/ithome:
-    newFile: !uuid 'db427dd2ab584a0e907cfc6853380b23a23981e9'
+  /java:
+    newFile: !uuid 'f4da74ec8b1e4fc83b9e364741abd54bf221bc50'
+    oldFile: !uuid '2719353ca1ffd00b09550d29b78fe528f059382b'
+  /java/jar:
+    newFile: !uuid '07185bf6d30611a0ba068a210364edc348d976da'
+    oldFile: !uuid '512d0b39ea8e90d109d34940d59ece481a9fc3df'
+  /java/jar/kemulator.cfg:
+    newFile: !uuid '7d97dc40e18f574a12ef843a4f95602640ad4926'
     oldFile: null
-  /symbian/ithome/Info.plist:
+  /kaios:
+    newFile: !uuid '1a1d748f67a3cadc0eb549d3e3eec26238bac21f'
+    oldFile: !uuid '42d2fb4d5580383c2dd60dc77424b554e45ece0b'
+  /kaios/bilibili_ver.json:
+    newFile: !uuid '23a59023cbb168620a1da6303366b25672d458ce'
+    oldFile: !uuid 'c0ad6724dc00391c646194fe66c567069aaae791'
+  /kaios/java:
+    newFile: !uuid '963a38df8e82bcbd8cb6452018cfa99e202bf3e6'
+    oldFile: null
+  /kaios/java.wgz:
+    newFile: !uuid 'a1da9392e9403e663bfbcdd088bb4bc5fae36cff'
+    oldFile: null
+  /kaios/java/Info.plist:
     newFile: !uuid '6fad348cc8055c36d20894d408b05547564dd955'
     oldFile: null
-  /symbian/ithome/css:
-    newFile: !uuid '86a112cd6702afee799e55cc6967f99714b74db6'
+  /kaios/java/benchmark.js:
+    newFile: !uuid '28245aaecb636dbf2424e4eb2c70eb3d38b427f0'
     oldFile: null
-  /symbian/ithome/css/global.css:
-    newFile: !uuid '23aae95c8411513b5c4b54f67868dfa8dce8124a'
+  /kaios/java/bld:
+    newFile: !uuid '6b719931d09cc525ecc85496e7b4d8ec8e6f3d41'
     oldFile: null
-  /symbian/ithome/icon.png:
-    newFile: !uuid 'd4b38bca100665772362793bd5e1d0dc21d83e5c'
+  /kaios/java/bld/classes.jar.js:
+    newFile: !uuid '51daa72b92924330a542567fd77588cb52955a8c'
     oldFile: null
-  /symbian/ithome/img:
-    newFile: !uuid '12732e1b5ab63ac6821ac4212fcbabf2f1bf2a9c'
+  /kaios/java/bld/j2me.js:
+    newFile: !uuid 'e3ef7755b5a06fc5ed9a2010563737296874ee31'
     oldFile: null
-  /symbian/ithome/img/avatar_default_rect.png:
-    newFile: !uuid 'a8ca6f8225c76cedec61014cf1207327133c0abc'
+  /kaios/java/bld/main-all.js:
+    newFile: !uuid '96ee8163f791b77a60607b637b17992eccd4af23'
     oldFile: null
-  /symbian/ithome/img/nav_ithome.png:
-    newFile: !uuid '53208ef8ff5444f7d0f5e0c2ba78bb25bd2f8afb'
+  /kaios/java/bld/native.js:
+    newFile: !uuid '77922ec216b7a1d17ee5948f5bf2df5b4376ddd5'
     oldFile: null
-  /symbian/ithome/img/nav_ithome_hover.png:
-    newFile: !uuid 'a0696cbecfddd313ca090458591b4e1a922b8478'
+  /kaios/java/bld/shumway.js:
+    newFile: !uuid '0cd97607da8961f52e8e4e64533f699da985e1ef'
     oldFile: null
-  /symbian/ithome/img/nav_me.png:
-    newFile: !uuid 'e08fad43e3d984ddff12aba301e32b4a03b69203'
+  /kaios/java/certs:
+    newFile: !uuid '887fbc808d34522d19c09380fe0dbde2f6f950a8'
     oldFile: null
-  /symbian/ithome/img/nav_me_hover.png:
-    newFile: !uuid '5c88b3b49dd61fc8fdc9184f18d2d1471b64f99e'
+  /kaios/java/certs/Makefile:
+    newFile: !uuid 'a95b380e211b1e0cbd983bcd512d34ecbc5f75ed'
     oldFile: null
-  /symbian/ithome/img/nav_quan.png:
-    newFile: !uuid 'dc9886cd5124581745e99d4bcb54f325721242a7'
+  /kaios/java/certs/_main.ks:
+    newFile: !uuid 'e0af6ef488a0d030c3494c156f43d20ed66b2f0a'
     oldFile: null
-  /symbian/ithome/img/nav_quan_hover.png:
-    newFile: !uuid 'f6719578fa2ac734c3d28d58ec52ac976050680f'
+  /kaios/java/certs/_test.ks:
+    newFile: !uuid 'a387db955f6cb70a2c5762be483dd368d4765799'
     oldFile: null
-  /symbian/ithome/img/splash.png:
-    newFile: !uuid 'bfeea4c0f8fec231eb399037e19a6c6566d683d1'
+  /kaios/java/certs/digicert_global_root.der:
+    newFile: !uuid '2f1e5523af47d44e35ea27be89e25a663ea7f99f'
     oldFile: null
-  /symbian/ithome/img/transparent.png:
-    newFile: !uuid '34b62a454f296bd55e3cb81b5cb966d684a6157e'
+  /kaios/java/certs/godaddy_class_2_ca.der:
+    newFile: !uuid '3cd289bdff9d0a2185b4271ebd7d1e278714a542'
+    oldFile: null
+  /kaios/java/config:
+    newFile: !uuid '515f5b1aaadb5841990ffa392ce7fb4d23c20254'
+    oldFile: null
+  /kaios/java/config/build.js:
+    newFile: !uuid 'cda66b6cd6fe281287ac959141d84919e1a23ed0'
+    oldFile: null
+  /kaios/java/config/default.js:
+    newFile: !uuid 'e8971e059de0c0364a2be634148df5e7e188445e'
+    oldFile: null
+  /kaios/java/config/runtests.js:
+    newFile: !uuid 'e68b523db7cf2afdf842afd34b41d6926f5269df'
+    oldFile: null
+  /kaios/java/config/urlparams.js:
+    newFile: !uuid 'f4aceea305d456dc504ec86af89982bb9c8edfc9'
+    oldFile: null
+  /kaios/java/gc.html:
+    newFile: !uuid 'ca1e859c150b250afec541b3f042fb07b8c7ac01'
+    oldFile: null
+  /kaios/java/gc.js:
+    newFile: !uuid '0c20bf99cba17f16a239a0cae88f799237ef9152'
+    oldFile: null
+  /kaios/java/img:
+    newFile: !uuid '734c528eba8523e6f91ab53f50c5d554d430f7f7'
+    oldFile: null
+  /kaios/java/img/icon-128.png:
+    newFile: !uuid '890828f73808f9c3e0814524280b92b29ccec7a2'
+    oldFile: null
+  /kaios/java/img/icon-512.png:
+    newFile: !uuid '43816df61b68a03efd60ee4a6a59374da1f6223b'
+    oldFile: null
+  /kaios/java/index.html:
+    newFile: !uuid 'bb515158f030205dcd1bba9c7bf1aaaf09ef3e93'
+    oldFile: null
+  /kaios/java/index.js:
+    newFile: !uuid 'b632a29933463085ca9896d99696197443cfc096'
+    oldFile: null
+  /kaios/java/index2.html:
+    newFile: !uuid 'f6939d9a811f1a08dd3f8ab086e25ab619c89d7e'
+    oldFile: null
+  /kaios/java/indexold.html:
+    newFile: !uuid '82d6f3a8e4eef5739e4351c092c34e10830e03ca'
+    oldFile: null
+  /kaios/java/indexold.js:
+    newFile: !uuid 'bc55027f7e93ab972af848e23a2037880e7c9721'
+    oldFile: null
+  /kaios/java/jar:
+    newFile: !uuid 'd387c40abc31ea76bbeb6bedb7af89447c6ca02f'
+    oldFile: null
+  /kaios/java/jar/新建 文本文档.txt:
+    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
+    oldFile: null
+  /kaios/java/java:
+    newFile: !uuid '9822674b39214a90ebc20eb5328d820dad498c24'
+    oldFile: null
+  /kaios/java/java/classes.jar:
+    newFile: !uuid '3d468b83548c855f31771f1f4a229f689d587c1e'
+    oldFile: null
+  /kaios/java/js:
+    newFile: !uuid 'b84431061d07d8516d51b30827b780e3ed2050ba'
+    oldFile: null
+  /kaios/java/js/focusable-core.js:
+    newFile: !uuid 'fa06fe7841033e209d7d14cb8ab0db26082f8fff'
+    oldFile: null
+  /kaios/java/js/midi:
+    newFile: !uuid 'c9f92dab81a5c0f687fa82c18363a1f838fb622c'
+    oldFile: null
+  /kaios/java/js/midi/loader.js:
+    newFile: !uuid '02136f66bb44b0fe903cb4cd4745529b5cfd2c34'
+    oldFile: null
+  /kaios/java/js/tv-focusable.js:
+    newFile: !uuid '8ccac905acad7fb371e0982ddaad00aafc365c0a'
+    oldFile: null
+  /kaios/java/keymap.js:
+    newFile: !uuid '7742a8c4351593e328d2bcc630ecdbcbac0ecb0b'
+    oldFile: null
+  /kaios/java/libs:
+    newFile: !uuid '36b0c75a723fd47b240e097bc880b1d434276301'
+    oldFile: null
+  /kaios/java/libs/BenzAMRRecorder.js:
+    newFile: !uuid '2a54ff2fb4b8b924f1c78552b9e43330018a6c1d'
+    oldFile: null
+  /kaios/java/libs/PicoAudio.js:
+    newFile: !uuid 'c6aa04f49f155de3c5c9bdd39e26ea8eb5b08994'
+    oldFile: null
+  /kaios/java/libs/compiled-method-cache.js:
+    newFile: !uuid '8fdbd75cd0acbfddb9acedeb4f00688ef60809c3'
+    oldFile: null
+  /kaios/java/libs/encoding.js:
+    newFile: !uuid 'bf7d7c5d4481616429cd37581ec435b5ca1fbb03'
+    oldFile: null
+  /kaios/java/libs/jsgraphics.js:
+    newFile: !uuid '352ced89bfedb660ad426add4928f9c627fcc7e8'
+    oldFile: null
+  /kaios/java/libs/load.js:
+    newFile: !uuid '50feb9a179b8cbccd7e8c1bfc0da8bd6ff754c7a'
+    oldFile: null
+  /kaios/java/libs/promise-6.0.0.js:
+    newFile: !uuid '4f1e9dcad747603544b59b46ca042958ffa1a25c'
+    oldFile: null
+  /kaios/java/libs/webaudio-tinysynth.js:
+    newFile: !uuid '7cc225d70580db34b202c6f17b6c7621a1b80dcf'
+    oldFile: null
+  /kaios/java/libs/webaudio.js:
+    newFile: !uuid '420c14c00d243e8f8bbceb705bc13d79d02797f8'
+    oldFile: null
+  /kaios/java/main.html:
+    newFile: !uuid 'd555f4bfcd0656f9d910a902fa739725b45e5140'
+    oldFile: null
+  /kaios/java/manifest.webapp:
+    newFile: !uuid '197f56c3d1cd3d545e94a9c4418a5d5f86d014a2'
+    oldFile: null
+  /kaios/java/polyfill:
+    newFile: !uuid '0410c7c28879a91c4b0b30f81bdee26d798f450c'
+    oldFile: null
+  /kaios/java/polyfill/IndexedDB-getAll-shim.js:
+    newFile: !uuid '364d52d55169bbb2f4e9d909a133d71d42f7b6d6'
+    oldFile: null
+  /kaios/java/polyfill/chrome_polyfills.js:
+    newFile: !uuid '1e089a7861caebab9a19e581567ad4bc8d688b23'
+    oldFile: null
+  /kaios/java/style:
+    newFile: !uuid 'a1f8694d970a2c67579e0e24884d43259678047b'
+    oldFile: null
+  /kaios/java/style/confirm.css:
+    newFile: !uuid '5620d7c2ee5215c8d187d8116086a800a149ce92'
+    oldFile: null
+  /kaios/java/style/drawer:
+    newFile: !uuid 'cfdaedc15e6f5a7f5a0a386975b38efc342ddd3d'
+    oldFile: null
+  /kaios/java/style/drawer.css:
+    newFile: !uuid '2403b250f92a3039b3181e0100e13205233e432b'
+    oldFile: null
+  /kaios/java/style/drawer/images:
+    newFile: !uuid '1e5fe42a284257397d120cdca6bb1b124fa479e6'
+    oldFile: null
+  /kaios/java/style/drawer/images/icons:
+    newFile: !uuid '2aa0668aa9d1cdb9c622bb0573c0cbd8016bd308'
+    oldFile: null
+  /kaios/java/style/drawer/images/icons/menu.png:
+    newFile: !uuid '941b9c9a5334ac751d674d10c3bee95ab0792a97'
+    oldFile: null
+  /kaios/java/style/drawer/images/icons/menu@1.5x.png:
+    newFile: !uuid 'a8bdf131845c4bc6a5c2f46b508c6a0d2854771e'
+    oldFile: null
+  /kaios/java/style/drawer/images/icons/menu@2.25x.png:
+    newFile: !uuid 'fa4c8c61527be099fe4fd67f1b0660968697b91b'
+    oldFile: null
+  /kaios/java/style/drawer/images/icons/menu@2x.png:
+    newFile: !uuid '35a9cfd4a2ac045705b8d392369f189ea864d61f'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui:
+    newFile: !uuid '2739f31340958a9d68763fe45065b1a9e35a089b'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/header:
+    newFile: !uuid 'f34d16f7bea32fdc3d7df361d195f08c4500547e'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/header.png:
+    newFile: !uuid 'c301407cf363cc2795d70afa6196ae489896b8af'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/header/header.png:
+    newFile: !uuid 'e3a89a2b011b353484284048b2b28c481e26a2b8'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/header/shadow.png:
+    newFile: !uuid 'a27376b29209b20b77da46b5a8027d0326673081'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/header/shadow@1.5x.png:
+    newFile: !uuid '6c7cda307ab7cafafe342335efe7f06c9519285d'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/header/shadow@2x.png:
+    newFile: !uuid '8ed9035cee7e3b646a21dd6c864eecfb3f8b2569'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/negative.png:
+    newFile: !uuid '9e9f4281b3cfec843f97415462ea0f455ff77697'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/pattern.png:
+    newFile: !uuid '0e9d996c1a7515175cd8515e14a0f95781a70e8a'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/pattern_subheader.png:
+    newFile: !uuid '8c27afdb11a3f2c205c7556061f7a921de7be17a'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/separator.png:
+    newFile: !uuid 'c87aa177eabe24b3f12e55530bbb48d9740312d6'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/separator_large.png:
+    newFile: !uuid '93a5d17fb125934d8a18c929732fe009b24b87e0'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow.png:
+    newFile: !uuid '39b4610c0dc018a4451519aeb82c413f4015e9d1'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow@1.5x.png:
+    newFile: !uuid 'd9c074202d347b63ad2a8645345e4c0f6a627bc6'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow@2x.png:
+    newFile: !uuid '961da78d33ffbd95049056ca794e97096ea1a5ac'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow_header.png:
+    newFile: !uuid 'a27376b29209b20b77da46b5a8027d0326673081'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow_header@1.5x.png:
+    newFile: !uuid 'cabe26b40cd3f36f2165d86b135de6b4a9de254b'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow_header@2x.png:
+    newFile: !uuid '6738ae9debe099b96f65a79a0b9994b99e317849'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow_rtl.png:
+    newFile: !uuid '9701b284f18542fe32456cdc7d1a68a34b3cf09e'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow_rtl@1.5x.png:
+    newFile: !uuid '11e9282acfc9dca79857fa754f982894d0cfcee9'
+    oldFile: null
+  /kaios/java/style/drawer/images/ui/shadow_rtl@2x.png:
+    newFile: !uuid '1b086aca3085b6427224d9b6882fce4b530d2892'
+    oldFile: null
+  /kaios/java/style/emoji:
+    newFile: !uuid 'df8b32b0ef9643e6206ce6111ae8dccdc2f3334e'
+    oldFile: null
+  /kaios/java/style/emoji/LICENSE:
+    newFile: !uuid '72ce0d8c43426de5fd40a3012bc4e9573d94d8a9'
+    oldFile: null
+  /kaios/java/style/emoji/emoji0.png:
+    newFile: !uuid '94efc849eed882fa0ae3820d121129dfe2c407b6'
+    oldFile: null
+  /kaios/java/style/emoji/emoji1.png:
+    newFile: !uuid 'b97d25a184497b8e84ec450313b3ff4b60beafe5'
+    oldFile: null
+  /kaios/java/style/emoji/emoji2.png:
+    newFile: !uuid '82d0d7d256f4e45d84a67cde4496865c4c561f40'
+    oldFile: null
+  /kaios/java/style/emoji/emoji3.png:
+    newFile: !uuid '9cd1cf7f5f93f51b1fad1500e6068482462290b2'
+    oldFile: null
+  /kaios/java/style/emoji/emoji4.png:
+    newFile: !uuid 'a00bad44e157ec963bae9c8d59113aa8419558b3'
+    oldFile: null
+  /kaios/java/style/emoji/emoji5.png:
+    newFile: !uuid '48b926ea3ebc36bd58eb8fac77eef50588ed8c31'
+    oldFile: null
+  /kaios/java/style/emoji/emoji6.png:
+    newFile: !uuid '2519a1d91076a0a48c8d6bde3a604efcc0bb440b'
+    oldFile: null
+  /kaios/java/style/emoji/emoji7.png:
+    newFile: !uuid '8a490f8ae2d36655d089f86ef14ce2e4d695c49f'
+    oldFile: null
+  /kaios/java/style/emoji/emoji8.png:
+    newFile: !uuid '1589d009f63a7c85266c1d453f952b8b9044b0e9'
+    oldFile: null
+  /kaios/java/style/emoji/emoji9.png:
+    newFile: !uuid 'a74db89d2940c3afcd49cce9bcd01d58807d5542'
+    oldFile: null
+  /kaios/java/style/emoji/emojia.png:
+    newFile: !uuid '8df9e5352f54b65352b8016f5b17febb6bffed36'
+    oldFile: null
+  /kaios/java/style/emoji/emojic.png:
+    newFile: !uuid '9d46a2000930381a165e1f742855e1d22396f21a'
+    oldFile: null
+  /kaios/java/style/headers:
+    newFile: !uuid '6aef1970c6f05c2df8456391a33ced5405f43c82'
+    oldFile: null
+  /kaios/java/style/headers.css:
+    newFile: !uuid 'd99ac5e940e790378391d8692afc1cb7e7918614'
+    oldFile: null
+  /kaios/java/style/headers/images:
+    newFile: !uuid '37827277e1bd708fa22a3b3bd9851e732852473f'
+    oldFile: null
+  /kaios/java/style/headers/images/icons:
+    newFile: !uuid 'd907c039e5032482fbf7ee399c5c8136ed2f4934'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/add.png:
+    newFile: !uuid '2d56f1f82b4287def9d89b31755e25a3b9650e1f'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/add@1.5x.png:
+    newFile: !uuid '7c7eade8b2e7a3522674dcb03718b203ef0c2fb0'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/add@2.25x.png:
+    newFile: !uuid '9055c109ff899e9f5532a0ac90cfac934950ccfa'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/add@2x.png:
+    newFile: !uuid '6a566496000d8a4af80f76d5de9361c39511a2aa'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back-rtl.png:
+    newFile: !uuid '675203095b356846c6132e9adfe762448a96521a'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back-rtl@1.5x.png:
+    newFile: !uuid '0fe61158018c19a6c40b2ec48ef4aeea078b96ec'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back-rtl@2.25x.png:
+    newFile: !uuid '3eb2c68db04f429ae20f514efb924ef28330f5d0'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back-rtl@2x.png:
+    newFile: !uuid '67931b25024e900e1118bf6210c9055ae9064852'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back.png:
+    newFile: !uuid '9f932c2b3fef94d4654b9646c2fb1d3c750cbaed'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back.svg:
+    newFile: !uuid '5319bf9148c582b31c92cf8a511168219daa2ee5'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back@1.5x.png:
+    newFile: !uuid '790e4123a904948ff1f96bceb82f28848a93772e'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back@2.25x.png:
+    newFile: !uuid 'a013a42263e6f3603904692e8a07b6b1fa980400'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back@2x.png:
+    newFile: !uuid '3dac82d0b4b88a7068a4fe0cab5ed628ba2a9ba2'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back_rtl.png:
+    newFile: !uuid 'b3486575c0b266bdce491996a627e08238baf43f'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/back_rtl@1.5x.png:
+    newFile: !uuid '5afb74e852be5c74962b8bd94fa03a24469b269e'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/clear.png:
+    newFile: !uuid 'a96ec74e69d2224a659bf9ffc79825465e73d57f'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/clear@1.5x.png:
+    newFile: !uuid 'c3f633a853ece29eda90f0c6e899bf94b0e7057f'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/clear@2x.png:
+    newFile: !uuid 'dc507317fd7db1269760ca39110cc9eb2770f51f'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/close.png:
+    newFile: !uuid '52f256b95bdc9d4bd208cc4d268de497f4baba91'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/close.svg:
+    newFile: !uuid '96522e247ffdcb3b60be3fe7a3861910c9d5e565'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/close@1.5x.png:
+    newFile: !uuid '64e93f17fc6bda0ce9f8c43c43628129e268b5e1'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/close@2.25x.png:
+    newFile: !uuid 'a54c7649a79993f998c500267ae5d5d001888e12'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/close@2x.png:
+    newFile: !uuid '6d2e8746c3696899635180cc74f10ec96136a9bf'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/compose.png:
+    newFile: !uuid 'c7ed33bf4d3e788698f4afc3bb6f2dabb3ab7080'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/compose@1.5x.png:
+    newFile: !uuid '65aef9c8ca834a5949834f20e6571958ead349b5'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/compose@2.25x.png:
+    newFile: !uuid '5668cb528ff54163f2315ca7ded24b15295dd717'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/compose@2x.png:
+    newFile: !uuid '0edba0f8777ef07ce52982c2af60bb09064ad4d6'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/down.png:
+    newFile: !uuid 'e411b3322d589d5334e63f68f46c3b38a342ca0a'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/down@1.5x.png:
+    newFile: !uuid 'd2e9bc7aac020a078dcaedc066d5edad19a4a869'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/down@2.25x.png:
+    newFile: !uuid '6945765378948feb1e7dd0de6cd6afc4eaa6af5c'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/down@2x.png:
+    newFile: !uuid 'ad76c2ac5d5f9160184b6f22b806611a664895b9'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/edit.png:
+    newFile: !uuid 'a18f3bf4f7d749eb73fa56c52e6f450b70a5e9d8'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/edit@1.5x.png:
+    newFile: !uuid '2839b2c4b8b727563878285861ab897bd1194714'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/edit@2.25x.png:
+    newFile: !uuid '1af2e9318e1de5d34e56246b990be4d995a3c913'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/edit@2x.png:
+    newFile: !uuid '98f5e8e40568b79c534543e2c0b57844a6453b94'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/menu.png:
+    newFile: !uuid '20bf539c045243eb295816dd5158f894c84c21cb'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/menu.svg:
+    newFile: !uuid '1d83b6397317ca6a6665bf5f37e2723f33ecc666'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/menu@1.5x.png:
+    newFile: !uuid '8711b62c2e98d266ed6ae61b46eca680bb504d56'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/menu@2.25x.png:
+    newFile: !uuid '3b07cd0270dbd74abee5815f9f95963a3a7aa66a'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/menu@2x.png:
+    newFile: !uuid '7fc4c4cb366aae443f2c152bc4b7f773b878aefd'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/options.png:
+    newFile: !uuid 'd7afc51b61ce0f2cb72a1fb565cdaf7a17bae4f9'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/options@1.5x.png:
+    newFile: !uuid '52ac216841b52df368318d5d9b6de65597616021'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/options@2.25x.png:
+    newFile: !uuid 'a005fb655cfbcdd87741f197d3c9e683b174d910'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/options@2x.png:
+    newFile: !uuid 'b5d0b2281bca876fe01c0ce43b65394d6c829c95'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic:
+    newFile: !uuid '2626c1ed0dc6d8f9e5ca76ec5e15a0fa1cdadc52'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/add.png:
+    newFile: !uuid '8a379c0c04eec46bcb9de3db5b515e5b30eb47bb'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/add@1.5.png:
+    newFile: !uuid 'a8567c5021897e12431aa437d427fc69e2ae4577'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/add@1.5x.png:
+    newFile: !uuid 'a8567c5021897e12431aa437d427fc69e2ae4577'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/add@2.25x.png:
+    newFile: !uuid 'bc2fb53a954fb667581653fa2888f0138872aaf2'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/add@2x.png:
+    newFile: !uuid '5f7234d7a9a826329a36a17842febaccb8e1acc3'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back-rtl@2.25x.png:
+    newFile: !uuid 'dc2f30d19df7f7fb8a00eb1ca5d4b76b7f151129'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back.png:
+    newFile: !uuid 'fe7208f625c950eb820a97ee3beee0e53ba6ca59'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back.svg:
+    newFile: !uuid 'cc153819be9267b5481fa76dbb4a0c9a686bba79'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back@1.5x.png:
+    newFile: !uuid 'e77952524e0887188f988de15cf586b7040c6bb2'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back@2.25x.png:
+    newFile: !uuid '8521435772e3d734fe3199c8dcc89cf51ed4d9a8'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back@2x.png:
+    newFile: !uuid '2f3ac041c3c0d4d8811a057fd04a93a4463d8265'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back_rtl.png:
+    newFile: !uuid '7fe46582f25c27bd54388752c731664bacd1c9ea'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/back_rtl@1.5x.png:
+    newFile: !uuid 'b61be0d73bf3dc6e27fbde769a55b732c7e778f9'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/close.png:
+    newFile: !uuid '75a382504aca86e8ddd3b690020f7241ed1cee53'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/close.svg:
+    newFile: !uuid '87a1ca40d0c72ee25ddc5e3cb932e91dbaba6b7c'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/close@1.5x.png:
+    newFile: !uuid 'ed25a7758cbf2a703c49ccb090f07fae0313d4fd'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/close@2.25x.png:
+    newFile: !uuid '2af287367fb16bdf12a10786180a17d124eac5dd'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/close@2x.png:
+    newFile: !uuid '31cd81f23aef69be7dcc86c735263dcd84b1c6bd'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/edit.png:
+    newFile: !uuid 'cbea478951a4bfd092858edf9d5e91b8ea3754b3'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/edit@1.5x.png:
+    newFile: !uuid 'c7c5693e4ffc00733b9e16a3b92e234420ff7f00'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/edit@2.25x.png:
+    newFile: !uuid 'a83d2d381668e5678193491f7836bc668d6807c5'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/organic/edit@2x.png:
+    newFile: !uuid 'a920cc34b26dee7e9adec5920116142276b2655f'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply-all.png:
+    newFile: !uuid '47dc97178c6854bd2c8c02544b44726f24791d8c'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply-all@1.5x.png:
+    newFile: !uuid '6250315953e262c1a186c0eebee9b89afc396af2'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply-all@2x.png:
+    newFile: !uuid 'ed3154d7796f459e769dcc0cbb8767b2c33952ec'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply.png:
+    newFile: !uuid 'c703d95685312d674f26ce5bb6282d9f92178a62'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply.png@2.25x.png:
+    newFile: !uuid '1d81b55f171637294bbac06b1591d8c6a7fc6313'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply@1.5x.png:
+    newFile: !uuid 'a7815d99b97abe7eacc0e00613a385c46c19f6f2'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply@2.25x.png:
+    newFile: !uuid '1d81b55f171637294bbac06b1591d8c6a7fc6313'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply@2x.png:
+    newFile: !uuid '9787372c25710fa1b860054a49c4a1aefe7fc482'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply_all.png:
+    newFile: !uuid 'e1d1ca86548c47000de9a0e511d9e3e01f5716df'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply_all@1.5x.png:
+    newFile: !uuid '6250315953e262c1a186c0eebee9b89afc396af2'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply_all@2.25x.png:
+    newFile: !uuid 'a55a59ee9d6bb784fc0be9ac62e08d87507cad24'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/reply_all@2x.png:
+    newFile: !uuid '0b0d26b9024591895b4d9c74f560c906e36b1ecf'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/send.png:
+    newFile: !uuid 'b01e4467f6e593369e2e49c1cd2f9c41f0229aa0'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/send@1.5x.png:
+    newFile: !uuid 'e658730af13551d26ea33921156eb8bbad50d684'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/send@2.25x.png:
+    newFile: !uuid '5b200a06b96fa372d34621ea08f5d61ab8c948f0'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/send@2x.png:
+    newFile: !uuid '56922a7ac1935a1ddec3d4726677c53bfaa7c60b'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/up.png:
+    newFile: !uuid '3a4ff2227284879177c244832e8d9c8fe58174c4'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/up@1.5x.png:
+    newFile: !uuid 'a3229aaf0b6b128f9cc6e3cdf147c61585ea2f29'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/up@2.25x.png:
+    newFile: !uuid 'ef53fcebf7ef756c57d52f4068281ef585933600'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/up@2x.png:
+    newFile: !uuid '11111f4e4b136427b58ee0701b6376f4f26ea7bb'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/user.png:
+    newFile: !uuid '20fa25ed651b0d759867600037be9b28938ee9de'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/user@1.5x.png:
+    newFile: !uuid '1623e54f736cb5f7154ca56bf079918c27c13e69'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/user@2.25x.png:
+    newFile: !uuid '853b5b0b1bcbd05e13e9a75136630172dcfa6bfd'
+    oldFile: null
+  /kaios/java/style/headers/images/icons/user@2x.png:
+    newFile: !uuid '8158685271e7ac8efc677b590c987c28a352078f'
+    oldFile: null
+  /kaios/java/style/headers/images/ui:
+    newFile: !uuid '491b5e0534d673fa8b6aea4af2ca594a2d539983'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/dark:
+    newFile: !uuid '3d7545a051501597b33192dc5f407b637a360eeb'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/dark/header.png:
+    newFile: !uuid 'a3b8274032c698697443693e201a37096a17c3a4'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/dark/negative.png:
+    newFile: !uuid '68be4a0e9b0e8761db6a96998cfd56f07ac8db9c'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/dark/separator-large.png:
+    newFile: !uuid '37ce4ded6a770821d8b035ed46625c0e96781dc9'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/dark/separator.png:
+    newFile: !uuid '3c6844770f34f0fedabc9edb4fe8a5e4bd4318e5'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/dark/separator@1.5x.png:
+    newFile: !uuid '0cf443d2f4e2e23d1db4c720ddfdf90830b0218c'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/dark/subheader.png:
+    newFile: !uuid 'd83c0c3744e0ba5e1c99bd333e33d5605c363c91'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/header.png:
+    newFile: !uuid '424eb1cf80ba4fd7949149744c0fbf1b55d4e18f'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/noise-pattern.png:
+    newFile: !uuid '75c07fd7ab80c9f4fb192fb84caa9e5be6190c05'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/organic:
+    newFile: !uuid 'abc5a9bcf2aede60f86a4156d32dad3720bb84ba'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/organic/header.png:
+    newFile: !uuid 'c0b4417154076f54b7b584d69afe1664241d96b7'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/organic/negative.png:
+    newFile: !uuid 'b6639019763a45d58b0b742a5bf29d76d323794d'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/organic/pattern.png:
+    newFile: !uuid 'cf36154db5f739d4289dcd3814935f6a5ba7f42f'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/organic/separator-large.png:
+    newFile: !uuid '3c4782f6bc5ced36d8b01fd7e58b70bd39e43cad'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/organic/separator.png:
+    newFile: !uuid '3c6844770f34f0fedabc9edb4fe8a5e4bd4318e5'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/organic/subheader.png:
+    newFile: !uuid '225007c470fdf9eabcae6b8aa2f799d6979a0f26'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/overlay:
+    newFile: !uuid '8d7697205333c1b8b456ae034f768f983a1bb10b'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/overlay/header.png:
+    newFile: !uuid 'e8bee7ed1f41fe404788388781699132108705d2'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/overlay/separator.png:
+    newFile: !uuid '411e22d3e683da756c24a63c57b73101cfbe93a9'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/separator-large.png:
+    newFile: !uuid 'f50841f4f44b92dfef3e3a4f9886c840c85545ae'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/separator.png:
+    newFile: !uuid '343b1deb8eda9c43e6bdce84e242c602f46eec8d'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/shadow.png:
+    newFile: !uuid 'ef785f50e8e3f01c4e92fc9a928944221ee6cb6d'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/shadow@1.5x.png:
+    newFile: !uuid 'cabe26b40cd3f36f2165d86b135de6b4a9de254b'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/shadow@2x.png:
+    newFile: !uuid '6738ae9debe099b96f65a79a0b9994b99e317849'
+    oldFile: null
+  /kaios/java/style/headers/images/ui/subheader.png:
+    newFile: !uuid 'ffd2ea704d7d3531cefef3249090fd90dba8fceb'
+    oldFile: null
+  /kaios/java/style/index.css:
+    newFile: !uuid 'ca182ee52e0a534b3d44874d3f96089520c2a2a7'
+    oldFile: null
+  /kaios/java/style/indexkaios.css:
+    newFile: !uuid '807acf62b2f4e14cc82f75c52849f5a3954826c0'
+    oldFile: null
+  /kaios/java/style/main.css:
+    newFile: !uuid 'a440445124b76c3128bd149ab057f3e83df45fa3'
+    oldFile: null
+  /kaios/java/style/progress_activity:
+    newFile: !uuid 'cf1bb837c97f9480a5a91fc5c764d0716cd7b43e'
+    oldFile: null
+  /kaios/java/style/progress_activity.css:
+    newFile: !uuid '552426ae72905f3444187233a6a8ed8fcd1abc6b'
+    oldFile: null
+  /kaios/java/style/progress_activity/images:
+    newFile: !uuid '44554589d6d0b05a767351cadb286ca0fb9650c7'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui:
+    newFile: !uuid '6488eff7563706b8ba4dd6b3c338b2cc593c1845'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/activity.png:
+    newFile: !uuid 'e694a038b8097ee1b35aebd2c015ae8e64e6a0fc'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/activity@1.5x.png:
+    newFile: !uuid '8803aac947eff4419e53d852ac38a93c7a3768d0'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/activity@2.25x.png:
+    newFile: !uuid '6761481cccb8e41f885aa18edf7eff3fd3a90113'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/activity@2x.png:
+    newFile: !uuid '75e39f4337e2d4fea7ac41ef080f6e332033db22'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/default.png:
+    newFile: !uuid 'a0629e4ddb29a26bc4f6519b2b46225f4db7ffb9'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/default@1.5x.png:
+    newFile: !uuid '7ed280882e7515c40ce446f235f69f8aec5ded32'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/default@2.25x.png:
+    newFile: !uuid '4a948baea72d63adb4196823fe714129cd931b00'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/default@2x.png:
+    newFile: !uuid 'beb2d148f86658d6ae1233d815c3d4ae740c901f'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/light.png:
+    newFile: !uuid '1c66a28311d93a1019439ade86ebb4276f10a133'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/light@1.5x.png:
+    newFile: !uuid '2248dc76d73cf2eee1528eafe53645d0b364a506'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/light@2.25x.png:
+    newFile: !uuid '324b9189ae18cef6dfd7814344cb2a02f396a7af'
+    oldFile: null
+  /kaios/java/style/progress_activity/images/ui/light@2x.png:
+    newFile: !uuid '5af17c45aa31f910374bb4ff5c3c6bb6c8466e4e'
+    oldFile: null
+  /kaios/java/timer.js:
+    newFile: !uuid 'b0f1fae407e0cb8ae1c13e7c05ec78cf90fad84c'
+    oldFile: null
+  /kaios/java/updatelog.html:
+    newFile: !uuid 'd7768a42f61d62d974cbc4ab07f40e5d3a11b0c1'
+    oldFile: null
+  /symbian:
+    newFile: !uuid '50445297373a8aad6bdba7427bd7ef4eb29e9f07'
+    oldFile: !uuid '210fa4985b1e5e0a840ec7653a7d2952e45cd36b'
+  /symbian/ithome:
+    newFile: !uuid 'b21f5e721bddf48a679fce74c1d3119949aff531'
+    oldFile: !uuid 'db427dd2ab584a0e907cfc6853380b23a23981e9'
+  /symbian/ithome.wgz:
+    newFile: !uuid 'd9d42c87089c2b11e2fac779347f40d878b48d7f'
     oldFile: null
   /symbian/ithome/index.html:
-    newFile: !uuid '5a26b035a58554c946a882cc9e9a94899788ca9b'
-    oldFile: null
+    newFile: !uuid '0aa57105a9174c3b38b5830ba043842e40ff3342'
+    oldFile: !uuid '5a26b035a58554c946a882cc9e9a94899788ca9b'
   /symbian/ithome/index.js:
-    newFile: !uuid '919bbc28f8ff059583a004b9f595000c6d8f3f41'
-    oldFile: null
-  /symbian/ithome/js:
-    newFile: !uuid '297c57abbcb26d2078ba36b499cf5f4f4bb4cb0e'
-    oldFile: null
-  /symbian/ithome/js/crypto-js.min.js:
-    newFile: !uuid '67c3e2143b0d18881aace5df6b051e67dbdbdbfe'
-    oldFile: null
-  /symbian/ithome/js/desktop.js:
-    newFile: !uuid '521ca0d04249d66faa41f844e90b439b4a1680c8'
-    oldFile: null
-  /symbian/ithome/js/ithomecrypto.js:
-    newFile: !uuid 'e06ec92d75f5e48322073d911993b03ceaad0b80'
-    oldFile: null
-  /symbian/ithome/js/json3.min.js:
-    newFile: !uuid 'c4567f87edae6d25be4cf3cc7d6180373ac2ca2c'
-    oldFile: null
-  /symbian/ithome/js/keymap.js:
-    newFile: !uuid '4a50906243e73277a1aea5bc208fd6cb6f2e93de'
-    oldFile: null
-  /symbian/ithome/js/splash.js:
-    newFile: !uuid '4942241965a9105c594c2a6576a8400447fdd6cc'
-    oldFile: null
-  /symbian/ithome/js/utils.js:
-    newFile: !uuid '4f7f5d3425e1b1d4ca1000ac9d70064b41dad6dc'
-    oldFile: null
+    newFile: !uuid '0efe53bfdfd03bc87853d2cd532633d2a534c814'
+    oldFile: !uuid '919bbc28f8ff059583a004b9f595000c6d8f3f41'
   /symbian/ithome/pages:
-    newFile: !uuid '6855748b6938547f9a7523fcfb24fc149ceeefd5'
-    oldFile: null
+    newFile: !uuid '209ad02c069805155e21746ada42af1464ca8411'
+    oldFile: !uuid '6855748b6938547f9a7523fcfb24fc149ceeefd5'
   /symbian/ithome/pages/about.html:
-    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
-    oldFile: null
-  /symbian/ithome/pages/about.js:
-    newFile: !uuid '4a91ce8253d4c230133cba406cd7b6d94a5e8b51'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
   /symbian/ithome/pages/article.html:
-    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
   /symbian/ithome/pages/article.js:
-    newFile: !uuid '341248e3c3efe158d3447fe39f5c6215f3839dea'
-    oldFile: null
+    newFile: !uuid '273c6d6c79a39735299f15ef0dc6bf00ff4af835'
+    oldFile: !uuid '341248e3c3efe158d3447fe39f5c6215f3839dea'
   /symbian/ithome/pages/comment.html:
-    newFile: !uuid '05d3ef5b58856b0e85214f4341063ac61e0e08e4'
-    oldFile: null
-  /symbian/ithome/pages/comment.js:
-    newFile: !uuid 'd9e437ff94b6b2e4ced01b4a3aaa6508546ddc20'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid '05d3ef5b58856b0e85214f4341063ac61e0e08e4'
   /symbian/ithome/pages/home.html:
-    newFile: !uuid '3d9b76442c8a72bf191f7e54fe3c26c0b136908f'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid '3d9b76442c8a72bf191f7e54fe3c26c0b136908f'
   /symbian/ithome/pages/home.js:
-    newFile: !uuid '065b6f46d944ed77cf722cfa0fa0e7283af43b2c'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid '065b6f46d944ed77cf722cfa0fa0e7283af43b2c'
   /symbian/ithome/pages/menu.html:
-    newFile: !uuid '5e6a6a7b5afd27577fa545cea94a4ea5b6cf4681'
-    oldFile: null
-  /symbian/ithome/pages/menu.js:
-    newFile: !uuid '476060dd0df0cc1654e4a25abcdb023727fe7c55'
-    oldFile: null
-  /symbian/ithome/pages/menubar.css:
-    newFile: !uuid '99eb0eaebe123d7b908b22edf9e72e3726a3e2c0'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid '5e6a6a7b5afd27577fa545cea94a4ea5b6cf4681'
   /symbian/ithome/pages/menubar.js:
-    newFile: !uuid '098eccf45028b503e7e9ee7f40a88dcb345ea8b9'
-    oldFile: null
+    newFile: !uuid '31733d645a8776d081b0a032cb039841cf854e20'
+    oldFile: !uuid '098eccf45028b503e7e9ee7f40a88dcb345ea8b9'
   /symbian/ithome/pages/newslist.html:
-    newFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
-    oldFile: null
-  /symbian/ithome/pages/newslist.js:
-    newFile: !uuid '0880f5416d4d710aafe3d03bc2cb49318320fac5'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'
   /symbian/ithome/pages/quanzi.html:
-    newFile: !uuid '4516565b9020ac9fe4f6a949b1422995bef8b44c'
-    oldFile: null
-  /symbian/ithome/pages/quanzi.js:
-    newFile: !uuid 'c27d7c56f0afa8f2f4323bd162d2b8de5d83b1ba'
-    oldFile: null
+    newFile: null
+    oldFile: !uuid '4516565b9020ac9fe4f6a949b1422995bef8b44c'
   /symbian/ithome/pages/quanziarticle.html:
-    newFile: !uuid '987445a7b94e1b9d3c77260e9fb70f40c692f061'
-    oldFile: null
-  /symbian/ithome/pages/quanziarticle.js:
-    newFile: !uuid 'bd2dc66d763da2a026f08052349cd072c159f07e'
-    oldFile: null
-  /symbian/musicspeed:
-    newFile: !uuid 'a7aac86d13ba8d4065da773eaa3aa9310d085e1c'
-    oldFile: !uuid '1dc3ffa70495bd9c83335b873bd7ab239af3ad12'
-  /symbian/musicspeed.wgz:
-    newFile: !uuid '1f935ea1ed92beaab2ac9d8cb60c69414638dc0c'
-    oldFile: null
-  /symbian/musicspeed/js:
-    newFile: !uuid '59ba797bb71851082f0677fc4242f71c4e8f9dd3'
-    oldFile: !uuid '0ff9a60931466d7e7b9700ed988cb1f97aaff86a'
-  /symbian/musicspeed/js/utils.js:
-    newFile: !uuid '37c3d1e4b9f20e926f3e11fe4374bdd58c5268c1'
-    oldFile: !uuid '47d0e41f948ef0179b8f8d3c72c5c19e5a14b50a'
-gitCommitId: !uuid 'e3a5bd077797314d5b18f1f8c2a2dbbb5490d0a1'
-renames: {
-  }
-revisionId: 65
+    newFile: null
+    oldFile: !uuid '987445a7b94e1b9d3c77260e9fb70f40c692f061'
+gitCommitId: !uuid 'da6430c5f45438a5d203c77c118e2225256e36dd'
+renames:
+  /kaios/java/jar/新建 文本文档.txt: /symbian/ithome/pages/about.html
+revisionId: 66
