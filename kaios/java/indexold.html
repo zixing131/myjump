@@ -1,0 +1,623 @@
+<!DOCTYPE html>  
+<html>
+<head>
+<meta charset="utf-8">
+<title>j2me在线模拟器</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1"> 
+ 
+  <!-- Required for non-UTF encodings --> 
+  <script src="libs/encoding.js"></script>
+  <!-- Load config scripts separately because compiled-method-cache.js
+     - depends on them. -->
+  <script type="text/javascript" src="config/default.js" defer></script>
+  <script type="text/javascript" src="config/runtests.js" defer></script>
+  <script type="text/javascript" src="config/build.js" defer></script>
+  <script type="text/javascript" src="config/urlparams.js" defer></script>
+
+
+  <!--<script type="text/javascript" src="libs/terminal.js" defer></script>-->
+
+  <!-- Load promise-6.0.0.js and IndexedDB-getAll-shim.js separately
+     - because compiled-method-cache.js depends on them. -->
+  <script type="text/javascript" src="libs/promise-6.0.0.js" defer></script>
+  <script type="text/javascript" src="polyfill/IndexedDB-getAll-shim.js" defer></script>
+
+  <!-- Load compiled-method-cache.js separately because j2me.js depends on it. -->
+  <script type="text/javascript" src="libs/compiled-method-cache.js" defer></script>
+
+  <!-- Load bld/native.js separately because adding it to main-all.js
+     - throws an "asm.js type error". -->
+  <script type="text/javascript" src="bld/native.js" defer></script>
+
+  <!-- Load j2me.js separately because classes.jar.js depends on it (it adds
+     - members to the AOTMD hash that j2me.js defines); and also so its source
+     - map gets loaded by the debugger. -->
+  <script type="text/javascript" src="bld/j2me.js" defer></script>
+
+  <!-- Run `make aot` to generate these.  Load them separately, because adding
+     - classes.jar.js to main-all.js fails silently for unknown reasons. -->
+  <!--<script type="text/javascript" src="bld/classes.jar.js" defer></script>-->
+  <!--<script type="text/javascript" src="bld/program.jar.js" defer></script>-->
+  <!--<script type="text/javascript" src="bld/tests.jar.js" defer></script>-->
+
+  <!-- Load the rest of the scripts from the combined script main-all.js
+     - to improve startup and runtime performance.  See Makefile for the list
+     - of files that get combined into this one. -->
+  <script type="text/javascript" src="bld/main-all.js" defer></script>
+   
+</head>  
+<body>
+	
+	<div id="pageContainer" style="display: none;">
+		<pre id="consoleContainer"></pre>
+	  <div id="profilerContainer">
+		<div id="profilerToolbar">
+		  <div class="toolbarLabel">Profiler <span id="profilerMessage" class="toolbarMessage">6 Seconds</span></div>
+		  <div id="profilerButtons">
+			<div id="profilerStartStop">Start</div>
+			<div id="profilerAdjustHeight">Height</div>
+		  </div>
+		</div>
+		<div id="profiler">
+		  <div id="profileList">
+		  </div>
+		  <div id="profilePanel">
+		  </div>
+		</div>
+	  </div>
+	</div>
+  
+	  <!-- The raw console is used for unit tests, so it's not visible by default: -->
+	  <pre id="raw-console" style="display: none"></pre>
+  
+	<div id="display-container"  style="display: none;">
+	  <div id="display">
+		<section id="sidebar" data-type="sidebar" style="display:none">
+		  <header>
+			<h1>Menu</h1>
+		  </header>
+		  <nav>
+			<ul>
+			</ul>
+		  </nav>
+		</section>
+		<section id="drawer" role="region">
+		  <header style="display:none">
+			<a href="#"><span class="icon icon-menu">hide sidebar</span></a>
+			<a id="header-drawer-button" href="#drawer"><span class="icon icon-menu">show sidebar</span></a>
+			<menu id="header-ok-button" type="toolbar" style="display:none"><button>√</button></menu>
+			<h1 id="display_title"></h1>
+		  </header>
+		  <div id="main" role="main">
+			<canvas id="canvas"></canvas>
+			<input id="password-editor" class="text-editor" type="password">
+			<input id="tel-editor" class="text-editor" type="tel">
+			<input id="number-editor" class="text-editor" type="number">
+			<input id="email-editor" class="text-editor" type="email">
+			<input id="url-editor" class="text-editor" type="url">
+			<div id="textarea-editor" class="text-editor" contenteditable="true"></div>
+			<!-- The hidden textarea editor is used to measure the content height -->
+			<div id="hidden-textarea-editor" class="text-editor"></div>
+			<button id="back-button">Back</button>
+		  </div>
+		</section>
+  
+		<div id="gamepad" onselectstart ='return false' οnselect='document.selection.empty()'>
+		  <div id="padcontent">
+			<button>1</button>
+			<button>2</button>
+			<button>3</button>
+			<button>L</button>
+			<div></div>
+			<button >R</button> 
+		  </div>
+		  <div id="padcontent">
+			<button>4</button>
+			<button>5</button>
+			<button>6</button>
+			<div></div>
+			<button >up</button>
+		  </div>
+		  <div id="padcontent">
+			<button>7</button>
+			<button>8</button>
+			<button>9</button>
+			<button>left</button>
+			<button >OK</button>
+			<button >right</button>
+		  </div>
+		  <div id="padcontent" >
+			<button>*</button>
+			<button>0</button>
+			<button>#</button>
+			<div></div>
+			<button>down</button>
+		  </div>
+		</div>
+  
+		<div id="download-screen" class="screen">
+		  <h1 class="title">Downloading midlet…</h1>
+		  <div class="download-progress-container">
+			<progress class="pack-activity" value="0" max="100"></progress>
+		  </div>
+		</div>
+  
+		<div id="splash-screen" class="screen">
+		  <h1 class="title">Starting midlet…</h1>
+		  <div class="splash-progress-container">
+			<progress></progress>
+		  </div>
+		</div>
+  
+		<div id="exit-screen" class="screen">
+		</div>
+  
+		<div id="background-screen">
+		</div>
+  
+		<form role="dialog" data-type="confirm"
+			  class="lcdui-alert"
+			  id="lcdui-alert" style="display: none">
+		  <section>
+			<h1 class="title"></h1>
+			<p class="text"></p>
+			<p style="border-top: 0"><progress style="display: none"></progress></p>
+		  </section>
+		  <menu>
+			<button class="button0" style="display: none"></button>
+			<button class="button1" style="display: none"></button>
+		  </menu>
+		</form>
+  
+		<form role="dialog" data-type="confirm"
+			  class="sms-listener-prompt"
+			  id="sms-listener-prompt" style="display: none">
+		  <section>
+			<h1>SMS Verification</h1>
+			<p class="verificationText"></p>
+			  <input type="text" placeholder="Type SMS Here">
+			  <p class="timeLeft"></p>
+			  <progress class="timeLeftBar" value="0" max="100"></progress>
+		  </section>
+		  <menu>
+			<button class="cancel">Cancel</button>
+			<button class="recommend">Done</button>
+		  </menu>
+		</form>
+  
+		<form role="dialog" data-type="confirm"
+			  class="nokia-fileui-prompt"
+			  id="nokia-fileui-prompt" style="display: none">
+		  <section>
+			<h1>Select a file</h1>
+			<p><input type="file" name="nokia-fileui-file">
+		  </section>
+		  <menu>
+			<button class="cancel">Cancel</button>
+			<button class="recommend">Done</button>
+		  </menu>
+		</form>
+  
+		<form role="dialog" data-type="confirm"
+			  class="download-failure-dialog"
+			  id="download-failure-dialog" style="display: none">
+		  <section>
+			<h1 class="download-dialog-text">Download failure</h1>
+			<p>The download of midlet failed.  Press <i>Retry</i> to try again.</p>
+		  </section>
+		  <menu>
+			<button class="recommend">Retry</button>
+		  </menu>
+		</form>
+	  </div>
+	  <div id="settings">
+		<section>
+		  <table id="counters">
+			<tr><td>Bytecode:</td><td><span id="bytecodeCount"></span></td></tr>
+			<tr><td>Compiled:</td><td><span id="compiledCount"></span></td></tr>
+			<tr><td>Interpreter:</td><td><span id="interpreterCount"></span></td></tr>
+			<tr><td>OSR:</td><td><span id="onStackReplacementCount"></span></td></tr>
+			<tr><td>Unwind:</td><td><span id="unwindCount"></span></td></tr>
+			<tr><td>Preemption:</td><td><span id="preemptionCount"></span></td></tr>
+		  </table>
+		</section>
+		<section>
+		  <select id="loglevel">
+			<option value="0">Log Level: Trace
+			<option value="1">Log Level: Log
+			<option value="2">Log Level: Info
+			<option value="3">Log Level: Warn
+			<option value="4">Log Level: Error
+			<option value="5">Log Level: Silent
+		  </select>
+			<input id="console-filter-input" type="text" placeholder="Filter Console Output" value="">
+			<button id="console-clear">Clear console</button>
+			<button id="console-save">Save console</button>
+		  <label><input type="checkbox" id="perfWriter">Perf</label>
+		</section>
+		<section>
+		  <button id="exportstorage">Export File System</button>
+		  <div>Import File System:</div>
+		  <input type="file" id="importstoragefile">
+		  <input type="text" id="importstorageurl" placeholder="URL to FS backup">
+		  <button id="importstorage">Import</button>
+		  <button id="clearCompiledMethodCache">Clear Compiled Method Cache</button>
+		  <button id="deleteDatabases">Delete IDB Databases</button>
+		  <button id="printAllExceptions">Print all exceptions: OFF</button>
+		  <button id="clearCounters">Clear Counters</button>
+		  <button id="dumpCounters">Dump Counters</button>
+		  <button id="sampleCounters1">One sample for 1s</button>
+		  <button id="sampleCounters2">One sample for 100ms (2s)</button>
+		  <select id="canvasSize1">
+			<option value="" selected>Display size: 240x320</option>
+			<option value="size-320x240">Display size: 320x240</option>
+			<option value="size-320x480">Display size: 320x480</option>
+			<option value="size-480x320">Display size: 480x320</option>
+		  </select>
+		  <button id="start">Start</button>
+  
+		</section>
+	  </div>
+   </div>
+  
+
+	<input id="jarFileupload" type="file" style="visibility: hidden;display:none;"/>
+    <div style="display:flex;flex-wrap: wrap; margin: 10px 0px">
+         
+		 <script type="text/javascript">
+			
+			function refreshGameList()
+			{
+				JARStore.getAll().then(
+					(files)=>{ 
+						var localjars=document.getElementById('localjars'); 
+						localjars.length = 0;
+						for(var i=0;i<files.length;i++)
+						{
+							var f=files[i];
+							//console.log(f.jarName);
+							//JARStore.loadJAR(f.jarName);
+							localjars.options.add(new Option(f.jarName));
+						} 
+						var gameindex=config01.getValueByKey("gameindex"); 
+						var localjars=document.getElementById('localjars');
+						if(gameindex>=files.length)
+						{
+							gameindex=files.length-1;
+						}
+						localjars.selectedIndex = gameindex;
+					},
+					(err)=>{
+						alert(err);
+					}
+				);
+			}
+
+			function loadLocalJar()
+			{
+				
+				var localjars=document.getElementById('localjars');
+				if(localjars.options.length==0)
+				{
+					alert("请先上传jar!");
+					return;
+				}
+				if(localjars.selectedIndex<0 || localjars.selectedIndex>=localjars.options.length)
+				{
+					alert("请选择jar名称!");
+					return;
+				}
+				var jarname = localjars.options[localjars.selectedIndex].text;
+				console.log(jarname);
+				openJar(jarname,"",1);
+				
+			}
+
+			
+			function deleteLocalJar()
+			{
+				
+				var localjars=document.getElementById('localjars');
+				if(localjars.options.length==0)
+				{
+					alert("没有要删除的jar!");
+					return;
+				}
+				if(localjars.selectedIndex<0 || localjars.selectedIndex>=localjars.options.length)
+				{
+					alert("请选择jar名称!");
+					return;
+				}
+				var jarname = localjars.options[localjars.selectedIndex].text;
+				console.log(jarname);
+				let res = confirm('确定删除 '+jarname+' ？');
+				if(res)
+				{
+					JARStore.deleteJar(jarname).then
+				(
+					()=>{ 
+						alert(jarname+"删除成功！"); 
+						refreshGameList();
+				},  
+					(errname)=>{
+						alert(errname+"删除失败！"); 
+					}
+					); 
+				} 
+			} 
+			var onUploadFile = function(e){
+				const _files = e.target.files;
+				if (_files.length == 0) {
+					return;
+				}
+				const _file = _files[0];  
+				if(!_file.name.toLowerCase().endsWith('.jar'))
+				{
+					alert("只能上传jar格式!");
+					return;
+				}
+				//fs.createUniqueFile("/Phone",_file.name,_file);
+				const reader = new FileReader();
+				reader.readAsArrayBuffer(_file);
+				reader.onload = function(readRes){
+					JARStore.installJAR(_file.name,readRes.target.result).then
+					(
+						()=>{ 
+							alert(_file.name+"安装成功！"); 
+							refreshGameList();
+					},  
+						(errname)=>{
+							alert(errname+"安装失败！"); 
+						}
+						);	
+				document.getElementById("jarFileupload").value= null;
+				}    
+		}
+
+			var config = function() {
+				var myInfo = {
+					canvasSize: 4, 
+					gamepadSize: 0,
+					gameresize:0,
+					gameindex:0,
+				};
+				if (window.localStorage["my"] === undefined) {
+					window.localStorage["my"] = JSON.stringify(myInfo);
+				} else { 
+					var data = JSON.parse(window.localStorage["my"]);
+					for (var key in data) {
+						myInfo[key] = data[key];
+					}
+				}
+				return {
+					//按key从对象中取值
+					getValueByKey(key) {
+						return myInfo[key]
+					},
+					//将键值对保存到对象中
+					setValueByKey() {
+						for (var i = 0; i < arguments.length; i += 2) {
+							myInfo[arguments[i]] = arguments[i + 1];
+						}
+						//将新的数据序列化到本地保存
+						window.localStorage["my"] = JSON.stringify(myInfo);
+					}
+				}
+			}
+
+			var config01 = new config(); 
+			window.addEventListener("load", () => {
+				
+				var csize=config01.getValueByKey("canvasSize");
+				var gsize=config01.getValueByKey("gamepadSize");
+				var gresize=config01.getValueByKey("gameresize");
+				
+				var gamepadSize=document.getElementById('gamepadSize'); 
+				var canvasSize=document.getElementById('canvasSize'); 
+				var gameresize=document.getElementById('gameresize');  
+
+				
+				canvasSize.selectedIndex=csize;
+				gamepadSize.selectedIndex=gsize;
+				gameresize.selectedIndex = gresize;
+ 
+				document.getElementById("jarFileupload").addEventListener("change", onUploadFile); 
+				refreshGameList();
+				
+			})
+
+
+			function openLocalJar()
+			{
+				document.getElementById("jarFileupload").click();
+
+			}
+			
+			function openJar(jarname,midletClassName,islocaljar)
+			{
+				//var mycheck1=document.getElementById('mycheck1'); 
+				//var mycheck2=document.getElementById('mycheck2'); 
+				var href='main.html?jars=jar/'+jarname+'&jad=&midletClassName='+midletClassName;
+				if(islocaljar)
+				{
+					 href='main.html?localjar='+jarname;
+				}
+				//if(mycheck1.checked)
+				//{
+				//	href+="&gamepad=1";
+				//}
+				/*
+				if(mycheck2.checked)
+				{
+					href+="&enablexy=1";
+				}
+				*/
+				var gamepadSize=document.getElementById('gamepadSize'); 
+				var mvalue=gamepadSize.options[gamepadSize.selectedIndex].value;
+				if(mvalue)
+				{
+					href+="&gamepadSize="+mvalue;
+					if(gamepadSize.selectedIndex==0)
+					{
+						href+="&gamepad=0";
+					}
+					else{
+						href+="&gamepad=1";
+					}
+				}
+
+				var canvasSize=document.getElementById('canvasSize'); 
+				var mvalue=canvasSize.options[canvasSize.selectedIndex].value;
+				if(mvalue)
+				{
+					href+="&canvasSize="+mvalue;
+				}
+				var gameresize=document.getElementById('gameresize');  
+				var gameresizevalue=gameresize.options[gameresize.selectedIndex].value;
+				if(gameresizevalue)
+				{ 
+					href+="&gameresize="+gameresizevalue; 
+				}
+
+				var localjars=document.getElementById('localjars');  
+
+				config01.setValueByKey("canvasSize",canvasSize.selectedIndex);
+				config01.setValueByKey("gamepadSize",gamepadSize.selectedIndex);
+				config01.setValueByKey("gameresize",gameresize.selectedIndex);
+				config01.setValueByKey("gameindex",localjars.selectedIndex)
+
+				window.location.href = href;
+			}
+		 </script>
+		 
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('Anyview4.0.jar','com.ismyway.anyview.Anyview');">
+			<div style="height:64px;"> 
+				<img src="img/anyview.png" ></img>
+			</div> 
+			Anyview
+		 </a>
+
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('kybc6.jar','GloftASP6');">
+			<div style="height:64px;"> 
+				<img src="img/kybc6.png" width="60" height="60"></img>
+			</div> 
+			狂野飙车6
+		 </a>
+
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('pvz.jar','Game');">
+			<div style="height:64px;"> 
+				<img src="img/pvz.png" style="margin-top:15px"></img>
+			</div>
+			植物大战僵尸
+		 </a> 
+
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('ckxt3.jar','GloftASBR');">
+			<div style="height:64px;"> 
+				<img src="img/ckxt3.png" style="margin-top:0px"></img>
+			</div>
+			刺客信条3
+		 </a> 
+		 
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('kxnc.jar','FarmMIDlet');">
+			<div style="height:64px;"> 
+				<img src="img/kxnc.png" style="margin-top:4px"></img>
+			</div>
+			  开心农场
+		 </a> 
+
+		 <a style="height:100px;width:80px;text-align:center;float: left;" href="javascript:void(0)"onclick="openJar('rf18.jar','GloftR8FP');">
+			<div style="height:64px;"> 
+				<img src="img/rf18.png" style="margin-top:4px"></img>
+			</div>
+			RF18
+		 </a> 
+
+		 <a style="height:100px;width:100px;text-align:center;" href="javascript:void(0)"onclick="openJar('BounceTales.jar','RMIDlet');">
+			<div style="height:64px;"> 
+				<img src="img/BounceTales.png" style="margin-top:4px"></img>
+			</div>
+			BounceTales
+		 </a> 
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('jxlls.jar','baltorogames.system.Application');">
+			<div style="height:64px;"> 
+				<img src="img/jxlls.png" style="margin-top:4px"></img>
+			</div>
+			极限拉力赛2
+		 </a> 
+		 
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('ddz.jar','GameMidlet');">
+			<div style="height:64px;"> 
+				<img src="img/ddz.png" style="margin-top:20px"></img>
+			</div>
+			斗地主
+		 </a> 
+
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('gta.jar','SaintsRow2');">
+			<div style="height:64px;"> 
+				<img src="img/gta.png" style="margin-top:20px"></img>
+			</div>
+			GTA5
+		 </a> 
+
+		 <a style="height:100px;width:80px;text-align:center;" href="javascript:void(0)"onclick="openJar('tyty.jar','S');">
+			<div style="height:64px;"> 
+				<img src="img/tyty.png" style="margin-top:10px"></img>
+			</div>
+			涂鸦跳跃
+		 </a> 
+
+		 
+ 
+    </div>
+	<!-- <label><input id="mycheck1" name="enablekey" type="checkbox"  checked value="" />启用按键</label> -->
+	<!-- <label><input id="mycheck2" name="enablexy" type="checkbox" value="" />自适应缩放</label>  -->
+   <select id="canvasSize">
+	  <option value="size-240x320">显示尺寸: 240x320</option>
+	  <option value="size-320x240">显示尺寸: 320x240</option>
+	  <option value="size-360x640" >显示尺寸: 360x640</option>
+	  <option value="size-640x360">显示尺寸: 640x360</option>
+	  <option value="size-no" selected>显示尺寸: 无限制</option>
+	</select>
+	<select id="gamepadSize">
+		<option value="gamepad-0" selected>虚拟键盘-无</option>
+		<option value="gamepad-1">虚拟键盘-小</option>
+		<option value="gamepad-2">虚拟键盘-中</option>
+		<option value="gamepad-3">虚拟键盘-大</option>
+		<option value="gamepad-4">虚拟键盘-特大</option>
+	  </select>
+
+	  <select id="gameresize">
+		<option value="resize-1" selected>无缩放</option>
+		<option value="resize-1x5">缩放1.5倍</option>
+		<option value="resize-2">缩放2倍</option>
+		<option value="resize-2x5">缩放2.5倍</option>
+		<option value="resize-3">缩放3倍</option>
+	  </select>
+	</br>
+</br>
+<select id="localjars"> 
+
+  </select>
+	  <button onclick="openLocalJar()">
+		选择本地jar
+	  </button>
+
+	  <button onclick="loadLocalJar()">
+		运行本地jar
+	  </button>
+
+	  <button onclick="deleteLocalJar()">
+		删除本地jar
+	  </button>
+
+	</br>
+</br>
+</br>
+<a href="updatelog.html">
+	更新日志
+	</a>
+</br>
+
+</body>
+</html>

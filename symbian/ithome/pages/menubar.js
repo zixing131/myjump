@@ -34,4 +34,3 @@ function ClickMenu(id)
 	
 	showById(id);
 }
-

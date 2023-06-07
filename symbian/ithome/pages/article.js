@@ -10,7 +10,8 @@ function articleEnterKey()
 
 //显示文章正文
 function displayArticle(item) {
-	alert('displayArticle');
+	//alert('displayArticle');
+	hideMenuBar();
 	lstviewtop = getScorllTop();
 	setLoading('加载文章中...'); 
 	item = JSON.parse(unescape(item)) 
