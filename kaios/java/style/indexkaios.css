@@ -83,11 +83,38 @@
     outline: 0; 
 }
 
+#applist{
+	padding-bottom: 40px;
+	margin-bottom: 40px;
+}
+
 .menuitem{
     text-align: left;
     font-size: 16px;
     color: #000;
     padding: 7px 24px;
+}
+
+.listitem{
+    text-align: left;
+    font-size: 16px;
+    color: #000;
+    padding: 12px;
+}
+
+.listitem.focus{
+    background: rgba(205,61,61,.2);
+    color: #cd3d3d;
+}
+
+.jaricon{
+	position: absolute;
+	 width:32px;
+	 height: 32px; 
+} 
+.listtext{
+	padding: 0px 0px 0px 42px;
+	
 }
 
 .menuitem.focus{
@@ -96,7 +123,7 @@
 }
 
 #softkeys {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
@@ -126,4 +153,3 @@
     top: 50%;
     transform: translate(-50%,-50%);
 }
-  

@@ -1,10 +1,61 @@
 
 
-mainmenulist = [
+mainmenulist = [ 
+	["启动JAR",'openJar',],
+	["刷新列表",'refreshGameList',],
     ["安装JAR",'installJar',],
+	["删除JAR",'deleteJar',],
     ["关于",'about',],
     ["退出",'exit'],
 ]
+
+function myopenJar(jarname,midletClassName)
+			{
+				
+				href='main.html?localjar='+jarname; 
+				href+="&gamepad=0";
+				
+				window.location.href = href;
+			}
+function openJar()
+{
+	if(nowfocus)
+	{ 
+		var jarname = nowfocus.children[1].innerText;
+		var jarmid = nowfocus.children[2].innerText;
+		if(jarmid==null || jarmid=="")
+		{
+			alert("jar文件损坏！")
+			return;
+		} 
+		myopenJar(jarname,jarmid);
+	}
+	else{
+		alert("请先选择一个jar！")
+	}
+}
+
+function deleteJar()
+{
+	
+	if(nowfocus)
+	{ 
+		var jarname = nowfocus.children[1].innerText;
+		JARStore.deleteJar(jarname).then
+		(
+			()=>{ 
+				alert(jarname+"删除成功！"); 
+				refreshGameList();
+		},  
+			(errname)=>{
+				alert(errname+"删除失败！"); 
+			}
+			); 
+		}  
+	else{
+		alert("请先选择一个jar！")
+	}
+}
 
 var onUploadFile = function(e){
     const _files = e.target.files;
@@ -52,6 +103,13 @@ function loadMenu()
         }
         menuitems.innerHTML = menus.join('');
     }
+	
+	var applist=document.getElementById("applist");
+	var menuitems=applist.getElementsByClassName('menuitem');
+	for(var i=0;i<menuitems;i++)
+	{
+		menuitems[i].removeAttribute("focusable")
+	} 
 } 
 
 function installJar()
@@ -62,6 +120,47 @@ function installJar()
     restoreMenuName();
 }
 
+function processJAD2(data) {
+  var dts={}
+  data.replace(/\r\n|\r/g, "\n").replace(/\n /g, "").split("\n").forEach(function(entry) {
+    if (entry) {
+      var keyEnd = entry.indexOf(":");
+      var key = entry.substring(0, keyEnd);
+      var val = entry.substring(keyEnd + 1).trim();
+      dts[key] = val;
+    }
+  });
+  return dts;
+} 
+
+var nowfocus=undefined; 
+function disableAppList()
+{
+	var applist=document.getElementById('applist'); 
+	
+	nowfocus = applist.getElementsByClassName("focus")[0];
+	
+	var listitems=applist.getElementsByClassName("listitem");
+	
+	for(var i=0;i<listitems.length;i++)
+	{
+		listitems[i].removeAttribute("focusable")
+	}
+}
+function enableApplist()
+{
+	var applist=document.getElementById('applist'); 
+	var listitems=applist.getElementsByClassName("listitem");
+	for(var i=0;i<listitems.length;i++)
+	{
+		listitems[i].setAttribute("focusable","")
+	}
+	if(nowfocus)
+	{
+		focusable.requestFocus(nowfocus)
+	}
+}
+
 function refreshGameList()
     {
         JARStore.getAll().then(
@@ -70,10 +169,55 @@ function refreshGameList()
                 var listapp = [];
                 for(var i=0;i<files.length;i++)
                 {
-                    var f=files[i];
+					var res=files[i];
+					try{
+                    
                     //console.log(f.jarName);
                     //JARStore.loadJAR(f.jarName);
-                    listapp.push(' <div class="menuitem" focusable>' + f.jarName + '</div>');
+					var mffile = res.jar['META-INF/MANIFEST.MF'];
+					mfdata=''
+					switch(mffile.compression_method) {
+					  case 0:
+					    mfdata= mffile.compressed_data;
+					  case 8:
+					    mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+					}
+					mfdata=new TextDecoder('utf-8').decode(mfdata);
+					console.log(mfdata);
+					var dts=processJAD2(mfdata);
+					var a=dts['MIDlet-1']; 
+					var a=a.split(',');
+					var name = a[0].trim(); 
+					var jarmid=a[2].trim();
+					
+					var jaricon = a[1].trim();
+					if(jaricon.indexOf("/")==0)
+					{
+						jaricon = jaricon.substring(1);
+					}
+					
+					var iconfile = res.jar[jaricon];
+					if(iconfile==undefined)
+					{
+						iconfile =  res.jar[dts['MIDlet-Icon'].trim()];
+					}
+					var iconfiledata=''
+					switch(iconfile.compression_method) {
+					  case 0:
+					    iconfiledata= iconfile.compressed_data;
+					  case 8:
+					    iconfiledata = inflate(iconfile.compressed_data, iconfile.uncompressed_len);
+					}
+					var bytes = new Uint8Array(iconfiledata);
+					var blob = new Blob([bytes], { type: "image/png" });
+					var url = URL.createObjectURL(blob);  
+                    listapp.push(' <div class="listitem" focusable> <image class="jaricon" src="'+url+'"></image> <div id="jarname" style="display:none">'+res.jarName+'</div> <div id="jarmid" style="display:none">'+jarmid+'</div> <div class="listtext">' + name + '</div></div>');
+					}catch(err)
+					{
+						url=""
+						listapp.push(' <div class="listitem" focusable> <image class="jaricon" src="'+url+'"></image> <div id="jarname" style="display:none">'+res.jarName+'</div> <div id="jarmid" style="display:none"></div> <div class="listtext">' + res.jarName + '[文件损坏]</div></div>');
+						console.log(err)
+					}
                 } 
                 applist.innerHTML = listapp.join('');
             },
@@ -268,9 +412,12 @@ function softleft()
             {
                 fc[0].click();
             }
+			enableApplist();
         }
         else {
+			
             loadMenu();
+			disableAppList();
             saveMenuName();
             menu.style.display="block";    
             focusable.requestFocus(document.getElementsByClassName('menuitem')[0])
@@ -295,9 +442,9 @@ function exit(){
     var menu = document.getElementById("menu");
         menu.style.display="none";  
         
-    showDialog("确认","是否确认退出？",()=>{
-        alert("退出应用!");
+    showDialog("确认","是否确认退出？",()=>{ 
         closeDialog();
+		window.close();
     },()=>{closeDialog()});
 }
 
@@ -315,6 +462,7 @@ function softright()
         {
             restoreMenuName();
             menu.style.display="none";
+			enableApplist();
         }
         else{
             exit();
