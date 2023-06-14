@@ -86,20 +86,21 @@
 		  <header style="display:none">
 			<a href="#"><span class="icon icon-menu">hide sidebar</span></a>
 			<a id="header-drawer-button" href="#drawer"><span class="icon icon-menu">show sidebar</span></a>
-			<menu id="header-ok-button" type="toolbar" style="display:none"><button>√</button></menu>
+    		 <button id="header-ok-button" style="display:none">√</button>
+			 <button id="back-button" style="display:none">Back</button>
 			<h1 id="display_title"></h1>
+			<input id="tel-editor" class="text-editor" type="tel">
 		  </header>
 		  <div id="main" role="main">
 			<canvas id="canvas"></canvas>
-			<input id="password-editor" class="text-editor" type="password">
-			<input id="tel-editor" class="text-editor" type="tel">
+			<input id="password-editor" class="text-editor" type="password"> 
 			<input id="number-editor" class="text-editor" type="number">
 			<input id="email-editor" class="text-editor" type="email">
 			<input id="url-editor" class="text-editor" type="url">
 			<div id="textarea-editor" class="text-editor" contenteditable="true"></div>
 			<!-- The hidden textarea editor is used to measure the content height -->
 			<div id="hidden-textarea-editor" class="text-editor"></div>
-			<button id="back-button">Back</button>
+			
 		  </div>
 		</section>
   

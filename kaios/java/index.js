@@ -25,13 +25,14 @@ function openJar()
 		var jarmid = nowfocus.children[2].innerText;
 		if(jarmid==null || jarmid=="")
 		{
-			alert("jar文件损坏！")
+			showDialog("提示","jar文件损坏！",closeDialog,closeDialog);    
 			return;
 		} 
 		myopenJar(jarname,jarmid);
 	}
 	else{
-		alert("请先选择一个jar！")
+		
+			showDialog("提示","请先选择一个jar！",closeDialog,closeDialog);     
 	}
 }
 
@@ -44,16 +45,16 @@ function deleteJar()
 		JARStore.deleteJar(jarname).then
 		(
 			()=>{ 
-				alert(jarname+"删除成功！"); 
+				showDialog("提示",jarname+"删除成功！",closeDialog,closeDialog);   
 				refreshGameList();
 		},  
 			(errname)=>{
-				alert(errname+"删除失败！"); 
+				showDialog("提示",errname+"删除失败！",closeDialog,closeDialog);     
 			}
 			); 
 		}  
 	else{
-		alert("请先选择一个jar！")
+		showDialog("提示","请先选择一个jar！",closeDialog,closeDialog);    
 	}
 }
 
@@ -65,7 +66,7 @@ var onUploadFile = function(e){
     const _file = _files[0];  
     if(!_file.name.toLowerCase().endsWith('.jar'))
     {
-        alert("只能上传jar格式!");
+		showDialog("提示","只能上传jar格式!",closeDialog,closeDialog);   
         return;
     }
     //fs.createUniqueFile("/Phone",_file.name,_file);
@@ -75,11 +76,11 @@ var onUploadFile = function(e){
         JARStore.installJAR(_file.name,readRes.target.result).then
         (
             ()=>{ 
-                alert(_file.name+"安装成功！"); 
+				showDialog("提示",_file.name+"安装成功！",closeDialog,closeDialog);  
                 refreshGameList();
         },  
             (errname)=>{
-                alert(errname+"安装失败！"); 
+					showDialog("提示",errname+"安装失败！",closeDialog,closeDialog);   
             }
             );	
     document.getElementById("jarFileupload").value= null;
@@ -179,8 +180,10 @@ function refreshGameList()
 					switch(mffile.compression_method) {
 					  case 0:
 					    mfdata= mffile.compressed_data;
+						break;
 					  case 8:
 					    mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+						break;
 					}
 					mfdata=new TextDecoder('utf-8').decode(mfdata);
 					console.log(mfdata);
@@ -205,10 +208,12 @@ function refreshGameList()
 					switch(iconfile.compression_method) {
 					  case 0:
 					    iconfiledata= iconfile.compressed_data;
+						break;
 					  case 8:
-					    iconfiledata = inflate(iconfile.compressed_data, iconfile.uncompressed_len);
+					    iconfiledata = new Uint8Array(inflate(iconfile.compressed_data, iconfile.uncompressed_len));
+						break;
 					}
-					var bytes = new Uint8Array(iconfiledata);
+					var bytes = iconfiledata;
 					var blob = new Blob([bytes], { type: "image/png" });
 					var url = URL.createObjectURL(blob);  
                     listapp.push(' <div class="listitem" focusable> <image class="jaricon" src="'+url+'"></image> <div id="jarname" style="display:none">'+res.jarName+'</div> <div id="jarmid" style="display:none">'+jarmid+'</div> <div class="listtext">' + name + '</div></div>');
@@ -233,12 +238,13 @@ function loadLocalJar()
     var localjars=document.getElementById('localjars');
     if(localjars.options.length==0)
     {
-        alert("请先上传jar!");
+		showDialog("提示","请先上传jar!",closeDialog,closeDialog);   
         return;
     }
     if(localjars.selectedIndex<0 || localjars.selectedIndex>=localjars.options.length)
     {
-        alert("请选择jar名称!");
+		
+		showDialog("提示","请选择jar名称!",closeDialog,closeDialog);  
         return;
     }
     var jarname = localjars.options[localjars.selectedIndex].text;
@@ -253,9 +259,7 @@ window.addEventListener("load", () => {
 })
 
 function about()
-{ 
-    var menu = document.getElementById("menu");
-    menu.style.display="none";  
+{  
     showDialog("关于","kaios版本的j2me模拟器客户端  made by zixing！",closeDialog,closeDialog); 
 }
 
@@ -291,8 +295,7 @@ function showDialog(title,content,acceptevent,cancelevent)
     setLeftKeyName("确定");
     setCenterKeyName("");
     setRightKeyName("取消"); 
-
-
+	
     var alertDialog = document.getElementById("alertDialog")
     alertDialog.style.display = "block";
 
@@ -323,8 +326,8 @@ function closeDialog()
     alertheader.innerText="";
     alerttext.innerText = "";
     var alertDialog = document.getElementById("alertDialog")
-    alertDialog.style.display = "none";    
-    restoreMenuName(); 
+    alertDialog.style.display = "none";
+    restoreMenuName();
     restoreEvent();
 }
 
@@ -361,20 +364,20 @@ function setRightKeyName(name)
     }
 }
 
-var lastleft="";
-var lastcenter="";
-var lastright="";
+var lastleft=[];
+var lastcenter=[];
+var lastright=[];
 function saveMenuName()
-{
+{ 
     var softkeyleft = document.getElementById("softkeyleft")
     
     var softkeycenter = document.getElementById("softkeycenter")
     
     var softkeyright = document.getElementById("softkeyright")
 
-    lastleft=softkeyleft.innerText;
-    lastcenter=softkeycenter.innerText;
-    lastright=softkeyright.innerText;
+    lastleft.push(softkeyleft.innerText);
+    lastcenter.push(softkeycenter.innerText);
+    lastright.push(softkeyright.innerText);
      
 }
 
@@ -386,9 +389,12 @@ function restoreMenuName()
     
     var softkeyright = document.getElementById("softkeyright")
 
-    softkeyleft.innerText = lastleft;
-    softkeycenter.innerText = lastcenter;
-    softkeyright.innerText =lastright;
+	var p = lastleft.pop();
+	if(p){
+		softkeyleft.innerText = p;
+		softkeycenter.innerText = lastcenter.pop();
+		softkeyright.innerText =lastright.pop(); 
+	}
      
 }
 
@@ -438,10 +444,8 @@ function softcenter()
     }
 }
 
-function exit(){
-    var menu = document.getElementById("menu");
-        menu.style.display="none";  
-        
+function exit(){ 
+    
     showDialog("确认","是否确认退出？",()=>{ 
         closeDialog();
 		window.close();

@@ -22,6 +22,11 @@ function handleKeydown(e) {
             break;
         case 'Enter':
             MIDP.sendKeyPress(-5);
+			var nokia_fileui_prompt=document.getElementById("nokia-fileui-prompt");
+			if(nokia_fileui_prompt.style.display=="block")
+			{
+				nokia_fileui_prompt.style.display=="none"
+			}
             break;
         case 'Backspace':
 
@@ -29,10 +34,21 @@ function handleKeydown(e) {
         case 'Q':
         case 'SoftLeft':
             MIDP.sendKeyPress(-6);
+			var backBtn = document.getElementById("header-ok-button");
+			if(backBtn.style.display=="block")
+			{
+				backBtn.click();
+			}
+			
             break;
         case 'E':
         case 'SoftRight':
             MIDP.sendKeyPress(-7);
+			var backBtn = document.getElementById("back-button");
+			if(backBtn.style.display=="block")
+			{
+				backBtn.click();
+			}
             break;
         case '0':
             MIDP.sendKeyPress(48);

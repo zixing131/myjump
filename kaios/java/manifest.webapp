@@ -1,16 +1,16 @@
 {
-  "name": "J2ME",
-  "description": "a J2ME-compatible virtual machine written in JavaScript",
+  "name": "J2ME-kaios",
+  "description": "一个javascript开发的j2me模拟器",
   "launch_path": "/index.html",
   "origin": "app://pluotsorbet.mozilla.org",
-  "version": "1659142869",
+  "version": "1.0.2",
   "icons": {
     "128": "/img/icon-128.png",
     "512": "/img/icon-512.png"
   },
   "developer": {
-    "name": "Mozilla Apps",
-    "url": "http://mozilla.org"
+    "name": "zixing",
+    "url": "https://github.com/zixing131"
   },
   "default_locale": "en",
   "orientation": ["portrait", "landscape"],
@@ -62,5 +62,7 @@
       }
     }
   },
-  "type": "web"
+  "type": "web",
+  "cursor": false,
+  "fullscreen": true
 }

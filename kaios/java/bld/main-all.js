@@ -1,7 +1,9 @@
 //var midiplayer;
 //var pAudio;
 //var pAudioList = {};
-
+var myflushAll=undefined;
+var mytitle="";
+var mycontent="";
 //1是pAudio
 //2是webaudio-tinysynth
 var midimode=2;
@@ -3419,7 +3421,12 @@ var fs = function() {
     syncStore();
   } 
   
-  window.addEventListener("pagehide", flushAll);
+  myflushAll = function()
+  {
+	  flushAll(); 
+  }
+  
+  window.addEventListener("οnbefοreunlοad", flushAll);
   function list(path) {
     path = normalizePath(path);
     if (DEBUG_FS) {
@@ -6270,7 +6277,7 @@ if (typeof module !== "undefined" && module.exports) {
         updateCanvas();
       }
     }
-    function isFullscreen(id) {
+    function isFullscreen(id) { 
       return 0 !== map.get(id);
     }
     return {set:set, isFullscreen:isFullscreen};
@@ -6285,7 +6292,7 @@ if (typeof module !== "undefined" && module.exports) {
     var sidebar = document.getElementById("sidebar");
     var header = document.getElementById("drawer").querySelector("header");
     var isFullscreen = FG.isFullscreen();
-    sidebar.style.display = header.style.display = isFullscreen ? "none" : "block";
+    //sidebar.style.display = header.style.display = isFullscreen ? "none" : "block";
     var headerHeight = isFullscreen ? 0 : header.offsetHeight;
     var newHeight = physicalScreenHeight - headerHeight;
     var newWidth = physicalScreenWidth;
@@ -9195,7 +9202,7 @@ function trans10to16(num10) { //十进制转十六进制
     textEditor.setSize(width, height);
     textEditor.setVisible(false);
     textEditor.setFont(self.font);
-    textEditor.setContent(J2ME.fromStringAddr(textAddr));
+    textEditor.setContent(mycontent);
     setTextEditorCaretPosition(textEditor, self, textEditor.getContentSize());
     textEditor.oninput(function(e) {
       wakeTextEditorThread(addr);
@@ -9222,6 +9229,7 @@ function trans10to16(num10) { //十进制转十六进制
   };
   Native["javax/microedition/lcdui/Display.setTitle.(Ljava/lang/String;)V"] = function(addr, titleAddr) {
     document.getElementById("display_title").textContent = J2ME.fromStringAddr(titleAddr);
+	mytitle = J2ME.fromStringAddr(titleAddr);
   };
   Native["com/nokia/mid/ui/CanvasItem.setSize.(II)V"] = function(addr, width, height) {
     NativeMap.get(addr).setSize(width, height);
@@ -9281,6 +9289,14 @@ function trans10to16(num10) { //十进制转十六进制
     }
     setTextEditorCaretPosition(textEditor, self, index);
   };
+  
+  Native["javax/microedition/lcdui/TextFieldLFImpl.getString0.(ILcom/sun/midp/lcdui/DynamicCharacterArray;)Z"] = function(addr,chars) {
+	  var methodInfo = J2ME.getClassInfo(chars).getMethodByNameString("insert", "(ILjava/lang/String;)I");
+	   
+	  methodInfo.invoke(chars,mycontent.length,mycont);
+    return true;
+  }; 
+  
   Native["com/nokia/mid/ui/TextEditor.getCaretPosition.()I"] = function(addr) {
     var self = getHandle(addr);
     var nativeTextEditor = NativeMap.get(addr);
@@ -9391,6 +9407,7 @@ function trans10to16(num10) { //十进制转十六进制
   };
   Native["javax/microedition/lcdui/DisplayableLFImpl.setTitle0.(ILjava/lang/String;)V"] = function(addr, nativeId, titleAddr) {
     document.getElementById("display_title").textContent = J2ME.fromStringAddr(titleAddr);
+	mytitle = J2ME.fromStringAddr(titleAddr);
   };
   Native["javax/microedition/lcdui/CanvasLFImpl.createNativeResource0.(Ljava/lang/String;Ljava/lang/String;)I"] = function(addr, titleAddr, tickerAddr) {
     console.warn("javax/microedition/lcdui/CanvasLFImpl.createNativeResource0.(Ljava/lang/String;Ljava/lang/String;)I not implemented");
@@ -9485,6 +9502,12 @@ function trans10to16(num10) { //十进制转十六进制
     if (numItemCommands !== 0) {
       console.error("NativeMenu.updateCommands: item commands not yet supported");
     }
+	
+	if (commandsAddr === J2ME.Constants.NULL) {
+	  return;
+	} 
+	 
+	
     var el = document.getElementById("displayable-" + curDisplayableId);
     if (!el) {
       document.getElementById("sidebar").querySelector("nav ul").innerHTML = "";
@@ -9529,7 +9552,9 @@ function trans10to16(num10) { //十进制转十六进制
         };
       });
     } else {
-      var menu = document.getElementById("sidebar").querySelector("nav ul");
+		
+      //var menu = document.getElementById("sidebar").querySelector("nav ul");
+	  var title="";
       var okCommand = null;
       var backCommand = null;
       var isSidebarEmpty = true;
@@ -9547,30 +9572,40 @@ function trans10to16(num10) { //十进制转十六进制
         var text = J2ME.fromStringAddr(command.shortLabel);
         var a = document.createElement("a");
         a.textContent = text;
+		title=text;
         li.appendChild(a);
         li.onclick = function(e) {
           e.preventDefault();
           window.location.hash = "";
           sendEvent(command);
         };
-        menu.appendChild(li);
+        //menu.appendChild(li);
         isSidebarEmpty = false;
       });
-      document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
-      var headerBtn = document.getElementById("header-ok-button");
-      if (okCommand) {
-        headerBtn.style.display = "block";
-        headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
-      } else {
-        headerBtn.style.display = "none";
-      }
-      var backBtn = document.getElementById("back-button");
-      if (backCommand) {
-        backBtn.style.display = "block";
-        backBtn.onclick = sendEvent.bind(backBtn, backCommand);
-      } else {
-        backBtn.style.display = "none";
-      }
+	   
+	   var name = prompt(mytitle, mytitle);
+	   if (name != null) { 
+		   mycontent=name;
+	   	sendEvent(okCommand)
+	   }else{
+	   	sendEvent(backCommand) 
+	   }
+	  
+   //    document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
+   //    var headerBtn = document.getElementById("header-ok-button");
+   //    if (okCommand) {
+   //      headerBtn.style.display = "block";
+   //      headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
+   //    } else {
+   //      headerBtn.style.display = "none";
+   //    }
+   //    var backBtn = document.getElementById("back-button");
+   //    if (backCommand) {
+   //      backBtn.style.display = "block";
+   //      backBtn.onclick = sendEvent.bind(backBtn, backCommand);
+   //    } else {
+   //      backBtn.style.display = "none";
+   //    }
     }
   };
 })(Native);
@@ -9888,6 +9923,7 @@ var TextEditorProvider = function() {
   }, deactivate:function() {
     this.textEditorElem.oninput = null;
   }, getContent:function() {
+	return mycontent;
     return this.content;
   }, setContent:function(content) {
     this.content = content;
@@ -11537,6 +11573,7 @@ function CloseWebPage() {
 
 function showExitScreen() {
   document.getElementById("exit-screen").style.display = "block";
+  myflushAll();
   window.location.href = "index.html";
   //CloseWebPage();
 }
@@ -13847,8 +13884,10 @@ if(config.localjar)
       switch(mffile.compression_method) {
         case 0:
           mfdata= mffile.compressed_data;
+		  break;
         case 8:
           mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+		  break;
       }
       mfdata=new TextDecoder('utf-8').decode(mfdata);
       console.log(mfdata);
