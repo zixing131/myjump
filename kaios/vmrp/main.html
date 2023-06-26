@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        * {
+            user-select: none;
+        }
+
+        body {
+            font-family: arial;
+            margin: 0;
+            padding: none;
+        }
+
+        #main {
+            margin: auto;
+            width: 100%;
+            max-width: 640px;
+        }
+
+        #main>div:first-child {
+            text-align: center;
+        }
+
+        #screen {
+            position: relative;
+        }
+
+        #canvas {
+            /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+            position: fixed;
+            display: block;
+            left: 0px;
+            top:0px;
+            width: 240px;
+            height: 320px;
+            border: 0px none;
+            padding: 0;
+            background-color: black;
+        }
+
+        #dialog {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            margin-left: -120px;
+            width: 240px;
+            height: 320px;
+            background-color: white;
+            visibility: hidden;
+        }
+
+        #dialog h1 {
+            text-align: center;
+            margin: 0;
+            font-size: 1em;
+            border: 1px solid black;
+            border-bottom-color: transparent;
+        }
+
+        #dialog textarea {
+            flex: 1;
+            width: 100%;
+            border: 1px solid black;
+            box-sizing: border-box;
+            overflow: auto;
+            outline: none;
+            resize: none;
+        }
+
+        #dialog .control {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #status {
+            height: 1em;
+            font-weight: bold;
+            color: rgb(120, 120, 120);
+        }
+
+        #progress {
+            height: 20px;
+            width: 300px;
+        }
+
+        #keymap {
+            max-width: 400px;
+            margin: 30px auto;
+        }
+
+        #keymap>div {
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        #keymap>div button {
+            line-height: 40px;
+            width: 40px;
+            margin: 5px;
+            outline: none;
+        }
+    </style>
+    <script src="./midi.js"></script>
+    
+</head>
+
+<body>
+    <div id="main">
+        <div>
+            <div id="status">Downloading...</div>
+            <progress value="0" max="100" id="progress"></progress>
+        </div>
+        <div id="screen">
+            <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+            <div id="dialog">
+                <h1>标题</h1>
+                <textarea></textarea>
+                <div class="control">
+                    <button id="dialogOk">确定</button>
+                    <span id="dialogInfo">0/0</span>
+                    <button id="dialogCancel">取消</button>
+                </div>
+            </div>
+        </div>
+        <div id="keymap">
+            <div>
+                <button id="key_sleft">=</button>
+                <button id="key_up">↑</button>
+                <button id="key_sright">=</button>
+                <button id="key_1">1</button>
+                <button id="key_2">2</button>
+                <button id="key_3">3</button>
+                <button id="key_star">*</button>
+            </div>
+            <div>
+                <button id="key_left">←</button>
+                <button id="key_ok"></button>
+                <button id="key_right">→</button>
+                <button id="key_4">4</button>
+                <button id="key_5">5</button>
+                <button id="key_6">6</button>
+                <button id="key_0">0</button>
+            </div>
+            <div>
+                <button style="visibility: hidden;"></button>
+                <button id="key_down">↓</button>
+                <button style="visibility: hidden;"></button>
+                <button id="key_7">7</button>
+                <button id="key_8">8</button>
+                <button id="key_9">9</button>
+                <button id="key_pound">#</button>
+            </div>
+        </div>
+        <p>
+            按键： 0-9对应0-9键 &nbsp; &nbsp; &nbsp; <span style="color: red;">网页无法发短信，所以不可能产生付费，放心使用</span><br> 减号对应 * 键<br>
+            等号对应 # 键<br> 上下左右或wsad控制方向<br> 回车键：确认/选择/ok<br> q键或左中括号：左功能键<br> e键或右中括号:
+            右功能键<br> tab键：接听键<br> esc键：挂机键<br> 导入文件后不会刷新列表，你可以先打开一个app然后退出app这样就能刷新到<br>
+            注意！模拟器所有文件都是在内存中，刷新网页将导致恢复初始状态<br> MIDI播放采用的是简易的 <a href="https://github.com/chenx/MidiPlayer">MidiPlayer</a> 效果很一般<br><br> 本软件的开源地址是：<a href="https://github.com/zengming00/vmrp"
+                target="_blank">https://github.com/zengming00/vmrp</a><br>本软件采用GNU General Public License v3.0开源协议
+        </p>
+        <div>
+            <input type="file" id="files" multiple style="display:none" />
+            <input type="button" id="import" value="导入文件" />
+        </div>
+    </div>
+  
+    <script src="./keymap.js"></script>
+    <script src="./fs.js"></script>
+    <script async src="./vmrp.js"></script>
+</body>
+
+</html>
