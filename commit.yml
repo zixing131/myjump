@@ -3,99 +3,24 @@ branches: {
   }
 fileChange:
   /kaios:
-    newFile: !uuid 'c0bbb586dd6f1f3ec6fdaec83f332204ef0a514d'
-    oldFile: !uuid 'c8688f050f3e1ee8d89f0878036a37c04ae08c8c'
-  /kaios/java:
-    newFile: !uuid '4b4df767709aaa5881288d53d5b8d055b5fbd0d3'
-    oldFile: !uuid '394467959bd5ce275ca1370e10c28d3cdcf01b31'
-  /kaios/java/bld:
-    newFile: !uuid '446fd8fc5c449c76ade69aa46643d885ddda6a43'
-    oldFile: !uuid '147d41285214aa55bc4c20a1917afdf4e6e0cb11'
-  /kaios/java/bld/main-all.js:
-    newFile: !uuid '97a62f0f6cb19fb6a79d372cff4c1c81e69de14f'
-    oldFile: !uuid 'd0d3c1ced707d2023118be6865ef39f3bb3aeaa9'
+    newFile: !uuid '6f4c9d8709f9360cce7138a9bc2dd84094966b03'
+    oldFile: !uuid 'c0bbb586dd6f1f3ec6fdaec83f332204ef0a514d'
   /kaios/vmrp:
-    newFile: !uuid '7a6a8b02b9d76abf30b54038d3fe68181907b0f5'
-    oldFile: null
-  /kaios/vmrp/fs:
-    newFile: !uuid '796ebf5efeb0b58c06a45533f514b4c1789fe4ad'
-    oldFile: null
+    newFile: !uuid 'aacf87e90d3b681a6a8abd666b175a827b2a25ed'
+    oldFile: !uuid '7a6a8b02b9d76abf30b54038d3fe68181907b0f5'
   /kaios/vmrp/fs.js:
-    newFile: !uuid '31cb4ce6e650794d5fc268610e88105fe7750417'
-    oldFile: null
-  /kaios/vmrp/fs/cfunction.ext:
-    newFile: !uuid '45743b11a8d9ba20c5cfdf053d93c72697835304'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad:
-    newFile: !uuid 'd6a8e2f261ab9337d0ac1cb00b8fbf04e2c76266'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/baipaofen.mrp:
-    newFile: !uuid '3aae34560fd9c8c275836d02ef140de53429372d'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/dsm_gm.mrp:
-    newFile: !uuid '2ea16cc0283c50d671bf558c1d698ad97b27c3f9'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/game1.mrp:
-    newFile: !uuid 'b849948a8f947aaa86e17c16b53ad036d7b5d5e7'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/mpc.mrp:
-    newFile: !uuid '5985b339c85aace1ac439ca8daf888f2ad1a7f2f'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/plugins:
-    newFile: !uuid '15f6e196191358320479172323e32127131b398a'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/plugins/flaengine.mrp:
-    newFile: !uuid 'a935d3cb20156a60507ae699aba22db708c42835'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/plugins/netpay.mrp:
-    newFile: !uuid 'e5f5cc37c4e2d773236b364caac5a227e56ab918'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/plugins/ose:
-    newFile: !uuid '9d7972de894ee71e4387b4ce1da2dff0462e070d'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/plugins/ose/brwcore.mrp:
-    newFile: !uuid '3593940a330d089cf12d6b523a552ac59fc38c1d'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/system:
-    newFile: !uuid '26826234dce70e5fa827030041aeadb3bf33d2f8'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/system/gb12.uc2:
-    newFile: !uuid 'c63808e65206c95382dea6fd202f30fc3faf444b'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/system/gb16.uc2:
-    newFile: !uuid 'c61b555fea99c489796ca4adf3036f4c7a882f77'
-    oldFile: null
-  /kaios/vmrp/fs/mythroad/ydqtwo.mrp:
-    newFile: !uuid 'c5ecef20d583f118f091d1453bb0dbad75d28058'
-    oldFile: null
-  /kaios/vmrp/img:
-    newFile: !uuid '7d73654cfebc19538de0b9de004c07b9a0c3b95a'
-    oldFile: null
-  /kaios/vmrp/img/icon-128.png:
-    newFile: !uuid '6a19dd77be74e940b6752a642a5c7624f268d719'
-    oldFile: null
-  /kaios/vmrp/img/icon-512.png:
-    newFile: !uuid '6a19dd77be74e940b6752a642a5c7624f268d719'
-    oldFile: null
+    newFile: !uuid '359b500475383f473c5a449dbeb770b728940a45'
+    oldFile: !uuid '31cb4ce6e650794d5fc268610e88105fe7750417'
   /kaios/vmrp/keymap.js:
-    newFile: !uuid '5abe1b42255b2e270c967dc34040d86017d7d98a'
-    oldFile: null
+    newFile: !uuid '7876f624ce2e94e37f0e652fd36d321def196329'
+    oldFile: !uuid '5abe1b42255b2e270c967dc34040d86017d7d98a'
   /kaios/vmrp/main.html:
-    newFile: !uuid 'd953709e1dfb6b361b292088c97ddc656dea82d1'
-    oldFile: null
+    newFile: !uuid '9103bc52b2d850ea223e152fe6d4b1ad3cfbac42'
+    oldFile: !uuid 'd953709e1dfb6b361b292088c97ddc656dea82d1'
   /kaios/vmrp/manifest.webapp:
-    newFile: !uuid '2859cf46087db37aee488ae86ded1db3c8fd0992'
-    oldFile: null
-  /kaios/vmrp/midi.js:
-    newFile: !uuid '672e3bce25839c3fdf6228a1250ffa76f3e9894c'
-    oldFile: null
-  /kaios/vmrp/vmrp.js:
-    newFile: !uuid 'b3b81b9f65fea3704b980b0fa71dfb6ba498a6fa'
-    oldFile: null
-  /kaios/vmrp/vmrp.js.mem:
-    newFile: !uuid 'a6213348c93caddbf6c6d0538b6961fa488ea371'
-    oldFile: null
-gitCommitId: !uuid '3aa81514d2ab069274189712d271fa3b0737b2d3'
+    newFile: !uuid 'b3ce36af70f0cb46e22bdc8aa8d6c482ec6e1d76'
+    oldFile: !uuid '2859cf46087db37aee488ae86ded1db3c8fd0992'
+gitCommitId: !uuid '29ceed052f3629c6d7c5427b5a8116f66810397d'
 renames: {
   }
-revisionId: 69
+revisionId: 70
