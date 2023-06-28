@@ -7,7 +7,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
             "/mythroad",
             "/mythroad/plugins",
             "/mythroad/plugins/ose",
-            "/mythroad/system",
+            "/mythroad/system"
         ];
 
         const files = [
@@ -21,7 +21,7 @@ var Module = typeof Module !== 'undefined' ? Module : {};
             "/mythroad/plugins/ose/brwcore.mrp", // 冒泡浏览器插件
             "/mythroad/system/gb12.uc2",  // 12号字体
             "/mythroad/system/gb16.uc2",  // 16号字体
-            "/cfunction.ext",  // mythroad层
+            "/cfunction.ext"  // mythroad层
         ];
 
 		

@@ -1,4 +1,4 @@
-
+try{
 function GetQueryString(name) {
     var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
     var r = window.location.search.substr(1).match(reg);
@@ -356,3 +356,8 @@ window.onerror = function (event) {
         if (text) Module.printErr('[post-exception status] ' + text);
     };
 }; 
+}
+catch(err)
+{
+	console.log("error:"+err)
+}

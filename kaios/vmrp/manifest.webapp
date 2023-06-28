@@ -13,42 +13,9 @@
     "url": "https://github.com/zixing131"
   },
   "default_locale": "en",
-  "orientation": ["portrait"],
-  "permissions": {
-    "geolocation": {
-       "description": "Required by location API."
-    },
-    "tcp-socket": {
-      "description": "Required to connect to internet"
-    },
-    "contacts": {
-      "description": "Required to manage contacts",
-      "access": "readonly"
-    },
-    "mobilenetwork": {
-      "description": "Required to verify your phone number"
-    },
-    "browser": {
-      "description": "Required to improve performance"
-    },
-    "audio-capture": {
-       "description": "Required to capture audio via getUserMedia"
-    },
-    "video-capture": {
-       "description": "Required to take pictures"
-    },
-    "desktop-notification": {
-      "description": "Required to display notifications"
-    },
-    "systemXHR": {
-       "description": "Required to download MIDlets"
-    },
-    "storage": {
-       "description": "Required to store files without limitations"
-    },
-    "alarms": {
-      "description": "Required to perform tasks while the app isn't running"
-    }
+  "permissions": { 
+    "systemXHR": {},
+    "storage": {}
   },
   "type": "web",
   "cursor": false,
