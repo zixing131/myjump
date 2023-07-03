@@ -6935,13 +6935,14 @@ if (typeof module !== "undefined" && module.exports) {
       FG.sendNativeEventToForeground({type:KEY_EVENT, intParam1:RELEASED, intParam2:keyCode, intParam3:0}, true);
     }
   }
+  /*
   window.addEventListener("keydown", function(ev) {
     sendKeyPress(ev.which);
   });
   window.addEventListener("keyup", function(ev) {
     sendKeyRelease(ev.which);
   });
- 
+ */
   
   //实现midi控制部分 MIDIControl
   Native["com/sun/mmedia/DirectMIDIControl.nShortMidiEvent.(IIII)V"] = function(addr,v1,v2,v3,v4) {

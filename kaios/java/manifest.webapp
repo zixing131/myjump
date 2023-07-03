@@ -3,7 +3,7 @@
   "description": "一个javascript开发的j2me模拟器",
   "launch_path": "/index.html",
   "origin": "app://pluotsorbet.mozilla.org",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "icons": {
     "128": "/img/icon-128.png",
     "512": "/img/icon-512.png"

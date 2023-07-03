@@ -1,4 +1,4 @@
-try{
+
 function GetQueryString(name) {
     var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
     var r = window.location.search.substr(1).match(reg);
@@ -6,6 +6,8 @@ function GetQueryString(name) {
     return null;
 }
 
+
+try{
 const dialog = document.getElementById('dialog');
 const dialogTextarea = document.querySelector('#dialog textarea');
 const dialogTitle = document.querySelector('#dialog h1');
@@ -29,17 +31,18 @@ inputFile.addEventListener('change', function (ev) {
         }
         reader.onload = function () {
             FS.writeFile('/mythroad/' + file.name, new Uint8Array(reader.result));
-            print("写入:'" + file.name + "'完成.");
+            console.log("写入:'" + file.name + "'完成.");
         };
         reader.readAsArrayBuffer(file);
     }
 });
 
-const midi = MidiPlayer();
+//const midi = MidiPlayer();
 const MR_SOUND_MIDI = 0;
 const MR_SOUND_WAV = 1;
 const MR_SOUND_MP3 = 2;
 function js_playSound(type, data, dataLen, loop) {
+	return 0;
     if (type == MR_SOUND_MIDI) {
         const buf = Module.HEAPU8.slice(data, data + dataLen);
         midi.play(buf.buffer, loop);
@@ -50,6 +53,7 @@ function js_playSound(type, data, dataLen, loop) {
 }
 
 function js_stopSound(type) {
+	return 0;
     if (type == MR_SOUND_MIDI) {
         midi.stop();
     } else {
@@ -95,6 +99,11 @@ const MR_DIALOG_CANCEL = 2; // 对话框有"返回"键
 const MR_EDIT_ANY = 0;
 const MR_EDIT_NUMERIC = 1;
 const MR_EDIT_PASSWORD = 2;
+
+
+
+
+
 
 function dialogRelease() {
     dialog.style.visibility = 'hidden';
@@ -290,7 +299,7 @@ touch_add("key_ok", 20);
 var statusElement = document.getElementById('status');
 var progressElement = document.getElementById('progress');
 function print(text) {
-    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+    //if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
     console.log(text);
 }
 function setTitle() {
@@ -356,8 +365,61 @@ window.onerror = function (event) {
         if (text) Module.printErr('[post-exception status] ' + text);
     };
 }; 
+
+
+
+
 }
 catch(err)
 {
 	console.log("error:"+err)
 }
+
+var Module = typeof Module !== 'undefined' ? Module : {};
+(function () {
+    function runWithFS() {
+        const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/fs';
+		console.log(window.location.pathname,path)
+        const dirs = [
+            "/mythroad",
+            "/mythroad/plugins",
+            "/mythroad/plugins/ose",
+            "/mythroad/system"
+        ];
+
+        const files = [
+            "/mythroad/dsm_gm.mrp", // 入口mrp
+            "/mythroad/mpc.mrp",
+			"/mythroad/baipaofen.mrp",//白跑分
+			"/mythroad/game1.mrp",//游戏
+            "/mythroad/ydqtwo.mrp", // 电子书阅读器
+            "/mythroad/plugins/netpay.mrp", // 支付模块
+            "/mythroad/plugins/flaengine.mrp", // flash播放器
+            "/mythroad/plugins/ose/brwcore.mrp", // 冒泡浏览器插件
+            "/mythroad/system/gb12.uc2",  // 12号字体
+            "/mythroad/system/gb16.uc2",  // 16号字体
+            "/cfunction.ext"  // mythroad层
+        ];
+
+		
+        for (var vindex =0;vindex< dirs.length;vindex++) {
+			var v=dirs[vindex];
+            FS.mkdir(v);
+        }
+
+        const dsm_gm = GetQueryString('f');
+       for (var vindex =0;vindex< files.length;vindex++) {
+			var v=files[vindex];
+            const parent = v.substring(0, v.lastIndexOf('/'));
+            const name = v.substring(v.lastIndexOf('/') + 1);
+            if (dsm_gm && name === 'dsm_gm.mrp') {
+                FS.createPreloadedFile(parent, name, dsm_gm, true, true);
+            } else {
+                FS.createPreloadedFile(parent, name, path + v, true, true);
+            }
+        }
+    }
+
+    if (!Module['preRun']) Module['preRun'] = [];
+    Module["preRun"].push(runWithFS);
+})();
