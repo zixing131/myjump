@@ -1,0 +1,23 @@
+{
+  "name": "super nes",
+  "description": "super nes",
+  "version": "1.2",
+  "launch_path": "/index.html",
+  "type": "privileged",
+  "origin": "app://kai.zixing.supernes",
+  "icons": {
+    "56": "/icon.png"
+  },
+  "developer": {
+    "name": "zixing",
+    "url": "http://www.github.com/openkaios"
+  },
+  "permissions": {
+    "attention": {},
+    "browser": {},
+    "mobilenetwork": {},
+	"systemXHR" : {}
+  },
+  "ime_default_softkey_bar": true,
+  "theme_color": "#00a1d6"
+}
