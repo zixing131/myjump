@@ -1,0 +1,1 @@
+js2me.createClass({});

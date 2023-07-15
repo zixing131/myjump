@@ -64,5 +64,5 @@
   },
   "type": "web",
   "cursor": false,
-  "fullscreen": true
+  "fullscreen": false
 }

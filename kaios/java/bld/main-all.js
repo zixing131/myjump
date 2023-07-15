@@ -1031,7 +1031,7 @@ Native["org/mozilla/internal/Sys.stopProfile.()V"] = function(addr) {
 };
 function load(file, responseType) {
   return new Promise(function(resolve, reject) {
-    var xhr = new XMLHttpRequest;
+    var xhr = new XMLHttpRequest({mozSystem:true});
     xhr.open("GET", file, true);
     xhr.responseType = responseType;
     xhr.onload = function() {
