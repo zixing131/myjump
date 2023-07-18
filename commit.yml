@@ -3,33 +3,15 @@ branches: {
   }
 fileChange:
   /kaios:
-    newFile: !uuid '55dd0b072b2343d611f144fdde06ec9aca65dd34'
-    oldFile: !uuid 'b0acac36753d26895b8bed367dde4278e2de14b8'
+    newFile: !uuid 'b31769977cb0ab7938d6cf32b31b344ccba2dda0'
+    oldFile: !uuid '55dd0b072b2343d611f144fdde06ec9aca65dd34'
   /kaios/java:
-    newFile: !uuid '159e5f5a429e30e56f381d5a052aa25e19bdf15b'
-    oldFile: !uuid '9edbb0bdf5dbc9075190ff6c5d3103108938f445'
-  /kaios/java/bld:
-    newFile: !uuid '00690f973ab64ee945a5bef3b5f304c552b83463'
-    oldFile: !uuid '1f53af49f78a1a90d918f9a9d317dbf0cdd097a4'
-  /kaios/java/bld/j2me.js:
-    newFile: !uuid '825a18590a8d67354d69c2ef342bb71ddec03549'
-    oldFile: !uuid '1684137685aa43a3abf9a6ff61766a27deecbba1'
-  /kaios/java/bld/main-all.js:
-    newFile: !uuid 'c3fcce702eb3616ea3b3b04ca1f8209e789df3cd'
-    oldFile: !uuid '9190aadd9a5fa2912d184b861b621078290622bb'
-  /kaios/java/main.html:
-    newFile: !uuid '46e3cca8c38e7ac2c2c458443ae647f28b1a7e16'
-    oldFile: !uuid '366443914cb82b110166906fd47733272f2fea8c'
-  /kaios/java/manifest.webapp:
-    newFile: !uuid '27198e6df635f9360738edae3dac83c0c4bf046e'
-    oldFile: !uuid '9727082b2d8fd04fdfdefe7913fbb208529ba1c0'
-  /kaios/java/style:
-    newFile: !uuid '05d6a5c079a203c4bc1414ac0ffcea012e0685de'
-    oldFile: !uuid 'e63a464972777eea16f609afad8d2e2e5100c177'
-  /kaios/java/style/main.css:
-    newFile: !uuid '9a19f1335a8c16ecb191c0b48a8ee31aaea48040'
-    oldFile: !uuid 'a440445124b76c3128bd149ab057f3e83df45fa3'
-gitCommitId: !uuid '3363d2445e77cba6390185b10ce8452343d35499'
+    newFile: !uuid '48a028f921b0dafab04c74a6e20597900468e3da'
+    oldFile: !uuid '159e5f5a429e30e56f381d5a052aa25e19bdf15b'
+  /kaios/java/updatelog.html:
+    newFile: !uuid 'b5f4f4b4a07d4ba05af38e039c8d06973fb636d2'
+    oldFile: !uuid '0170e9436a45ef6b23ca76329431114b93b408bf'
+gitCommitId: !uuid '99fe7bacfe9bf53ebdf482178a68a16798d7afa3'
 renames: {
   }
-revisionId: 75
+revisionId: 76
