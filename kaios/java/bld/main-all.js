@@ -9291,10 +9291,22 @@ function trans10to16(num10) { //十进制转十六进制
     setTextEditorCaretPosition(textEditor, self, index);
   };
   
-  Native["javax/microedition/lcdui/TextFieldLFImpl.getString0.(ILcom/sun/midp/lcdui/DynamicCharacterArray;)Z"] = function(addr,chars) {
-	  var methodInfo = J2ME.getClassInfo(chars).getMethodByNameString("insert", "(ILjava/lang/String;)I");
-	   
-	  methodInfo.invoke(chars,mycontent.length,mycont);
+  Native["javax/microedition/lcdui/TextFieldLFImpl.getString0.(ILcom/sun/midp/lcdui/DynamicCharacterArray;)Z"] = function(addr,chars,buffer) {
+    //var textEditor = J2ME.getHandle(buffer);
+	  var methodInfo = CLASSES.getClass("com/sun/midp/lcdui/DynamicCharacterArray").getMethodByNameString("set", "([CII)V");
+    var met = J2ME.getLinkedMethod(methodInfo)
+
+    //mycontent="123123123"
+    var chararray = J2ME.newCharArray(mycontent.length);
+
+    J2ME.setUncollectable(chararray);
+    var array = J2ME.getArrayFromAddr(chararray);
+    for (var n = 0; n < mycontent.length; ++n) {
+        array[n] = mycontent.charCodeAt(n);
+    }  
+    J2ME.unsetUncollectable(chararray);
+ 
+	  met(buffer,chararray,0,mycontent.length);
     return true;
   }; 
   
@@ -9490,6 +9502,75 @@ function trans10to16(num10) { //十进制转十六进制
   Native["javax/microedition/lcdui/ItemLFImpl.hide0.(I)V"] = function(addr, nativeId) {
     console.warn("javax/microedition/lcdui/ItemLFImpl.hide0.(I)V not implemented");
   };
+
+
+  Native["javax/microedition/lcdui/ChoiceGroupLFImpl.getSelectedIndex0.(I)I"] = function(addr) {
+    return 0;
+  };
+
+  
+  Native["javax/microedition/lcdui/ChoiceGroupLFImpl.createNativeResource0.(ILjava/lang/String;III[Ljavax/microedition/lcdui/ChoiceGroup$CGElement;II)I"] = function(addr, name,A2,A3,A4,A6,cGElementArr,selectedIndex,A7) {
+    //return nextMidpDisplayableId++;
+    
+    console.log(name,J2ME.fromStringAddr(name),selectedIndex)
+
+    var commands = J2ME.getArrayFromAddr(cGElementArr);
+    var validCommands = [];
+    for (var i = 0;i < commands.length;i++) {
+      if (commands[i]) {
+        validCommands.push(getHandle(commands[i]));
+      }
+    }
+    
+    var menu = document.getElementById("sidebar").querySelector("nav ul");
+    var okCommand = null;
+    var backCommand = null;
+    var isSidebarEmpty = true;
+    validCommands.forEach(function(command) { 
+
+      var field =  command.classInfo.fields[0]
+      var filedstring = i32[command._address + field.byteOffset >> 2];
+      var text = J2ME.fromStringAddr(filedstring);
+      console.log(text);
+      var li = document.createElement("li"); 
+      var a = document.createElement("a");
+      a.textContent = text;
+      li.appendChild(a);
+      li.onclick = function(e) {
+        e.preventDefault();
+        window.location.hash = "";
+        sendEvent(command);
+      };
+      menu.appendChild(li);
+      isSidebarEmpty = false;
+    });
+    var header = document.getElementById("drawer").querySelector("header");
+    header.style.display = "block";
+    document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
+    var headerBtn = document.getElementById("header-ok-button");
+    if (okCommand) {
+      headerBtn.style.display = "block";
+      headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
+    } else {
+      headerBtn.style.display = "none";
+    }
+    var backBtn = document.getElementById("back-button");
+    if (backCommand) {
+      backBtn.style.display = "block";
+      backBtn.onclick = sendEvent.bind(backBtn, backCommand);
+    } else {
+      backBtn.style.display = "none";
+    }
+
+    return nextMidpDisplayableId++;
+    //console.warn("javax/microedition/lcdui/ChoiceGroupLFImpl.createNativeResource0.(ILjava/lang/String;III[Ljavax/microedition/lcdui/ChoiceGroup$CGElement;II)I not implemented");
+  };
+
+  Native["javax/microedition/lcdui/ChoiceGroupLFImpl.insert0(IILjava/lang/String;Ljavax/microedition/lcdui/ImageData;Z)V"] = function(str,imgdata,b,a){
+    var name = J2ME.fromStringAddr(str);
+    console.log(name)
+  };
+  
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getMinimumWidth0.(I)I", 10);
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getMinimumHeight0.(I)I", 10);
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getPreferredWidth0.(II)I", 10);
@@ -9500,15 +9581,10 @@ function trans10to16(num10) { //十进制转十六进制
   var OK = 4;
   var STOP = 6;
   Native["javax/microedition/lcdui/NativeMenu.updateCommands.([Ljavax/microedition/lcdui/Command;I[Ljavax/microedition/lcdui/Command;I)V"] = function(addr, itemCommandsAddr, numItemCommands, commandsAddr, numCommands) {
+    
     if (numItemCommands !== 0) {
       console.error("NativeMenu.updateCommands: item commands not yet supported");
     }
-	
-	if (commandsAddr === J2ME.Constants.NULL) {
-	  return;
-	} 
-	 
-	
     var el = document.getElementById("displayable-" + curDisplayableId);
     if (!el) {
       document.getElementById("sidebar").querySelector("nav ul").innerHTML = "";
@@ -9553,9 +9629,7 @@ function trans10to16(num10) { //十进制转十六进制
         };
       });
     } else {
-		
-      //var menu = document.getElementById("sidebar").querySelector("nav ul");
-	  var title="";
+      var menu = document.getElementById("sidebar").querySelector("nav ul");
       var okCommand = null;
       var backCommand = null;
       var isSidebarEmpty = true;
@@ -9573,41 +9647,40 @@ function trans10to16(num10) { //十进制转十六进制
         var text = J2ME.fromStringAddr(command.shortLabel);
         var a = document.createElement("a");
         a.textContent = text;
-		title=text;
         li.appendChild(a);
         li.onclick = function(e) {
           e.preventDefault();
           window.location.hash = "";
           sendEvent(command);
         };
-        //menu.appendChild(li);
+        menu.appendChild(li);
         isSidebarEmpty = false;
       });
-	   
-	   var name = prompt(mytitle, mytitle);
-	   if (name != null) { 
-		   mycontent=name;
-	   	sendEvent(okCommand)
-	   }else{
-	   	sendEvent(backCommand) 
-	   }
-	  
-   //    document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
-   //    var headerBtn = document.getElementById("header-ok-button");
-   //    if (okCommand) {
-   //      headerBtn.style.display = "block";
-   //      headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
-   //    } else {
-   //      headerBtn.style.display = "none";
-   //    }
-   //    var backBtn = document.getElementById("back-button");
-   //    if (backCommand) {
-   //      backBtn.style.display = "block";
-   //      backBtn.onclick = sendEvent.bind(backBtn, backCommand);
-   //    } else {
-   //      backBtn.style.display = "none";
-   //    }
-    }
+
+      var name = prompt(mytitle, mytitle);
+      if (name != null) { 
+        mycontent=name;
+        sendEvent(okCommand)
+      }else{
+        sendEvent(backCommand) 
+      } 
+    //   document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
+    //   var headerBtn = document.getElementById("header-ok-button");
+    //   if (okCommand) {
+    //     headerBtn.style.display = "block";
+    //     headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
+    //   } else {
+    //     headerBtn.style.display = "none";
+    //   }
+    //   var backBtn = document.getElementById("back-button");
+    //   if (backCommand) {
+    //     backBtn.style.display = "block";
+    //     backBtn.onclick = sendEvent.bind(backBtn, backCommand);
+    //   } else {
+    //     backBtn.style.display = "none";
+    //   }
+   }
+
   };
 })(Native);
 var TextEditorProvider = function() {
@@ -9897,7 +9970,7 @@ var TextEditorProvider = function() {
   }, getContentSize:function() {
     return util.toCodePointArray(this.content).length;
   }, getContentHeight:function() {
-    var div = document.getElementById("hidden-textarea-editor");
+    var div = document.getElementById("textarea-editor");
     div.style.setProperty("width", this.getWidth() + "px");
     div.style.setProperty("font", this.fontContext.font);
     div.innerHTML = this.html;
@@ -14028,11 +14101,11 @@ if (config.downloadJAD) {
   }));
 } else {
   if (config.jad) {
-    loadingMIDletPromises.push(load(config.jad, "text").then(processJAD));
+    //loadingMIDletPromises.push(load(config.jad, "text").then(processJAD));
   }
 }
 if (config.jad || config.downloadJAD) {
-  Promise.all(loadingMIDletPromises).then(backgroundCheck);
+  //Promise.all(loadingMIDletPromises).then(backgroundCheck);
 }
 var loadingFGPromises = [emoji.loadData()];
 if (jars.indexOf("tests/tests.jar") !== -1) {

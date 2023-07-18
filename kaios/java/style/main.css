@@ -629,9 +629,6 @@ div.text-editor {
   top: 0;
 }
 
-#hidden-textarea-editor {
-  visibility: hidden;
-}
 
 #counters {
   padding: 2px;

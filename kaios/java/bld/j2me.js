@@ -9732,6 +9732,10 @@ var J2ME;
             var methodInfo = classInfo.getMethodByNameString("throwException", "(Ljava/lang/Exception;)V");
             thread.pushMarkerFrame(J2ME.FrameType.Interrupt);
             thread.pushFrame(methodInfo);
+            if(!exception)
+            {
+                return;
+            }
             thread.frame.setParameter(8 /* Reference */, 0, exception._address);
             cleanup && cleanup();
             J2ME.Scheduler.enqueue(ctx);
