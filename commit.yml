@@ -3,15 +3,15 @@ branches: {
   }
 fileChange:
   /kaios:
-    newFile: !uuid 'b31769977cb0ab7938d6cf32b31b344ccba2dda0'
-    oldFile: !uuid '55dd0b072b2343d611f144fdde06ec9aca65dd34'
+    newFile: !uuid 'a1f3bc3d5faf3a6e2adc06a371da4d4136f456c1'
+    oldFile: !uuid 'b31769977cb0ab7938d6cf32b31b344ccba2dda0'
   /kaios/java:
-    newFile: !uuid '48a028f921b0dafab04c74a6e20597900468e3da'
-    oldFile: !uuid '159e5f5a429e30e56f381d5a052aa25e19bdf15b'
+    newFile: !uuid '0a5da9891dd6b501959a5ba002995167cec72c19'
+    oldFile: !uuid '48a028f921b0dafab04c74a6e20597900468e3da'
   /kaios/java/updatelog.html:
-    newFile: !uuid 'b5f4f4b4a07d4ba05af38e039c8d06973fb636d2'
-    oldFile: !uuid '0170e9436a45ef6b23ca76329431114b93b408bf'
-gitCommitId: !uuid '99fe7bacfe9bf53ebdf482178a68a16798d7afa3'
+    newFile: !uuid '1856ca91381151a80235a54e00e548e8c2de3f87'
+    oldFile: !uuid 'b5f4f4b4a07d4ba05af38e039c8d06973fb636d2'
+gitCommitId: !uuid 'e238740b084af574f636c7c71e27089ca3ce676f'
 renames: {
   }
-revisionId: 76
+revisionId: 77
