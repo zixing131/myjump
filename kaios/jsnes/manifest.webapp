@@ -1,0 +1,23 @@
+{
+  "name": "超级玛丽",
+  "description": "超级玛丽 KaiOS 版",
+  "version": "1.1",
+  "launch_path": "/index.html",
+  "type": "privileged",
+  "origin": "app://kai.zixing.jsnes",
+  "icons": {
+    "56": "/icon.png"
+  },
+  "developer": {
+    "name": "zixing",
+    "url": "http://www.github.com/openkaios"
+  },
+  "permissions": {
+    "attention": {},
+    "browser": {},
+    "mobilenetwork": {},
+	"systemXHR" : {}
+  },
+  "ime_default_softkey_bar": true,
+  "theme_color": "#00a1d6"
+}

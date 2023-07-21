@@ -1,0 +1,10 @@
+body{
+	background:black ;
+}
+.nes-screen{
+	position:fixed;
+	width:240px;
+	height: 320px;
+	left: 0;
+	top: 30px;
+}
