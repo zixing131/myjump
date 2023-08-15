@@ -3544,7 +3544,7 @@ var J2ME;
     J2ME.Thread = Thread;
     function prepareInterpretedMethod(methodInfo) {
         var method = function fastInterpreterFrameAdapter() {
-            J2ME.runtimeCounter && J2ME.runtimeCounter.count("fastInterpreterFrameAdapter");
+            J2ME.runtimeCounter && J2ME.runtimeCounter.count("fastInterpreterFrameAdapter"); 
             var calleeStats = methodInfo.stats;
             calleeStats.interpreterCallCount++;
             if (config.forceRuntimeCompilation ||
@@ -3654,6 +3654,10 @@ var J2ME;
         }
         release || assert(frame.type === FrameType.Interpreter, "Must begin with interpreter frame.");
         var mi = frame.methodInfo;
+        if(!mi)
+        {
+            console.log(frame);
+        } 
         release || assert(mi, "Must have method info.");
         mi.stats.interpreterCallCount++;
         if (config.forceRuntimeCompilation || (mi.state === 0 /* Cold */ &&
@@ -9728,6 +9732,10 @@ var J2ME;
             var methodInfo = classInfo.getMethodByNameString("throwException", "(Ljava/lang/Exception;)V");
             thread.pushMarkerFrame(J2ME.FrameType.Interrupt);
             thread.pushFrame(methodInfo);
+            if(!exception)
+            {
+                return;
+            }
             thread.frame.setParameter(8 /* Reference */, 0, exception._address);
             cleanup && cleanup();
             J2ME.Scheduler.enqueue(ctx);
