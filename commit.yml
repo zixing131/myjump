@@ -2,73 +2,19 @@
 branches: {
   }
 fileChange:
-  /kaios:
-    newFile: !uuid '5a5cffbdb445b95d54ce952a0df02ab694d2a584'
-    oldFile: !uuid 'a1f3bc3d5faf3a6e2adc06a371da4d4136f456c1'
-  /kaios/jsnes:
-    newFile: !uuid 'ce9607c8f54d2f88b4191f27eec42f943ce98ec6'
-    oldFile: null
-  /kaios/jsnes/SuperMario.nes:
-    newFile: !uuid '878ef21b5976a87c2fc19e780381816cbc769a65'
-    oldFile: null
-  /kaios/jsnes/css:
-    newFile: !uuid '786476506f15924328cb31dc6a6122d7d961837b'
-    oldFile: null
-  /kaios/jsnes/css/jsnes.css:
-    newFile: !uuid '3b8cdebed30be8b8c6fa09f390f85514cf43417b'
-    oldFile: null
-  /kaios/jsnes/icon.png:
-    newFile: !uuid 'd36b64663ea77745b0a08eedb18caafeb1ca70c7'
-    oldFile: null
-  /kaios/jsnes/index.html:
-    newFile: !uuid '5f8b02485c835e2a8bd1560fd3c43268b18861c2'
-    oldFile: null
-  /kaios/jsnes/lib:
-    newFile: !uuid 'e4daddaa8494d10001a572f7cee0638bfe13d20b'
-    oldFile: null
-  /kaios/jsnes/lib/dynamicaudio-min.js:
-    newFile: !uuid 'fa3d907727a16eb08a4b3fb13bb8095bdaa5ee28'
-    oldFile: null
-  /kaios/jsnes/lib/jquery-1.4.2.min.js:
-    newFile: !uuid 'c6f1c2fcdabaaa8520dfb1018ca5d953b779b022'
-    oldFile: null
-  /kaios/jsnes/manifest.webapp:
-    newFile: !uuid '2badad1333987c0bfd35cc634f3f531e3761b119'
-    oldFile: null
-  /kaios/jsnes/source:
-    newFile: !uuid 'ca58c3d3ce20348cdcbbaff3285e9013fe907e00'
-    oldFile: null
-  /kaios/jsnes/source/cpu.js:
-    newFile: !uuid '4658e6b24eb997e4ab6eef683529490d56bbb0bf'
-    oldFile: null
-  /kaios/jsnes/source/index.js:
-    newFile: !uuid '590425ea38637ce5f762df4fb52dd62eecbccedc'
-    oldFile: null
-  /kaios/jsnes/source/keyboard.js:
-    newFile: !uuid '4dfac1096de102d89f992047d641df8a59153f0c'
-    oldFile: null
-  /kaios/jsnes/source/mappers.js:
-    newFile: !uuid '35f2114ee345df5694311ef625c71d79136dc5b4'
-    oldFile: null
-  /kaios/jsnes/source/nes.js:
-    newFile: !uuid '81bc5d2091cf7c91dbc041d09e56d9ce85cb7287'
-    oldFile: null
-  /kaios/jsnes/source/papu.js:
-    newFile: !uuid '7b9efff93df597997cb676be8899f62807cd68f9'
-    oldFile: null
-  /kaios/jsnes/source/ppu.js:
-    newFile: !uuid 'e7c93fa5194ec9693a6310892427edbcee76ed35'
-    oldFile: null
-  /kaios/jsnes/source/rom.js:
-    newFile: !uuid 'f4975ab8c05f246175b609685d941eef9ad49e84'
-    oldFile: null
-  /kaios/jsnes/source/ui.js:
-    newFile: !uuid '345711aa76f575954b567f21fde3ab636e9f4ebd'
-    oldFile: null
-  /kaios/jsnes/source/utils.js:
-    newFile: !uuid '58dcce10b16eccd425f4cd9f112104a1aea2aa74'
-    oldFile: null
-gitCommitId: !uuid '2e2e0de6d5474e4d1dfe537415871e6e1fecdd8c'
+  /java:
+    newFile: !uuid 'eb21739bfa1ad7cb58cae0f29316ca4d88a8632b'
+    oldFile: !uuid '5616297becb7785c61edd808505e7fb2e059e948'
+  /java/bld:
+    newFile: !uuid '0d1c5d724f6687f3c055d17ee45610c0ccc785b3'
+    oldFile: !uuid 'c0dc7fc17490af44bd1fecfeaf8d7de41a686dc7'
+  /java/bld/j2me.js:
+    newFile: !uuid '825a18590a8d67354d69c2ef342bb71ddec03549'
+    oldFile: !uuid 'a2f5b959087e6d538f2c8504e678e931ccc5cecd'
+  /java/bld/main-all.js:
+    newFile: !uuid 'c3fcce702eb3616ea3b3b04ca1f8209e789df3cd'
+    oldFile: !uuid 'bbef7e0c1b4992d47c02710f3e6041a41fe452bd'
+gitCommitId: !uuid 'f6340c0a46b867bf0d322b66493d9617eae1183e'
 renames: {
   }
-revisionId: 78
+revisionId: 79
