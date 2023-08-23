@@ -7,7 +7,7 @@ var mycontent="";
 //1是pAudio
 //2是webaudio-tinysynth
 //3是Audio标签
-var midimode=3;
+var midimode=2;
 window.AudioContext = window.AudioContext || window.webkitAudioContext
 if(!window.AudioContext)
 {
