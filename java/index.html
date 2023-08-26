@@ -274,12 +274,12 @@
 				</section>
 			</div>
 		</div>
-		
-	
+
+
 
 		<input id="jarFileupload" type="file" style="visibility: hidden;display:none;" />
 		<h3>游戏列表：</h3>
-		<div style="display:flex;flex-wrap: wrap; margin: 10px 0px;float:left">
+		<div style="display:flex;flex-wrap: wrap; margin: 10px 0px;float:left;align-items: center;">
 
 			<script type="text/javascript">
 				function refreshGameList() {
@@ -563,11 +563,11 @@
 				涂鸦跳跃
 			</a>
 		</div>
-	
+
 		<!-- <label><input id="mycheck1" name="enablekey" type="checkbox"  checked value="" />启用按键</label> -->
 		<!-- <label><input id="mycheck2" name="enablexy" type="checkbox" value="" />自适应缩放</label>  -->
 		<div style="margin-top: 100px; clear: both;">
-			 
+
 			<select id="canvasSize" class="filter-box">
 				<option value="size-240x320">显示尺寸: 240x320</option>
 				<option value="size-320x240">显示尺寸: 320x240</option>
@@ -592,8 +592,8 @@
 			</select>
 			</br>
 			</br>
-			<select id="localjars">
-
+			<select id="localjars" class="filter-box">
+					<option value="" selected>无项目</option>
 			</select>
 			<button class="btn" onclick="openLocalJar()">
 				选择本地jar
@@ -617,124 +617,343 @@
 		</div>
 
 		<style>
-			body {
-				margin: 0 auto;
-				padding-left:20% ;
-				padding-right: 20%;
-				padding-top: 50px;
-			}
+			@media screen and (min-width: 1201px) {
+				body {
+					margin: 0 auto;
+					padding-left: 20%;
+					padding-right: 20%;
+					padding-top: 50px;
+				}
 
-			.filter-box {
-				width: 240px;
-				height: 34px;
-				background-color: #ffffff;
-				border: solid 1px #dcdcdc;
-				font-family: Roboto;
-				font-size: 12px;
-				font-weight: normal;
-				font-style: normal;
-				font-stretch: normal;
-				letter-spacing: normal;
-				text-align: left;
-				color: #3d3d3d;
-				padding-left: 10px;
-				border-color: #dcdcdc;
-				-webkit-appearance: none;
-			}
+				.filter-box {
+					width: 240px;
+					height: 34px;
+					background-color: #ffffff;
+					border: solid 1px #dcdcdc;
+					font-family: Roboto;
+					font-size: 12px;
+					font-weight: normal;
+					font-style: normal;
+					font-stretch: normal;
+					letter-spacing: normal;
+					text-align: left;
+					color: #3d3d3d;
+					padding-left: 10px;
+					border-color: #dcdcdc;
+					-webkit-appearance: none;
+				}
 
-			select {
-				background-image: url(backdropdown.png);
-				background-position: 222px 9px;
-				font-family: Roboto;
-				font-size: 12px;
-				color: #3d3d3d;
-				background-repeat: no-repeat;
-			}
+				select {
+					background-image: url(backdropdown.png);
+					background-position: 222px 9px;
+					font-family: Roboto;
+					font-size: 12px;
+					color: #3d3d3d;
+					background-repeat: no-repeat;
+				}
 
-			.game {
-				height: 100px;
-				width: 80px;
-				text-align: center;
-				width: 120px;
-				height: 100px;
-				border: 1px solid silver;
-				margin-right: 10px;
-				padding: 10px;
-				border-radius: 5px;
-				text-align: center;
-				margin-top: 10px;
-			}
-			.btn {
-			  background: #eb94d0;
-			  /* 创建渐变 */
-			  background-image: -webkit-linear-gradient(top, #eb94d0, #2079b0);
-			  background-image: -moz-linear-gradient(top, #eb94d0, #2079b0);
-			  background-image: -ms-linear-gradient(top, #eb94d0, #2079b0);
-			  background-image: -o-linear-gradient(top, #eb94d0, #2079b0);
-			  background-image: linear-gradient(to bottom, #eb94d0, #2079b0);
-			  /* 给按钮添加圆角 */
-			  -webkit-border-radius: 8;
-			  -moz-border-radius: 8;
-			  border-radius: 8px;
-			  text-shadow: 3px 2px 1px #9daef5;
-			  -webkit-box-shadow: 6px 5px 24px #666666;
-			  -moz-box-shadow: 6px 5px 24px #666666;
-			  box-shadow: 6px 5px 24px #666666;
-			  font-family: Arial;
-			  color: #fafafa;
-			  font-size: 9px;
-			  padding: 10px;
-			  text-decoration: none;
-			  margin-right: 20px;
-			}
-			/* 悬停样式 */
-			.btn:hover {
-			  background: #2079b0;
-			  background-image: -webkit-linear-gradient(top, #2079b0, #eb94d0);
-			  background-image: -moz-linear-gradient(top, #2079b0, #eb94d0);
-			  background-image: -ms-linear-gradient(top, #2079b0, #eb94d0);
-			  background-image: -o-linear-gradient(top, #2079b0, #eb94d0);
-			  background-image: linear-gradient(to bottom, #2079b0, #eb94d0);
-			  text-decoration: none;
-			}
-			  .blink{ 
-			    	font-size: 46px; 
-			    	color:#4cc134; 
-			    	margin: 10px;
-			    	animation: changeshadow 1s  ease-in  infinite ;
-			    	/* 其它浏览器兼容性前缀 */
-				    -webkit-animation: changeshadow 1s linear infinite;
-				    -moz-animation: changeshadow 1s linear infinite;
-				    -ms-animation: changeshadow 1s linear infinite;
-				    -o-animation: changeshadow 1s linear infinite;
-			    }  
-			    @keyframes changeshadow {  
-			        0%{ text-shadow: 0 0 4px #4cc134}  
-			        50%{ text-shadow: 0 0 40px #4cc134}  
-			        100%{ text-shadow: 0 0 4px #4cc134}  
-			    }
-			    /* 添加兼容性前缀 */
+				.game {
+					height: 100px;
+					width: 80px;
+					text-align: center;
+					width: 120px;
+					height: 100px;
+					border: 1px solid silver;
+					margin-right: 10px;
+					padding: 10px;
+					border-radius: 5px;
+					text-align: center;
+					margin-top: 10px;
+				}
+
+				.btn {
+					background: #eb94d0;
+					/* 创建渐变 */
+					background-image: -webkit-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: -moz-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: -ms-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: -o-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: linear-gradient(to bottom, #eb94d0, #2079b0);
+					/* 给按钮添加圆角 */
+					-webkit-border-radius: 8;
+					-moz-border-radius: 8;
+					border-radius: 8px;
+					text-shadow: 3px 2px 1px #9daef5;
+					-webkit-box-shadow: 6px 5px 24px #666666;
+					-moz-box-shadow: 6px 5px 24px #666666;
+					box-shadow: 6px 5px 24px #666666;
+					font-family: Arial;
+					color: #fafafa;
+					font-size: 9px;
+					padding: 10px;
+					text-decoration: none;
+					margin-right: 5px;
+				}
+
+				/* 悬停样式 */
+				.btn:hover {
+					background: #2079b0;
+					background-image: -webkit-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: -moz-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: -ms-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: -o-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: linear-gradient(to bottom, #2079b0, #eb94d0);
+					text-decoration: none;
+				}
+
+				.blink {
+					font-size: 46px;
+					color: #4cc134;
+					margin: 10px;
+					animation: changeshadow 1s ease-in infinite;
+					/* 其它浏览器兼容性前缀 */
+					-webkit-animation: changeshadow 1s linear infinite;
+					-moz-animation: changeshadow 1s linear infinite;
+					-ms-animation: changeshadow 1s linear infinite;
+					-o-animation: changeshadow 1s linear infinite;
+				}
+
+				@keyframes changeshadow {
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				}
+
+				/* 添加兼容性前缀 */
 				@-webkit-keyframes changeshadow {
-				  0%{ text-shadow: 0 0 4px #4cc134}  
-			          50%{ text-shadow: 0 0 40px #4cc134}  
-			          100%{ text-shadow: 0 0 4px #4cc134}  
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
 				}
+
 				@-moz-keyframes changeshadow {
-				    0%{ text-shadow: 0 0 4px #4cc134}  
-			            50%{ text-shadow: 0 0 40px #4cc134}  
-			            100%{ text-shadow: 0 0 4px #4cc134}  
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
 				}
+
 				@-ms-keyframes changeshadow {
-				    0%{ text-shadow: 0 0 4px #4cc134}  
-			            50%{ text-shadow: 0 0 40px #4cc134}  
-			            100%{ text-shadow: 0 0 4px #4cc134}  
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
 				}
+
 				@-o-keyframes changeshadow {
-				    0%{ text-shadow: 0 0 4px #4cc134}  
-			            50%{ text-shadow: 0 0 40px #4cc134}  
-			            100%{ text-shadow: 0 0 4px #4cc134}  
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
 				}
-			 
+			}
+		
+			@media screen and (min-width: 300px) and (max-width: 1200px) {
+				body {
+					margin: 0 auto;
+					padding-left: 10%;
+					padding-right: 10%;
+					padding-top: 10px;
+				}
+				
+				.filter-box {
+					width: 100%;
+					height: 34px;
+					background-color: #ffffff;
+					border: solid 1px #dcdcdc;
+					font-family: Roboto;
+					font-size: 12px;
+					font-weight: normal;
+					font-style: normal;
+					font-stretch: normal;
+					letter-spacing: normal;
+					text-align: left;
+					color: #3d3d3d;
+					padding-left: 10px;
+					border-color: #dcdcdc;
+					margin-top: 5px;
+					-webkit-appearance: none;
+				}
+				
+				select {
+					background-image: url(backdropdown.png);
+					background-position: 222px 9px;
+					font-family: Roboto;
+					font-size: 12px;
+					color: #3d3d3d;
+					background-repeat: no-repeat;
+				}
+				
+				.game {
+					height: 80px;
+					width:90px;
+					text-align: center;
+					border: 1px solid silver;
+					margin-right: 15px;
+					padding: 10px;
+					border-radius: 5px;
+					text-align: center;
+					margin-top: 10px;
+					font-size: 9px;
+					padding-bottom: 10px;
+				}
+				
+				.btn {
+					margin-top: 5px;
+					background: #eb94d0;
+					/* 创建渐变 */
+					background-image: -webkit-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: -moz-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: -ms-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: -o-linear-gradient(top, #eb94d0, #2079b0);
+					background-image: linear-gradient(to bottom, #eb94d0, #2079b0);
+					/* 给按钮添加圆角 */
+					-webkit-border-radius: 8;
+					-moz-border-radius: 8;
+					border-radius: 8px;
+					text-shadow: 3px 2px 1px #9daef5;
+					-webkit-box-shadow: 6px 5px 24px #666666;
+					-moz-box-shadow: 6px 5px 24px #666666;
+					box-shadow: 6px 5px 24px #666666;
+					font-family: Arial;
+					color: #fafafa;
+					font-size: 9px;
+					padding: 10px;
+					text-decoration: none;
+					margin-right: 5px;
+				}
+				
+				/* 悬停样式 */
+				.btn:hover {
+					background: #2079b0;
+					background-image: -webkit-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: -moz-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: -ms-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: -o-linear-gradient(top, #2079b0, #eb94d0);
+					background-image: linear-gradient(to bottom, #2079b0, #eb94d0);
+					text-decoration: none;
+				}
+				
+				.blink {
+					font-size: 46px;
+					color: #4cc134;
+					margin: 10px;
+					animation: changeshadow 1s ease-in infinite;
+					/* 其它浏览器兼容性前缀 */
+					-webkit-animation: changeshadow 1s linear infinite;
+					-moz-animation: changeshadow 1s linear infinite;
+					-ms-animation: changeshadow 1s linear infinite;
+					-o-animation: changeshadow 1s linear infinite;
+				}
+				
+				@keyframes changeshadow {
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+				
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				}
+				
+				/* 添加兼容性前缀 */
+				@-webkit-keyframes changeshadow {
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+				
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				}
+				
+				@-moz-keyframes changeshadow {
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+				
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				}
+				
+				@-ms-keyframes changeshadow {
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+				
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				}
+				
+				@-o-keyframes changeshadow {
+					0% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				
+					50% {
+						text-shadow: 0 0 40px #4cc134
+					}
+				
+					100% {
+						text-shadow: 0 0 4px #4cc134
+					}
+				}
+			}
 		</style>
 	</body>
 </html>
