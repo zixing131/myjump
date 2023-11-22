@@ -2,31 +2,10 @@
 branches: {
   }
 fileChange:
-  /java:
-    newFile: !uuid '363f7889cc4f1cdfdecdc795710a2c7a7740e54c'
-    oldFile: !uuid '42583c3b0d6879ee251c1681b7661c2f6192056a'
-  /java/bld:
-    newFile: !uuid '44e4d276a27427d8bde0579c35dcf5f508d423f0'
-    oldFile: !uuid '7758beab0e4ea684a697840f2170383be3eba928'
-  /java/bld/main-all.js:
-    newFile: !uuid '8794096bd538bf8234a6eaa5733484455b85f0da'
-    oldFile: !uuid '949dbd99d38ad6311a9de2f73c0a047c63d77fc4'
-  /java/libs:
-    newFile: !uuid '6a5f719463491de2b23759dfec3e347cdf9c1234'
-    oldFile: !uuid '36b0c75a723fd47b240e097bc880b1d434276301'
-  /java/libs/BenzAMRRecorder.js:
-    newFile: !uuid '04be08d37430723cfb051152043cb493d202e548'
-    oldFile: !uuid '2a54ff2fb4b8b924f1c78552b9e43330018a6c1d'
-  /java/libs/jsgraphics.js:
-    newFile: null
-    oldFile: !uuid '352ced89bfedb660ad426add4928f9c627fcc7e8'
-  /java/main.html:
-    newFile: !uuid '005c22d15d8fb3964c85461312604da03f690765'
-    oldFile: !uuid 'd555f4bfcd0656f9d910a902fa739725b45e5140'
-  /java/updatelog.html:
-    newFile: !uuid 'b152a7d8b4f8424007e4836b4fc135960fb8d2ec'
-    oldFile: !uuid 'dc464965ea5da2bd5df3d35c2b02807334d169a4'
-gitCommitId: !uuid 'd262286cbe548c2979f25053be2a36b74dab233d'
+  /index.html:
+    newFile: !uuid '8bf1bdf71a19576381340e8ccf07ed6775f2eaf1'
+    oldFile: !uuid '838e39f44ecffe46c18694845bc98b42ba4b1a85'
+gitCommitId: !uuid '7fa7f0173f68e7b49cdcc1c8855c0766d51d0705'
 renames: {
   }
-revisionId: 85
+revisionId: 86
