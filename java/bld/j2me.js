@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */ 
-/** @const */ var release = true;
+/** @const */ var release = false;
 /** @const */ var profile = 0;
 /** @const */ var profileFormat = "PLAIN";
 /** @const */ var asmJsTotalMemory = 8192 * 1024 * 1024;
@@ -3344,6 +3344,7 @@ var J2ME;
                 switch (frameType) {
                     case FrameType.Interpreter:
                         var mi = J2ME.methodIdToMethodInfoMap[i32[this.fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                       
                         release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Looking for handler in: " + mi.implKey);
                         for (var i = 0; i < mi.exception_table_length; i++) {
                             var exceptionEntryView = mi.getExceptionEntryViewByIndex(i);
@@ -5007,6 +5008,7 @@ var J2ME;
                         var calleeMethodInfo = cp.resolved[index] || cp.resolveMethod(index, isStatic);
                         var calleeTargetMethodInfo = null;
                         var callee = null;
+                        //console.log("isStatic",isStatic)
                         if (isStatic) {
                             address = 0 /* NULL */;
                         }
@@ -5014,6 +5016,7 @@ var J2ME;
                             address = i32[sp - calleeMethodInfo.argumentSlots];
                             classInfo = (address !== 0 /* NULL */) ? J2ME.classIdToClassInfoMap[i32[address >> 2]] : null;
                         }
+                        //console.log("classInfo",classInfo,address)
                         if (isStatic) {
                             thread.classInitAndUnwindCheck(fp, sp, opPC, calleeMethodInfo.classInfo);
                             if (U) {
@@ -5029,7 +5032,18 @@ var J2ME;
                                 calleeTargetMethodInfo = calleeMethodInfo;
                                 break;
                             case 182 /* INVOKEVIRTUAL */:
+                                try{
+                                    if(classInfo==null)
+                                    {
+                                        
+                                        break;
+                                    }
                                 calleeTargetMethodInfo = classInfo.vTable[calleeMethodInfo.vTableIndex];
+                                }catch(err)
+                                {
+                                    //calleeTargetMethodInfo = mi.classInfo.vTable[calleeMethodInfo.vTableIndex];
+                                    console.error(err);
+                                }
                                 break;
                             case 185 /* INVOKEINTERFACE */:
                                 calleeTargetMethodInfo = classInfo.iTable[calleeMethodInfo.mangledName];
@@ -5179,6 +5193,8 @@ var J2ME;
             catch (e) {
                 release || J2ME.traceWriter && J2ME.traceWriter.redLn("XXX I Caught: " + e + ", details: " + toName(e));
                 release || J2ME.traceWriter && J2ME.traceWriter.writeLn(e.stack);
+                console.error(e.stack);
+                
                 // release || traceWriter && traceWriter.writeLn(jsGlobal.getBacktrace());
                 // If an exception is thrown from a native there will be a native marker frame at the top of the stack
                 // which will be cut off when the the fp is set on the thread below. To keep the nativeFrameCount in
@@ -9201,7 +9217,7 @@ var J2ME;
             if (!bytes) {
                 console.warn("ClassNotFoundException"+fileName);
                 //J2ME.loadWriter && J2ME.loadWriter.leave("< ClassNotFoundException");
-                //throw new (J2ME.ClassNotFoundException)(fileName);
+                throw new (J2ME.ClassNotFoundException)(fileName);
                 return;
             }
             var self = this;
@@ -9745,6 +9761,7 @@ var J2ME;
     }
     J2ME.asyncImpl = asyncImpl;
     Native["java/lang/Thread.sleep.(J)V"] = function (addr, delayL, delayH) {
+        console.log('Thread.sleep',delayL,delayH,J2ME.longToNumber(delayL, delayH))
         asyncImpl(9 /* Void */, new Promise(function (resolve, reject) {
             window.setTimeout(resolve, J2ME.longToNumber(delayL, delayH));
         }));

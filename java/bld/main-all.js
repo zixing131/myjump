@@ -366,7 +366,7 @@ Native["java/lang/System.arraycopy.(Ljava/lang/Object;ILjava/lang/Object;II)V"] 
 var stubProperties = {"com.nokia.multisim.slots":"1", "com.nokia.mid.imsi":"000000000000000", "com.nokia.mid.imei":""};
 Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] = function(addr, keyAddr) {
   var key = J2ME.fromStringAddr(keyAddr);
- //console.log("System.getProperty0",key)
+  
   var value;
   switch(key) {
     case "microedition.configuration":
@@ -527,10 +527,11 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       }
       break;
   }
-  //console.log(value);
+  console.log("System.getProperty0",key,value)
   return J2ME.newString(value);
 };
 Native["java/lang/System.currentTimeMillis.()J"] = function(addr) {
+  console.log('currentTimeMillis'+Date.now()); 
   return J2ME.returnLongValue(Date.now());
 };
 Native["com/sun/cldchi/jvm/JVM.unchecked_char_arraycopy.([CI[CII)V"] = function(addr, srcAddr, srcOffset, dstAddr, dstOffset, length) {
@@ -562,7 +563,7 @@ Native["com/sun/cldchi/jvm/JVM.monotonicTimeMillis.()J"] = function(addr) {
   return J2ME.returnLongValue(performance.now());
 };
 Native["java/lang/Object.getClass.()Ljava/lang/Class;"] = function(addr) {
-  //console.log("getClass ",addr,J2ME.getClassInfo(addr))
+  //console.log("getClass ",addr,J2ME.getClassInfo(addr),new TextDecoder("utf-8").decode( J2ME.getClassInfo(addr).utf8Name))
   return $.getClassObjectAddress(J2ME.getClassInfo(addr));
 };
 Native["java/lang/Class.getSuperclass.()Ljava/lang/Class;"] = function(addr) {
@@ -617,7 +618,7 @@ Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAd
       return;
     }
     var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/"); 
-    //console.log(className)
+    console.log(className)
     classInfo = CLASSES.getClass(className); 
     //console.log(classInfo)
 
