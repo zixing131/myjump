@@ -3,12 +3,18 @@ branches: {
   }
 fileChange:
   /java:
-    newFile: !uuid 'b766d40c98ee76cbda8f63ffa5805cf2059837c9'
-    oldFile: !uuid '363f7889cc4f1cdfdecdc795710a2c7a7740e54c'
-  /java/index.html:
-    newFile: !uuid 'a2df697585d00a030c4f557784473bc6233a0bba'
-    oldFile: !uuid 'fd7875dacda7aa5b302111083d4b07ddd9cc24ec'
-gitCommitId: !uuid '3e4fd1218c127661f1c073d484d2abe9be8179bd'
+    newFile: !uuid '7a1b50df97a3bd035ad4842073d24d9ee8448717'
+    oldFile: !uuid 'b766d40c98ee76cbda8f63ffa5805cf2059837c9'
+  /java/bld:
+    newFile: !uuid '1998f51127335981c79bf0f4d54947abcdc1ee59'
+    oldFile: !uuid '44e4d276a27427d8bde0579c35dcf5f508d423f0'
+  /java/bld/j2me.js:
+    newFile: !uuid 'd68d58558e82ff1a315ecec1d538c49f2ac61cd6'
+    oldFile: !uuid '825a18590a8d67354d69c2ef342bb71ddec03549'
+  /java/bld/main-all.js:
+    newFile: !uuid '495f61a6122e29bb2ad70e57791a9292fd4bd50c'
+    oldFile: !uuid '8794096bd538bf8234a6eaa5733484455b85f0da'
+gitCommitId: !uuid '3e9fb59eefcb71cdb411544e9b69771b8981d5da'
 renames: {
   }
-revisionId: 87
+revisionId: 88
