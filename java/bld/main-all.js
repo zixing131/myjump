@@ -366,7 +366,7 @@ Native["java/lang/System.arraycopy.(Ljava/lang/Object;ILjava/lang/Object;II)V"] 
 var stubProperties = {"com.nokia.multisim.slots":"1", "com.nokia.mid.imsi":"000000000000000", "com.nokia.mid.imei":""};
 Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] = function(addr, keyAddr) {
   var key = J2ME.fromStringAddr(keyAddr);
-  
+ //console.log("System.getProperty0",key)
   var value;
   switch(key) {
     case "microedition.configuration":
@@ -527,11 +527,10 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       }
       break;
   }
-  console.log("System.getProperty0",key,value)
+  //console.log(value);
   return J2ME.newString(value);
 };
 Native["java/lang/System.currentTimeMillis.()J"] = function(addr) {
-  console.log('currentTimeMillis'+Date.now()); 
   return J2ME.returnLongValue(Date.now());
 };
 Native["com/sun/cldchi/jvm/JVM.unchecked_char_arraycopy.([CI[CII)V"] = function(addr, srcAddr, srcOffset, dstAddr, dstOffset, length) {
@@ -563,7 +562,7 @@ Native["com/sun/cldchi/jvm/JVM.monotonicTimeMillis.()J"] = function(addr) {
   return J2ME.returnLongValue(performance.now());
 };
 Native["java/lang/Object.getClass.()Ljava/lang/Class;"] = function(addr) {
-  //console.log("getClass ",addr,J2ME.getClassInfo(addr),new TextDecoder("utf-8").decode( J2ME.getClassInfo(addr).utf8Name))
+  //console.log("getClass ",addr,J2ME.getClassInfo(addr))
   return $.getClassObjectAddress(J2ME.getClassInfo(addr));
 };
 Native["java/lang/Class.getSuperclass.()Ljava/lang/Class;"] = function(addr) {
@@ -618,7 +617,7 @@ Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAd
       return;
     }
     var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/"); 
-    console.log(className)
+    //console.log(className)
     classInfo = CLASSES.getClass(className); 
     //console.log(classInfo)
 
@@ -8198,8 +8197,8 @@ var currentlyFocusedTextEditor;
     $.pause(refreshStr);
     $.nativeBailout(J2ME.Kind.Void);
   };
-  function swapRB(c) {
-    return (c & 0xFF00FF00) | ((c >> 16) & 0xFF) | ((c << 16) & 0xFF0000);
+  function swapRB(pixel) {
+    return pixel & 4278255360 | pixel >> 16 & 255 | (pixel & 255) << 16;
   }
   function ABGRToARGB(abgrData, argbData, width, height, offset, scanlength) {
     var i = 0;
@@ -8704,24 +8703,7 @@ function trans10to16(num10) { //十进制转十六进制
     return result;
 }
 
-function fillPolygon(vertices, alpha,fillColor,ctx) {
-  let last = vertices[0];
-  var oldalpha = ctx.globalAlpha;
-  ctx.globalAlpha=alpha;
-  ctx.beginPath();
-  ctx.moveTo(last.x, last.y);
-  for (var i=1;i<vertices.length;i++) {
-     var p=vertices[i]
-      ctx.lineTo(p.x, p.y);
-  }
-
-  ctx.fillStyle =fillColor;
-  ctx.fill();
-  ctx.globalAlpha = oldalpha
-} 
-
   Native["com/nokia/mid/ui/DirectGraphicsImp.fillPolygon.([II[IIII)V"] = function(addr, xPointsAddr,  xOffset,  yPointsAddr,  yOffset,  nPoints,  argbColor) {
-    try{
     var self = getHandle(addr);
     var  xPoints = J2ME.getArrayFromAddr(xPointsAddr);
     if (!xPoints) {
@@ -8730,35 +8712,33 @@ function fillPolygon(vertices, alpha,fillColor,ctx) {
     var  yPoints = J2ME.getArrayFromAddr(yPointsAddr);
     if (!yPoints) {
       throw $.newNullPointerException("yPoints array is null");
-    }   
- 
-    var x = new Array (nPoints)
-		var y = new Array(nPoints);
-    var pt = new Array(nPoints);
-    for(var i=0; i<nPoints; i++)
-		{
-			x[i] = xPoints[xOffset+i];
-			y[i] = yPoints[yOffset+i];
-      pt[i]={
-        x:x[i],
-        y:y[i]
-      } 
-		}
+    }  
+    //console.log(xPoints.length,yPoints.length)
+    tempContext.canvas.width = xPoints.length;
+    tempContext.canvas.height = yPoints.length;
+
+    var jg = new jsGraphics(tempContext.canvas);
+    jg.clear();
     
-    var alpha = 1-(argbColor >>> 24)/100;
+    //console.log(jg)
+
+    var alpha = argbColor >>> 24;
     var red = argbColor >>> 16 & 255;
     var green = argbColor >>> 8 & 255;
     var blue = argbColor & 255;
-    var color = transRgba([red,green,blue]);
-    var c = NativeMap.get(self.graphics).contextInfo.context;
-    console.log(pt,alpha,color,c)
-    fillPolygon(pt,alpha,color,c);
- 
-  }
-  catch(err)
-  {
-    console.log(err)
-  }
+    var color = transRgba([alpha,red,green,blue]);
+
+    jg.setColor(color);
+    jg.fillPolygon(xPoints,yPoints);
+     
+    var c = NativeMap.get(self.graphics).getGraphicsContext();
+
+    //console.log(jg)
+
+    //c.drawImage(tempContext.canvas, xOffset+xPoints.length/2, yOffset+yPoints.length/2); 
+    
+    c.drawImage(tempContext.canvas, xOffset, yOffset); 
+    
   };
  
 
@@ -8782,7 +8762,7 @@ function fillPolygon(vertices, alpha,fillColor,ctx) {
     var image = getHandle(imageAddr);
     var imageData = getHandle(image.imageData);
     //console.log(imageData,x, y)
-    renderRegion(NativeMap.get(addr).getGraphicsContext(), NativeMap.get(image.imageData).context.canvas,  0,  0, imageData.width, imageData.height, TRANS_NONE, x, y, anchor);
+    renderRegion(NativeMap.get(addr).getGraphicsContext(), NativeMap.get(image.imageData).context.canvas, 0, 0, imageData.width, imageData.height, TRANS_NONE, x, y, anchor);
   };
   function GraphicsInfo(contextInfo) {
     this.contextInfo = contextInfo;
@@ -9041,217 +9021,116 @@ function fillPolygon(vertices, alpha,fillColor,ctx) {
   var TRANS_ROT90 = 5;
   var TRANS_ROT270 = 6;
   var TRANS_MIRROR_ROT90 = 7;
-
-  
-  function AnchorX( x,  width,  anchor) {
-    var xout = x;
-    if ((anchor & 1) > 0) {
-        xout = x - (width / 2);
-    }
-    if ((anchor & 8) > 0) {
-        xout = x - width;
-    }
-    if ((anchor & 4) > 0) {
-        xout = x;
-    }
-    return xout;
-}
-
-function AnchorY(  y,   height,   anchor) {
-    var yout = y;
-    if ((anchor & 2) > 0) {
-        yout = y - (height / 2);
-    }
-    if ((anchor & 16) > 0) {
-        yout = y;
-    }
-    if ((anchor & 32) > 0) {
-        yout = y - height;
-    }
-    if ((anchor & 64) > 0) {
-        yout = y + height;
-    }
-    return yout;
-}
-
-
   function renderRegion(dstContext, srcCanvas, sx, sy, sw, sh, transform, absX, absY, anchor) {
-   
-    if(transform==0)
-    {
-      var w, h;
-      var w = AnchorX(absX, sw, anchor)
-      var h=AnchorY(absY, sh, anchor)
-  
-      //console.log("transform",transform,sx, sy, sw, sh, transform, absX, absY, anchor)
-      dstContext.drawImage(srcCanvas, sx, sy, sw, sh, w, h, sw, sh);
-    }
-    else{ 
-
-      var width = w;
-      var height = h;
-      var out_width = width;
-      var out_height = height;
-      switch (transform) {
-        case 1:
-            dstContext.translate(width, 0.0);
-            dstContext.scale(-1.0, 1.0);
-            dstContext.translate(width, height);
-            dstContext.rotate(3.141592653589793);
-            break;
-        case 2:
-            dstContext.translate(width, 0.0);
-            dstContext.scale(-1.0, 1.0);
-            break;
-        case 3:
-            dstContext.translate(width, height);
-            dstContext.rotate(3.141592653589793);
-            break;
-        case 4:
-            dstContext.translate(0.0, width);
-            dstContext.rotate(4.71238898038469);
-            dstContext.translate(width, 0.0);
-            dstContext.scale(-1.0, 1.0);
-            out_width = height;
-            out_height = width;
-            break;
-        case 5:
-            dstContext.translate(height, 0.0);
-            dstContext.rotate(1.5707963267948966);
-            out_width = height;
-            out_height = width;
-            break;
-        case 6:
-            dstContext.translate(0.0, width);
-            dstContext.rotate(4.71238898038469);
-            out_width = height;
-            out_height = width;
-            break;
-        case 7:
-          dstContext.translate(height, 0.0);
-            dstContext.rotate(1.5707963267948966);
-            dstContext.translate(width, 0.0);
-            dstContext.scale(-1.0, 1.0);
-            out_width = height;
-            out_height = width;
-            break;
-    }
     var w, h;
-    var w = AnchorX(absX, out_width, anchor)
-    var h=AnchorY(absY, out_height, anchor) 
-    dstContext.drawImage(srcCanvas, sx, sy, sw, sh, w, h, sw, sh);
-  
-        // switch(transform) {
-        //       case TRANS_NONE:
-        //       ;
-        //       case TRANS_ROT180:
-        //       ;
-        //       case TRANS_MIRROR:
-        //       ;
-        //       case TRANS_MIRROR_ROT180:
-        //         w = sw;
-        //         h = sh;
-        //         break;
-        //       case TRANS_ROT90:
-        //       ;
-        //       case TRANS_ROT270:
-        //       ;
-        //       case TRANS_MIRROR_ROT90:
-        //       ;
-        //       case TRANS_MIRROR_ROT270:
-        //         w = sh;
-        //         h = sw;
-        //         break;
-        //     }
-        //     if (0 !== (anchor & HCENTER)) {
-        //       absX -= w >>> 1 | 0;
-        //     } else {
-        //       if (0 !== (anchor & RIGHT)) {
-        //         absX -= w;
-        //       }
-        //     }
-        //     if (0 !== (anchor & VCENTER)) {
-        //       absY -= h >>> 1 | 0;
-        //     } else {
-        //       if (0 !== (anchor & BOTTOM)) {
-        //         absY -= h;
-        //       }
-        //     }
-        //     var x, y;
-        //     switch(transform) {
-        //       case TRANS_NONE:
-        //         x = absX;
-        //         y = absY;
-        //         break;
-        //       case TRANS_ROT90:
-        //         dstContext.rotate(Math.PI / 2);
-        //         x = absY;
-        //         y = -absX - w;
-        //         break;
-        //       case TRANS_ROT180:
-        //         dstContext.rotate(Math.PI);
-        //         x = -absX - w;
-        //         y = -absY - h;
-        //         break;
-        //       case TRANS_ROT270:
-        //         dstContext.rotate(Math.PI * 1.5);
-        //         x = -absY - h;
-        //         y = absX;
-        //         break;
-        //       case TRANS_MIRROR:
-        //         dstContext.scale(-1, 1);
-        //         x = -absX - w;
-        //         y = absY;
-        //         break;
-        //       case TRANS_MIRROR_ROT90:
-        //         dstContext.rotate(Math.PI / 2);
-        //         dstContext.scale(-1, 1);
-        //         x = -absY - h;
-        //         y = -absX - w;
-        //         break;
-        //       case TRANS_MIRROR_ROT180:
-        //         dstContext.scale(1, -1);
-        //         x = absX;
-        //         y = -absY - h;
-        //         break;
-        //       case TRANS_MIRROR_ROT270:
-        //         dstContext.rotate(Math.PI * 1.5);
-        //         dstContext.scale(-1, 1);
-        //         x = absY;
-        //         y = absX;
-        //         break;
-        //     }
-        //     //console.log(dstContext, srcCanvas, sx, sy, sw, sh, transform, absX, absY, anchor)
-        //     dstContext.drawImage(srcCanvas, sx, sy, sw, sh, x, y, sw, sh);
-        //     switch(transform) {
-        //       case TRANS_NONE:
-        //         break;
-        //       case TRANS_ROT90:
-        //         dstContext.rotate(Math.PI * 1.5);
-        //         break;
-        //       case TRANS_ROT180:
-        //         dstContext.rotate(Math.PI);
-        //         break;
-        //       case TRANS_ROT270:
-        //         dstContext.rotate(Math.PI / 2);
-        //         break;
-        //       case TRANS_MIRROR:
-        //         dstContext.scale(-1, 1);
-        //         break;
-        //       case TRANS_MIRROR_ROT90:
-        //         dstContext.scale(-1, 1);
-        //         dstContext.rotate(Math.PI * 1.5);
-        //         break;
-        //       case TRANS_MIRROR_ROT180:
-        //         dstContext.scale(1, -1);
-        //         break;
-        //       case TRANS_MIRROR_ROT270:
-        //         dstContext.scale(-1, 1);
-        //         dstContext.rotate(Math.PI / 2);
-        //         break;
-        //     }
+    switch(transform) {
+      case TRANS_NONE:
+      ;
+      case TRANS_ROT180:
+      ;
+      case TRANS_MIRROR:
+      ;
+      case TRANS_MIRROR_ROT180:
+        w = sw;
+        h = sh;
+        break;
+      case TRANS_ROT90:
+      ;
+      case TRANS_ROT270:
+      ;
+      case TRANS_MIRROR_ROT90:
+      ;
+      case TRANS_MIRROR_ROT270:
+        w = sh;
+        h = sw;
+        break;
     }
-    
+    if (0 !== (anchor & HCENTER)) {
+      absX -= w >>> 1 | 0;
+    } else {
+      if (0 !== (anchor & RIGHT)) {
+        absX -= w;
+      }
+    }
+    if (0 !== (anchor & VCENTER)) {
+      absY -= h >>> 1 | 0;
+    } else {
+      if (0 !== (anchor & BOTTOM)) {
+        absY -= h;
+      }
+    }
+    var x, y;
+    switch(transform) {
+      case TRANS_NONE:
+        x = absX;
+        y = absY;
+        break;
+      case TRANS_ROT90:
+        dstContext.rotate(Math.PI / 2);
+        x = absY;
+        y = -absX - w;
+        break;
+      case TRANS_ROT180:
+        dstContext.rotate(Math.PI);
+        x = -absX - w;
+        y = -absY - h;
+        break;
+      case TRANS_ROT270:
+        dstContext.rotate(Math.PI * 1.5);
+        x = -absY - h;
+        y = absX;
+        break;
+      case TRANS_MIRROR:
+        dstContext.scale(-1, 1);
+        x = -absX - w;
+        y = absY;
+        break;
+      case TRANS_MIRROR_ROT90:
+        dstContext.rotate(Math.PI / 2);
+        dstContext.scale(-1, 1);
+        x = -absY - h;
+        y = -absX - w;
+        break;
+      case TRANS_MIRROR_ROT180:
+        dstContext.scale(1, -1);
+        x = absX;
+        y = -absY - h;
+        break;
+      case TRANS_MIRROR_ROT270:
+        dstContext.rotate(Math.PI * 1.5);
+        dstContext.scale(-1, 1);
+        x = absY;
+        y = absX;
+        break;
+    }
+    dstContext.drawImage(srcCanvas, sx, sy, sw, sh, x, y, sw, sh);
+    switch(transform) {
+      case TRANS_NONE:
+        break;
+      case TRANS_ROT90:
+        dstContext.rotate(Math.PI * 1.5);
+        break;
+      case TRANS_ROT180:
+        dstContext.rotate(Math.PI);
+        break;
+      case TRANS_ROT270:
+        dstContext.rotate(Math.PI / 2);
+        break;
+      case TRANS_MIRROR:
+        dstContext.scale(-1, 1);
+        break;
+      case TRANS_MIRROR_ROT90:
+        dstContext.scale(-1, 1);
+        dstContext.rotate(Math.PI * 1.5);
+        break;
+      case TRANS_MIRROR_ROT180:
+        dstContext.scale(1, -1);
+        break;
+      case TRANS_MIRROR_ROT270:
+        dstContext.scale(-1, 1);
+        dstContext.rotate(Math.PI / 2);
+        break;
+    }
   }
   Native["javax/microedition/lcdui/Graphics.drawLine.(IIII)V"] = function(addr, x1, y1, x2, y2) {
     var c = NativeMap.get(addr).getGraphicsContext();
