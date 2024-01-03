@@ -8704,40 +8704,40 @@ function trans10to16(num10) { //十进制转十六进制
 }
 
   Native["com/nokia/mid/ui/DirectGraphicsImp.fillPolygon.([II[IIII)V"] = function(addr, xPointsAddr,  xOffset,  yPointsAddr,  yOffset,  nPoints,  argbColor) {
-    var self = getHandle(addr);
-    var  xPoints = J2ME.getArrayFromAddr(xPointsAddr);
-    if (!xPoints) {
-      throw $.newNullPointerException("xPoints array is null");
-    }
-    var  yPoints = J2ME.getArrayFromAddr(yPointsAddr);
-    if (!yPoints) {
-      throw $.newNullPointerException("yPoints array is null");
-    }  
-    //console.log(xPoints.length,yPoints.length)
-    tempContext.canvas.width = xPoints.length;
-    tempContext.canvas.height = yPoints.length;
+    // var self = getHandle(addr);
+    // var  xPoints = J2ME.getArrayFromAddr(xPointsAddr);
+    // if (!xPoints) {
+    //   throw $.newNullPointerException("xPoints array is null");
+    // }
+    // var  yPoints = J2ME.getArrayFromAddr(yPointsAddr);
+    // if (!yPoints) {
+    //   throw $.newNullPointerException("yPoints array is null");
+    // }  
+    // //console.log(xPoints.length,yPoints.length)
+    // tempContext.canvas.width = xPoints.length;
+    // tempContext.canvas.height = yPoints.length;
 
-    // var jg = new jsGraphics(tempContext.canvas);
-    // jg.clear();
+    // // var jg = new jsGraphics(tempContext.canvas);
+    // // jg.clear();
     
-    //console.log(jg)
+    // //console.log(jg)
 
-    var alpha = argbColor >>> 24;
-    var red = argbColor >>> 16 & 255;
-    var green = argbColor >>> 8 & 255;
-    var blue = argbColor & 255;
-    var color = transRgba([alpha,red,green,blue]);
+    // var alpha = argbColor >>> 24;
+    // var red = argbColor >>> 16 & 255;
+    // var green = argbColor >>> 8 & 255;
+    // var blue = argbColor & 255;
+    // var color = transRgba([alpha,red,green,blue]);
 
-    // jg.setColor(color);
-    // jg.fillPolygon(xPoints,yPoints);
+    // // jg.setColor(color);
+    // // jg.fillPolygon(xPoints,yPoints);
      
-    var c = NativeMap.get(self.graphics).getGraphicsContext();
+    // var c = NativeMap.get(self.graphics).getGraphicsContext();
 
-    //console.log(jg)
+    // //console.log(jg)
 
-    //c.drawImage(tempContext.canvas, xOffset+xPoints.length/2, yOffset+yPoints.length/2); 
+    // //c.drawImage(tempContext.canvas, xOffset+xPoints.length/2, yOffset+yPoints.length/2); 
     
-    c.drawImage(tempContext.canvas, xOffset, yOffset); 
+    // c.drawImage(tempContext.canvas, xOffset, yOffset); 
     
   };
  
