@@ -8717,8 +8717,8 @@ function trans10to16(num10) { //十进制转十六进制
     tempContext.canvas.width = xPoints.length;
     tempContext.canvas.height = yPoints.length;
 
-    var jg = new jsGraphics(tempContext.canvas);
-    jg.clear();
+    // var jg = new jsGraphics(tempContext.canvas);
+    // jg.clear();
     
     //console.log(jg)
 
@@ -8728,8 +8728,8 @@ function trans10to16(num10) { //十进制转十六进制
     var blue = argbColor & 255;
     var color = transRgba([alpha,red,green,blue]);
 
-    jg.setColor(color);
-    jg.fillPolygon(xPoints,yPoints);
+    // jg.setColor(color);
+    // jg.fillPolygon(xPoints,yPoints);
      
     var c = NativeMap.get(self.graphics).getGraphicsContext();
 

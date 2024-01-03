@@ -9761,7 +9761,7 @@ var J2ME;
     }
     J2ME.asyncImpl = asyncImpl;
     Native["java/lang/Thread.sleep.(J)V"] = function (addr, delayL, delayH) {
-        console.log('Thread.sleep',delayL,delayH,J2ME.longToNumber(delayL, delayH))
+        //console.log('Thread.sleep',delayL,delayH,J2ME.longToNumber(delayL, delayH))
         asyncImpl(9 /* Void */, new Promise(function (resolve, reject) {
             window.setTimeout(resolve, J2ME.longToNumber(delayL, delayH));
         }));
