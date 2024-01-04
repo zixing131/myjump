@@ -12672,7 +12672,7 @@ PlayerContainer.prototype.getVolume = function() {
   return this.player.getVolume();
 };
 PlayerContainer.prototype.setVolume = function(level) {
-   //console.log("播放音乐");
+  console.log('设置音量： '+level)
   if(this.pAudio)
   {
      this.pAudio.setMasterVolume(level);
