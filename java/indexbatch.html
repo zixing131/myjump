@@ -442,6 +442,23 @@
 						);
 					}
 				}
+
+				function clearLocalJar()
+				{
+					let res = confirm('确定清空本地jar吗 ？');
+					if (res) {
+						JARStore.clear().then(
+							() => {
+								alert(jarname + "清空成功！");
+							},
+							(errname) => {
+								alert(errname + "清空失败！");
+							}
+						); 
+						refreshGameList(); 
+					}
+				}
+
 				var onUploadFile = function(e) {
 					const _files = e.target.files;
 					if (_files.length == 0) {
@@ -646,6 +663,9 @@
 
 			<button class="btn" onclick="deleteLocalJar()">
 				删除本地jar
+			</button>
+			<button class="btn" onclick="clearLocalJar()">
+				清空本地jar
 			</button>
 
 			</br>
