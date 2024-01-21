@@ -365,6 +365,8 @@
 						(files) => {
 							var localjars = document.getElementById('localjars');
 							localjars.length = 0;
+							var gamepanel = document.getElementById("gamepanel");
+							gamepanel.innerHTML = '<a class="game" style="" href="javascript:void(0)" onclick="openJar(\'Anyview4.0.jar\',\'com.ismyway.anyview.Anyview\');"> <div style="height:64px;"> <img src="img/anyview.png"></img> </div> Anyview </a> ';
 							for (var i = 0; i < files.length; i++) {
 								var f = files[i];
 								console.log(f)
