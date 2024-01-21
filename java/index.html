@@ -288,9 +288,103 @@
 
 		<input id="jarFileupload"  accept=".jar" type="file" style="visibility: hidden;display:none;" />
 		<h3>游戏列表：</h3>
-		<div style="display:flex;flex-wrap: wrap; margin: 10px 0px;float:left;align-items: center;">
+		<div id="gameListDiv" style="display:flex;flex-wrap: wrap; margin-bottom: 10px; float:left;align-items: center;">
 
 			<script type="text/javascript">
+			
+				var GameList = [
+					{
+						name:"Anyview",
+						jarName:"Anyview4.0.jar",
+						midletClassName:"com.ismyway.anyview.Anyview",
+						picPath:"img/anyview.png"
+					},
+					{
+						name:"狂野飙车6",
+						jarName:"kybc6.jar",
+						midletClassName:"GloftASP6",
+						picPath:"img/kybc6.png"
+					},
+					{
+						name:"植物大战僵尸",
+						jarName:"pvz.jar",
+						midletClassName:"Game",
+						picPath:"img/pvz.png"
+					},
+					{
+						name:"刺客信条3",
+						jarName:"ckxt3.jar",
+						midletClassName:"GloftASBR",
+						picPath:"img/ckxt3.png"
+					},
+					{
+						name:"开心农场",
+						jarName:"kxnc.jar",
+						midletClassName:"FarmMIDlet",
+						picPath:"img/kxnc.png"
+					},
+					{
+						name:"RF18",
+						jarName:"rf18.jar",
+						midletClassName:"GloftR8FP",
+						picPath:"img/rf18.png"
+					},
+					{
+						name:"BounceTales",
+						jarName:"BounceTales.jar",
+						midletClassName:"RMIDlet",
+						picPath:"img/BounceTales.png"
+					},
+					{
+						name:"极限拉力赛2",
+						jarName:"ddz.jar",
+						midletClassName:"baltorogames.system.Application",
+						picPath:"img/jxlls.png"
+					},
+					{
+						name:"斗地主",
+						jarName:"ddz.jar",
+						midletClassName:"GameMidlet",
+						picPath:"img/ddz.png"
+					},
+					{
+						name:"GTA5",
+						jarName:"gta.jar",
+						midletClassName:"SaintsRow2",
+						picPath:"img/gta.png"
+					},
+					{
+						name:"涂鸦跳跃",
+						jarName:"chess.jar",
+						midletClassName:"com.chess.Tmpmidlet",
+						picPath:"img/chess.png"
+					},
+					{
+						name:"模拟人生3",
+						jarName:"sim3.jar",
+						midletClassName:"com.ea.sims3.MonkeyApp",
+						picPath:"img/sim3.png"
+					}
+					
+				]
+				// 初始化游戏列表
+				var GameListHtml = '';
+				for(var i = 0 ;i<GameList.length;i++){
+					var gameName = GameList[i]['name'];
+					var jarName =  GameList[i]['jarName'];
+					var midletClassName = GameList[i]['midletClassName'];
+					var picPath = GameList[i]['picPath'];
+					
+					GameListHtml += '<a class="game" href="javascript:void(0)" onclick="openJar(\"'+jarName+'\",\"'+midletClassName+'\");">'+
+									'<div>'+
+									'<img src="'+picPath+'" width="64px" height="64px" style="margin-top:4px"></img>'+
+									'</div>'+
+									'<span style="font-size:12px">'+gameName+'</span>' +
+									'</a>';
+				}
+				document.getElementById('gameListDiv').innerHTML = GameListHtml;
+				
+				
 				function refreshGameList() {
 					JARStore.getAll().then(
 						(files) => {
@@ -420,7 +514,7 @@
 
 				var config01 = new config();
 				window.addEventListener("load", () => {
-
+				
 					var csize = config01.getValueByKey("canvasSize");
 					var gsize = config01.getValueByKey("gamepadSize");
 					var gresize = config01.getValueByKey("gameresize");
@@ -495,7 +589,7 @@
 				}
 			</script>
 
-			<a class="game" style="" href="javascript:void(0)"
+<!-- 			<a class="game" style="" href="javascript:void(0)"
 				onclick="openJar('Anyview4.0.jar','com.ismyway.anyview.Anyview');">
 				<div style="height:64px;">
 					<img src="img/anyview.png"></img>
@@ -544,6 +638,7 @@
 				</div>
 				BounceTales
 			</a>
+			
 			<a class="game" href="javascript:void(0)" onclick="openJar('jxlls.jar','baltorogames.system.Application');">
 				<div style="height:64px;">
 					<img src="img/jxlls.png" style="margin-top:4px"></img>
@@ -579,13 +674,13 @@
 				中国象棋
 			</a>
 			
-				<a class="game" href="javascript:void(0)" onclick="openJar('sim3.jar','com.ea.sims3.MonkeyApp');">
+			<a class="game" href="javascript:void(0)" onclick="openJar('sim3.jar','com.ea.sims3.MonkeyApp');">
 				<div style="height:64px;">
 					<img src="img/sim3.png" style="margin-top:10px"></img>
 				</div>
 				模拟人生3
 			</a>
-			
+			 -->
 		</div>
 
 		<!-- <label><input id="mycheck1" name="enablekey" type="checkbox"  checked value="" />启用按键</label> -->
@@ -647,7 +742,7 @@
 		</div>
 
 		<style>
-			@media screen and (min-width: 1201px) {
+			@media screen and (min-width: 1080px) {
 				body {
 					margin: 0 auto;
 					padding-left: 20%;
@@ -815,13 +910,17 @@
 				}
 			}
 		
-			@media screen and (min-width: 300px) and (max-width: 1200px) {
+			@media screen and (min-width: 300px) and (max-width: 1080px) {
 				body {
-					margin: 0 auto;
+			/* 		margin: 0 auto;
 					padding-left: 10%;
 					padding-right: 10%;
-					padding-top: 10px;
+					padding-top: 10px; */
 				}
+				#gameListDiv{
+					justify-content: center; 
+				}
+				
 				
 				.filter-box {
 					width: 100%;
