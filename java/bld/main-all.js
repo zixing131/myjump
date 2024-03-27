@@ -8704,40 +8704,38 @@ function trans10to16(num10) { //十进制转十六进制
 }
 
   Native["com/nokia/mid/ui/DirectGraphicsImp.fillPolygon.([II[IIII)V"] = function(addr, xPointsAddr,  xOffset,  yPointsAddr,  yOffset,  nPoints,  argbColor) {
-    // var self = getHandle(addr);
-    // var  xPoints = J2ME.getArrayFromAddr(xPointsAddr);
-    // if (!xPoints) {
-    //   throw $.newNullPointerException("xPoints array is null");
-    // }
-    // var  yPoints = J2ME.getArrayFromAddr(yPointsAddr);
-    // if (!yPoints) {
-    //   throw $.newNullPointerException("yPoints array is null");
-    // }  
-    // //console.log(xPoints.length,yPoints.length)
+    if(nPoints<=0)
+    {
+      return;
+    }
+    var self = getHandle(addr);
+    var  xPoints = J2ME.getArrayFromAddr(xPointsAddr);
+    if (!xPoints) {
+      throw $.newNullPointerException("xPoints array is null");
+    }
+    var  yPoints = J2ME.getArrayFromAddr(yPointsAddr);
+    if (!yPoints) {
+      throw $.newNullPointerException("yPoints array is null");
+    }  
+    
     // tempContext.canvas.width = xPoints.length;
     // tempContext.canvas.height = yPoints.length;
+ 
+    var alpha = argbColor >>> 24;
+    var red = argbColor >>> 16 & 255;
+    var green = argbColor >>> 8 & 255;
+    var blue = argbColor & 255;
+    var color = transRgba([alpha,red,green,blue]);
+ 
+    var c = NativeMap.get(self.graphics).getGraphicsContext(); 
 
-    // // var jg = new jsGraphics(tempContext.canvas);
-    // // jg.clear();
-    
-    // //console.log(jg)
+    //c.drawImage(tempContext.canvas, xOffset, yOffset); 
+    c.beginPath();
+    c.moveTo(  xPoints[xOffset],  yPoints[yOffset]);
 
-    // var alpha = argbColor >>> 24;
-    // var red = argbColor >>> 16 & 255;
-    // var green = argbColor >>> 8 & 255;
-    // var blue = argbColor & 255;
-    // var color = transRgba([alpha,red,green,blue]);
 
-    // // jg.setColor(color);
-    // // jg.fillPolygon(xPoints,yPoints);
-     
-    // var c = NativeMap.get(self.graphics).getGraphicsContext();
+    c.fill();
 
-    // //console.log(jg)
-
-    // //c.drawImage(tempContext.canvas, xOffset+xPoints.length/2, yOffset+yPoints.length/2); 
-    
-    // c.drawImage(tempContext.canvas, xOffset, yOffset); 
     
   };
  
@@ -12442,7 +12440,7 @@ function concatenateAudioBuffers(buffer1, buffer2) {
 // 播放音频
 PlayerContainer.prototype.playSound = function(buffer) {
   this.wavBuffer = concatenateAudioBuffers(this.wavBuffer,buffer);
-  console.log("this.wavBuffer ",this.wavBuffer ) 
+  //console.log("this.wavBuffer ",this.wavBuffer ) 
   this.loadSize+= parseInt(buffer.length);
   // var source = context.createBufferSource();
 
@@ -12467,14 +12465,14 @@ function base64ToUint8Array(base64String) {
 
 PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
   try{
-  console.log("writeBuffer");
+  //console.log("writeBuffer");
   if (this.contentSize === 0) {
     this.data = new Int8Array(this.getBufferSize());
   }
   this.data.set(buffer, this.contentSize);
   this.contentSize += buffer.length;
   var uint8 = new Uint8Array(buffer).buffer;
-  console.log("buffer.length",buffer.length,bufferSize)
+  //console.log("buffer.length",buffer.length,bufferSize)
 
   if(this.getMediaFormat()!='mid')
   {  
@@ -12490,8 +12488,8 @@ PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
     this.tinysynth = null; 
     var that=this;  
      this.audioCtx.decodeAudioData(uint8, function(buffer) {
-              console.log('1231231231231')
-              console.log(buffer.length)
+              //console.log('1231231231231')
+              //console.log(buffer.length)
               that.playSound(buffer);
               // if(that.wholeContentSize<=that.contentSize)
               // { 
@@ -12664,20 +12662,50 @@ PlayerContainer.prototype.resume = function() {
 } 
 };
 PlayerContainer.prototype.getVolume = function() {
-  console.log("播放音乐");
-  if(this.pAudio)
-  {
-    return this.pAudio.getMasterVolume();
+  //console.log("播放音乐");
+  if(midimode==1)
+  {  
+    if(this.pAudio)
+    {
+      return this.pAudio.getMasterVolume();
+    }
   }
-  return this.player.getVolume();
+  else if(midimode==2){
+    if(this.tinysynth)
+    { 
+      return this.tinysynth.getAudioContext().volume * 100;
+    }
+  } 
+  else if(midimode==3){
+    if(this.audio)
+    { 
+      return this.audio.volume * 100;
+    }
+  } 
+
 };
 PlayerContainer.prototype.setVolume = function(level) {
-  console.log('设置音量： '+level)
-  if(this.pAudio)
-  {
-     this.pAudio.setMasterVolume(level);
+  console.log('设置音量： '+level) 
+  if(midimode==1)
+  {  
+    if(this.pAudio)
+    {
+      this.pAudio.setMasterVolume(level);
+    }
   }
-  this.player.setVolume(level);
+  else if(midimode==2){
+    if(this.tinysynth)
+    { 
+      this.tinysynth.setMasterVol(level/100);
+    }
+  } 
+  else if(midimode==3){
+    if(this.audio)
+    { 
+      this.audio.volume = level/100;
+    }
+  } 
+
 };
 PlayerContainer.prototype.getMute = function() {
   //console.log("播放音乐");
@@ -12961,11 +12989,11 @@ Native["com/sun/mmedia/MediaDownload.nSetWholeContentSize.(IJ)V"] = function(add
   console.log("com/sun/mmedia/MediaDownload.nSetWholeContentSize",player.wholeContentSize);
 };
 Native["com/sun/mmedia/DirectPlayer.nIsToneControlSupported.(I)Z"] = function(addr, handle) {
-  console.info("To support ToneControl, implement com.sun.mmedia.DirectTone.");
+  //console.info("To support ToneControl, implement com.sun.mmedia.DirectTone.");
   return 0;
 };
 Native["com/sun/mmedia/DirectPlayer.nIsMIDIControlSupported.(I)Z"] = function(addr, handle) {
-  console.info("To support MIDIControl, implement com.sun.mmedia.DirectMIDI.");
+  //console.info("To support MIDIControl, implement com.sun.mmedia.DirectMIDI.");
   return 1;
 };
 Native["com/sun/mmedia/DirectMIDI.nBuffering.([BI)I"] = function(addr, bufferAddr,len) {
