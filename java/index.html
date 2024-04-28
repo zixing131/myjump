@@ -380,8 +380,13 @@
 						jarName: "dragon.jar",
 						midletClassName: "GloftJUPK",
 						picPath: "img/dragon.png"
+					},
+					{
+						name: "鳄鱼小顽皮爱洗澡",
+						jarName: "WheresMyWater.jar",
+						picPath: "img/WheresMyWater.png",
+						midletClassName: "xor.wimw.j2me.src.WIMWGameController"
 					}
-
 				]
 				// 初始化游戏列表
 				var GameListHtml = '';
@@ -552,7 +557,6 @@
 
 				function openLocalJar() {
 					document.getElementById("jarFileupload").click();
-
 				}
 
 				function openJar(jarname, midletClassName, islocaljar) {
@@ -603,100 +607,7 @@
 
 					window.location.href = href;
 				}
-			</script>
-
-			<!-- 			<a class="game" style="" href="javascript:void(0)"
-				onclick="openJar('Anyview4.0.jar','com.ismyway.anyview.Anyview');">
-				<div style="height:64px;">
-					<img src="img/anyview.png"></img>
-				</div>
-				Anyview
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('kybc6.jar','GloftASP6');">
-				<div style="height:64px;">
-					<img src="img/kybc6.png" width="60" height="60"></img>
-				</div>
-				狂野飙车6
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('pvz.jar','Game');">
-				<div style="height:64px;">
-					<img src="img/pvz.png" style="margin-top:15px"></img>
-				</div>
-				植物大战僵尸
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('ckxt3.jar','GloftASBR');">
-				<div style="height:64px;">
-					<img src="img/ckxt3.png" style="margin-top:0px"></img>
-				</div>
-				刺客信条3
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('kxnc.jar','FarmMIDlet');">
-				<div style="height:64px;">
-					<img src="img/kxnc.png" style="margin-top:4px"></img>
-				</div>
-				开心农场
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('rf18.jar','GloftR8FP');">
-				<div style="height:64px;">
-					<img src="img/rf18.png" style="margin-top:4px"></img>
-				</div>
-				RF18
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('BounceTales.jar','RMIDlet');">
-				<div style="height:64px;">
-					<img src="img/BounceTales.png" style="margin-top:4px"></img>
-				</div>
-				BounceTales
-			</a>
-			
-			<a class="game" href="javascript:void(0)" onclick="openJar('jxlls.jar','baltorogames.system.Application');">
-				<div style="height:64px;">
-					<img src="img/jxlls.png" style="margin-top:4px"></img>
-				</div>
-				极限拉力赛2
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('ddz.jar','GameMidlet');">
-				<div style="height:64px;">
-					<img src="img/ddz.png" style="margin-top:20px"></img>
-				</div>
-				斗地主
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('gta.jar','SaintsRow2');">
-				<div style="height:64px;">
-					<img src="img/gta.png" style="margin-top:20px"></img>
-				</div>
-				GTA5
-			</a>
-
-			<a class="game" href="javascript:void(0)" onclick="openJar('tyty.jar','S');">
-				<div style="height:64px;">
-					<img src="img/tyty.png" style="margin-top:10px"></img>
-				</div>
-				涂鸦跳跃
-			</a>
-			
-			<a class="game" href="javascript:void(0)" onclick="openJar('chess.jar','com.chess.Tmpmidlet');">
-				<div style="height:64px;">
-					<img src="img/chess.png" style="margin-top:10px"></img>
-				</div>
-				中国象棋
-			</a>
-			
-			<a class="game" href="javascript:void(0)" onclick="openJar('sim3.jar','com.ea.sims3.MonkeyApp');">
-				<div style="height:64px;">
-					<img src="img/sim3.png" style="margin-top:10px"></img>
-				</div>
-				模拟人生3
-			</a>
-			 -->
+			</script> 
 		</div>
 
 		<!-- <label><input id="mycheck1" name="enablekey" type="checkbox"  checked value="" />启用按键</label> -->

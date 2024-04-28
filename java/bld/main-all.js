@@ -1,6 +1,9 @@
 //var midiplayer;
 //var pAudio;
 //var pAudioList = {};
+//是否是主页
+var isIndex = window.location.href.endsWith('/index.html');
+var isLoadJarFinished = false;
 var myflushAll=undefined;
 var mytitle="";
 var mycontent="";
@@ -366,6 +369,7 @@ Native["java/lang/System.arraycopy.(Ljava/lang/Object;ILjava/lang/Object;II)V"] 
 var stubProperties = {"com.nokia.multisim.slots":"1", "com.nokia.mid.imsi":"000000000000000", "com.nokia.mid.imei":""};
 Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] = function(addr, keyAddr) {
   var key = J2ME.fromStringAddr(keyAddr);
+  try{ 
  //console.log("System.getProperty0",key)
   var value;
   switch(key) {
@@ -477,10 +481,10 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       value = "1.7";
       break;
     case "com.nokia.mid.mnc":
-      if (mobileInfo.icc.mcc && mobileInfo.icc.mnc) {
+      if (mobileInfo && mobileInfo.icc && mobileInfo.icc.mcc && mobileInfo.icc.mnc) {
         value = util.pad(mobileInfo.icc.mcc, 3) + util.pad(mobileInfo.icc.mnc, 3);
       } else {
-        value = null;
+        value="460030912121001";
       }
       break;
     case "com.nokia.mid.networkID":
@@ -507,7 +511,7 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       break;
     case "audio.encodings":
       value = "encoding=audio/amr";
-      break;
+      break; 
     case "video.snapshot.encodings":
       value = "encoding=jpeg&quality=80&progressive=true&type=jfif&width=400&height=400";
       break;
@@ -529,6 +533,12 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
   }
   //console.log(value);
   return J2ME.newString(value);
+  }catch(err)
+  {
+    console.error(err);
+    console.log("System.getProperty0 "+key+" error return black ")
+    return J2ME.newString("");
+  }
 };
 Native["java/lang/System.currentTimeMillis.()J"] = function(addr) {
   return J2ME.returnLongValue(Date.now());
@@ -1030,8 +1040,16 @@ Native["org/mozilla/internal/Sys.stopProfile.()V"] = function(addr) {
   }
 };
 function load(file, responseType) {
+  
+  var progressBar = document.getElementById('download-bar');
   return new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest({mozSystem:true});
+    xhr.addEventListener("progress", function(event) {
+      if (event.lengthComputable && progressBar) {
+          var percentage = Math.round((event.loaded * 100) / event.total); 
+          progressBar.value = percentage; 
+      }
+    }, false);
     xhr.open("GET", file, true);
     xhr.responseType = responseType;
     xhr.onload = function() {
@@ -1414,9 +1432,38 @@ if (typeof module === "object") {
     });
   }
 
-  function addBuiltIn(jarName, jarData) {
+  function addBuiltIn(jarName, jarData,isBuiltIn) {
+    if(isBuiltIn==undefined)
+    {
+      isBuiltIn=true;
+    }
     var zip = new ZipFile(jarData, false);
-    jars.set(jarName, {directory:zip.directory, isBuiltIn:true});
+    if(!config.midletClassName && jarName!="java/classes.jar")
+    {
+      console.log(config)
+      var jar = zip.directory;
+      mffile = jar['META-INF/MANIFEST.MF'];
+      
+      mfdata=''
+      switch(mffile.compression_method) {
+        case 0:
+          mfdata= mffile.compressed_data;
+		  break;
+        case 8:
+          mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+		  break;
+      }
+      mfdata=new TextDecoder('utf-8').decode(mfdata);
+      console.log(mfdata);
+      processJAD(mfdata);
+      console.log(MIDP.manifest)
+      var a=MIDP.manifest['MIDlet-1'];
+      console.log(a)
+      a=a.substr(a.lastIndexOf(',')+1).trim()
+      config.midletClassName = a;
+      console.log("load main class :",config.midletClassName);
+    }
+    jars.set(jarName, {directory:zip.directory, isBuiltIn:isBuiltIn});
   }
 
   function deleteJar(jarName)
@@ -14026,6 +14073,8 @@ var getMobileInfo = new Promise(function(resolve, reject) {
     resolve();
   });
 });
+
+showDownloadScreen();
 var loadingMIDletPromises = [getMobileInfo];
 var loadingPromises = [initFS];
 loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data) {
@@ -14054,18 +14103,27 @@ if(config.localjar)
       var a=MIDP.manifest['MIDlet-1'];
       a=a.substr(a.lastIndexOf(',')+1).trim()
       config.midletClassName = a;
-      console.log("load main class :",config.midletClassName);
+      console.log("load main class :",config.midletClassName); 
+      
+      setTimeout(function(){ 
+        hideDownloadScreen();
+        isLoadJarFinished=true;
+      },0)
     });
    jars=config.localjar; 
 }
 else{
     jars.forEach(function(jar) {
     loadingMIDletPromises.push(load(jar, "arraybuffer").then(function(data) {
-      JARStore.addBuiltIn(jar, data);
+      JARStore.addBuiltIn(jar, data,false);  
+      hideDownloadScreen(); 
+      setTimeout(function(){ 
+        hideDownloadScreen();
+        isLoadJarFinished=true;
+      },0)
     }));
   });
 }
-
 
 function processJAD(data) {
   data.replace(/\r\n|\r/g, "\n").replace(/\n /g, "").split("\n").forEach(function(entry) {
@@ -14228,12 +14286,16 @@ function start() {
     }, deferStartup);
   } else {  
     var interval = setInterval(function() {   
-      if(JARStore.getjars().size>1)
+      if(!isLoadJarFinished)
+      {
+        return;
+      }
+      if(JARStore.getjars().size>1 && !isIndex)
       {
         console.log('开始执行jars'); 
         run();
-        clearInterval(interval);
-      }
+      } 
+      clearInterval(interval);
     }, 100); 
   }
   function run() {
@@ -14560,4 +14622,3 @@ var profiler = profile === 1 ? function() {
 }() : undefined;
 
 //# sourceMappingURL=main-all.js.map
- 

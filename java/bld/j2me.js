@@ -5678,7 +5678,8 @@ var J2ME;
             return null;
             return $.ctx.createException("java/lang/ClassNotFoundException", str);
         };
-        RuntimeTemplate.prototype.newIllegalArgumentException = function (str) {
+        RuntimeTemplate.prototype.newIllegalArgumentException = function (str) { 
+            return null;
             return $.ctx.createException("java/lang/IllegalArgumentException", str);
         };
         RuntimeTemplate.prototype.newIllegalStateException = function (str) {
@@ -10519,6 +10520,7 @@ var J2ME;
         Context.prototype.wait = function (objectAddr, timeout) {
             var lock = J2ME.getMonitor(objectAddr);
             if (timeout < 0)
+                //console.log('throw $.newIllegalArgumentException();')
                 throw $.newIllegalArgumentException();
             if (!lock || lock.threadAddress !== this.threadAddress)
                 throw $.newIllegalMonitorStateException();
