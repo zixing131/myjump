@@ -2,7 +2,7 @@
 //var pAudio;
 //var pAudioList = {};
 //是否是主页
-var isIndex = window.location.href.endsWith('/index.html');
+var isIndex = window.location.href.indexOf('main.html')==-1;
 var isLoadJarFinished = false;
 var myflushAll=undefined;
 var mytitle="";
