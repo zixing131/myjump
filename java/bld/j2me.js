@@ -8675,19 +8675,23 @@ var J2ME;
             return false;
         };
         ClassInfo.prototype.isAssignableTo = function (toClass) {
-            if (this === toClass) {
-                return true;
-            }
-            if (toClass.isInterface) {
-                return this.getAllInterfaces().indexOf(toClass) >= 0;
-            }
-            else if (toClass.elementClass) {
-                if (!this.elementClass) {
-                    return false;
+            try{
+                if (this === toClass) {
+                    return true;
                 }
-                return this.elementClass.isAssignableTo(toClass.elementClass);
+                if (toClass.isInterface) {
+                    return this.getAllInterfaces().indexOf(toClass) >= 0;
+                }
+                else if (toClass.elementClass) {
+                    if (!this.elementClass) {
+                        return false;
+                    }
+                    return this.elementClass.isAssignableTo(toClass.elementClass);
+                }
+                return this.getDisplay()[toClass.depth] === toClass;
+            }catch(err){
+                return false;
             }
-            return this.getDisplay()[toClass.depth] === toClass;
         };
         /**
           * Creates lookup tables used to efficiently implement type checks.
