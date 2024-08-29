@@ -438,7 +438,7 @@
 
 				function refreshGameList() {
 					JARStore.getAll().then(
-						(files) => {
+						function(files){
 							var localjars = document.getElementById('localjars');
 							localjars.length = 0;
 							for (var i = 0; i < files.length; i++) {
@@ -454,7 +454,7 @@
 							}
 							localjars.selectedIndex = gameindex;
 						},
-						(err) => {
+						function(err){
 							alert(err);
 						}
 					);
@@ -494,12 +494,12 @@
 					let res = confirm('确定删除 ' + jarname + ' ？');
 					if (res) {
 						JARStore.deleteJar(jarname).then(
-							() => {
+							function() {
 								alert(jarname + "删除成功！");
 								refreshGameList();
 
 							},
-							(errname) => {
+							function(errname) {
 								alert(errname + "删除失败！");
 							}
 						);
@@ -520,11 +520,11 @@
 					reader.readAsArrayBuffer(_file);
 					reader.onload = function(readRes) {
 						JARStore.installJAR(_file.name, readRes.target.result).then(
-							() => {
+							function()  {
 								alert(_file.name + "安装成功！");
 								refreshGameList();
 							},
-							(errname) => {
+							function(errname) {
 								alert(errname + "安装失败！");
 							}
 						);
@@ -547,24 +547,22 @@
 							myInfo[key] = data[key];
 						}
 					}
-					return {
-						//按key从对象中取值
-						getValueByKey(key) {
+					
+					return { 
+						getValueByKey:function(key) {
 							return myInfo[key]
-						},
-						//将键值对保存到对象中
-						setValueByKey() {
+						}, 
+						setValueByKey:function() {
 							for (var i = 0; i < arguments.length; i += 2) {
 								myInfo[arguments[i]] = arguments[i + 1];
-							}
-							//将新的数据序列化到本地保存
+							} 
 							window.localStorage["my"] = JSON.stringify(myInfo);
 						}
 					}
 				}
 
 				var config01 = new config();
-				window.addEventListener("load", () => {
+				window.addEventListener("load", function() {
 
 					var csize = config01.getValueByKey("canvasSize");
 					var gsize = config01.getValueByKey("gamepadSize");

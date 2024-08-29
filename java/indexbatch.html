@@ -366,7 +366,7 @@
 
 				function refreshGameList() {
 					JARStore.getAll().then(
-						(files) => {
+						function(files)  {
 							var localjars = document.getElementById('localjars');
 							localjars.length = 0;
 							var gamepanel = document.getElementById("gamepanel");
@@ -391,7 +391,7 @@
 							}
 							localjars.selectedIndex = gameindex;
 						},
-						(err) => {
+						function(err){
 							alert(err);
 						}
 					);
@@ -434,12 +434,12 @@
 					let res = confirm('确定删除 ' + jarname + ' ？');
 					if (res) {
 						JARStore.deleteJar(jarname).then(
-							() => {
+							function()  {
 								alert(jarname + "删除成功！");
 								refreshGameList();
 
 							},
-							(errname) => {
+							function(errname)  {
 								alert(errname + "删除失败！");
 							}
 						);
@@ -451,10 +451,10 @@
 					let res = confirm('确定清空本地jar吗 ？');
 					if (res) {
 						JARStore.clear().then(
-							() => {
+							function(){
 								alert(jarname + "清空成功！");
 							},
-							(errname) => {
+							function(errname){
 								alert(errname + "清空失败！");
 							}
 						); 
@@ -484,7 +484,7 @@
 						reader.readAsArrayBuffer(_file);
 						reader.onload = function(readRes) {
 							JARStore.installJAR(_file.name, readRes.target.result).then(
-								() => {
+								function()  {
 									successcount++;
 									if(successcount+failcount>=allcount)
 									{
@@ -492,7 +492,7 @@
 										refreshGameList();
 									} 
 								},
-								(errname) => {
+								function(errname) {
 									failcount++;
 									if(successcount+failcount>=allcount)
 									{
@@ -538,7 +538,7 @@
 				}
 
 				var config01 = new config();
-				window.addEventListener("load", () => {
+				window.addEventListener("load", function() {
 
 					var csize = config01.getValueByKey("canvasSize");
 					var gsize = config01.getValueByKey("gamepadSize");

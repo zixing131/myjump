@@ -23,7 +23,7 @@ function WebAudioTinySynthCore(target) {
       /*@@guiEND*/
     },
     /*@@gui*/
-    layout:(()=>{
+    layout:(function(){
       this.canvas.style.width=this.width;
       this.canvas.style.height=this.height; 
     }),
@@ -441,7 +441,7 @@ function WebAudioTinySynthCore(target) {
 
     ],
     /*@@gui*/
-    _guiInit:()=>{
+    _guiInit:function(){
       if(this.canvas){
         this.ctx=this.canvas.getContext("2d");
         this.ctx.fillStyle="#000";
@@ -458,7 +458,7 @@ function WebAudioTinySynthCore(target) {
         this.canvas.addEventListener("touchmove",this.pointermove.bind(this),false);
       }
     },
-    _guiUpdate:()=>{
+    _guiUpdate:function(){
       if(this.canvas){
         this.ctx.fillStyle="#000";
         this.ctx.fillRect(0,0,300,32);
@@ -550,25 +550,25 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    toTime:(ti)=>{
+    toTime:function(ti){
       ti=(ti*4*60/this.song.timebase/this.song.tempo)|0;
       const m=(ti/60)|0;
       const s=ti%60;
       return ("00"+m).substr(-2)+":"+("00"+s).substr(-2);
     },
-    preventScroll:(e)=>{
+    preventScroll:function(e){
       e.preventDefault();
     },
-    pointerup:(ev)=>{
+    pointerup:function(ev){
       document.body.removeEventListener('touchstart',this.preventScroll,false);
     },
-    getPos:(e)=>{
+    getPos:function(e){
       var p=e.target.getBoundingClientRect();
       if(p.right!=p.left)
         return {x:(e.clientX-p.left)*300/(p.right-p.left),y:e.clientY-p.top};
       return {x:0,y:0};
     },
-    pointerdown:(ev)=>{
+    pointerdown:function(ev){
       let e=ev;
       if(ev.touches)
         e=ev.touches[0];
@@ -586,7 +586,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    pointermove:(ev)=>{
+    pointermove:function(ev){
       let e=ev;
       if(ev.touches)
         e=ev.touches[0];
@@ -603,7 +603,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    click:(e)=>{
+    click:function(e){
       const pos=this.getPos(e);
       if(pos.x<40 && this.song){
         if(this.playing)
@@ -620,16 +620,16 @@ function WebAudioTinySynthCore(target) {
           this.masterVol=this.lastMasterVol;
       }
     },
-    dragLeave:(e)=>{
+    dragLeave:function(e){
       this.waitdrop=0;
     },
-    dragOver:(e)=>{
+    dragOver:function(e){
       this.waitdrop=1;
       e.stopPropagation();
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
     },
-    execDrop:(e)=>{
+    execDrop:function(e){
       this.waitdrop=0;
       const f = e.dataTransfer.files;
       if(this.disabledrop==0){
@@ -643,9 +643,9 @@ function WebAudioTinySynthCore(target) {
       e.preventDefault();
     },
     /*@@guiEND*/
-    ready:()=>{
-      return new Promise((resolv)=>{
-        const timerid=setInterval(()=>{
+    ready:function(){
+      return new Promise(function(resolv){
+        const timerid=setInterval(function(){
 /*
           if(this.debug)
             console.log("Initialize checking.");
@@ -659,7 +659,7 @@ function WebAudioTinySynthCore(target) {
         },100);
       });
     },
-    init:()=>{
+    init:function(){
       this.pg=[]; this.vol=[]; this.ex=[]; this.bend=[]; this.rpnidx=[]; this.brange=[];
       this.sustain=[]; this.notetab=[]; this.rhythm=[];
       this.masterTuningC=0; this.masterTuningF=0; this.tuningC=[]; this.tuningF=[]; this.scaleTuning=[];
@@ -726,29 +726,29 @@ function WebAudioTinySynthCore(target) {
       }
       this.isReady=1;
     },
-    setMasterVol:(v)=>{
+    setMasterVol:function(v){
       if(v!=undefined)
         this.masterVol=v;
       if(this.out)
         this.out.gain.value=this.masterVol;
     },
-    setReverbLev:(v)=>{
+    setReverbLev:function(v){
       if(v!=undefined)
         this.reverbLev=v;
       var r=parseFloat(this.reverbLev);
       if(this.rev&&!isNaN(r))
         this.rev.gain.value=r*8;
     },
-    setLoop:(f)=>{
+    setLoop:function(f){
       this.loop=f;
     },
-    setVoices:(v)=>{
+    setVoices:function(v){
       this.voices=v;
     },
-    getPlayStatus:()=>{
+    getPlayStatus:function(){
       return {play:this.playing, maxTick:this.maxTick, curTick:this.playTick};
     },
-    locateMIDI:(tick)=>{
+    locateMIDI:function(tick){
       let i,p=this.playing;
       this.stopMIDI();
       for(i=0;i<this.song.ev.length && tick>this.song.ev[i].t;++i){
@@ -780,16 +780,16 @@ function WebAudioTinySynthCore(target) {
       if(p)
         this.playMIDI();
     },
-    getTimbreName:(m,n)=>{
+    getTimbreName:function(m,n){
       if(m==0)
         return this.program[n].name;
       else
         return this.drummap[n-35].name;
     },
-    loadMIDIfromSrc:()=>{
+    loadMIDIfromSrc:function(){
       this.loadMIDIUrl(this.src);
     },
-    loadMIDIUrl:(url)=>{
+    loadMIDIUrl:function(url){
       if(!url)
         return;
       var xhr=new XMLHttpRequest();
@@ -803,7 +803,7 @@ function WebAudioTinySynthCore(target) {
       };
       xhr.send();
     },
-    reset:()=>{
+    reset:function(){
       for(let i=0;i<16;++i){
         this.setProgram(i,0);
         this.setBendRange(i,0x100);
@@ -820,12 +820,12 @@ function WebAudioTinySynthCore(target) {
       this.masterTuningF=0;
       this.rhythm[9]=1;
     },
-    stopMIDI:()=>{
+    stopMIDI:function(){
       this.playing=0;
       for(var i=0;i<16;++i)
         this.allSoundOff(i);
     },
-    playMIDI:()=>{
+    playMIDI:function(){
       if(!this.song)
         return;
       const dummy=this.actx.createOscillator();
@@ -839,7 +839,7 @@ function WebAudioTinySynthCore(target) {
       this.tick2Time=4*60/this.song.tempo/this.song.timebase;
       this.playing=1;
     },
-    loadMIDI:(data)=>{
+    loadMIDI:function(data) {
       function Get2(s, i) { return (s[i]<<8) + s[i+1]; }
       function Get3(s, i) { return (s[i]<<16) + (s[i+1]<<8) + s[i+2]; }
       function Get4(s, i) { return (s[i]<<24) + (s[i+1]<<16) + (s[i+2]<<8) + s[i+3]; }
@@ -949,7 +949,7 @@ function WebAudioTinySynthCore(target) {
       this.reset();
       this.locateMIDI(0);
     },
-    setQuality:(q)=>{
+    setQuality:function(q) {
       if(q!=undefined)
         this.quality=q;
       for(let i=0;i<128;++i)
@@ -965,7 +965,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    setTimbre:(m,n,p)=>{
+    setTimbre:function(m,n,p) {
       const defp={g:0,w:"sine",t:1,f:0,v:0.5,a:0,h:0.01,d:0.01,s:0,r:0.05,p:1,q:1,k:0};
       function filldef(p){
         for(n=0;n<p.length;++n){
@@ -981,7 +981,7 @@ function WebAudioTinySynthCore(target) {
       if(m==0 && n>=0 && n<=127)
         this.program[n].p=filldef(p);
     },
-    _pruneNote:(nt)=>{
+    _pruneNote:function(nt) {
       for(let k=nt.o.length-1;k>=0;--k){
         if(nt.o[k].frequency){
           nt.o[k].frequency.cancelScheduledValues(0);
@@ -1000,7 +1000,7 @@ function WebAudioTinySynthCore(target) {
         nt.g[k].gain.value = 0;
       }
     },
-    _limitVoices:(ch,n)=>{
+    _limitVoices:function(ch,n) {
       this.notetab.sort(function(n1,n2){
         if(n1.f!=n2.f) return n1.f-n2.f;
         if(n1.e!=n2.e) return n2.e-n1.e;
@@ -1014,7 +1014,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    _note:(t,ch,n,v,p)=>{
+    _note:function(t,ch,n,v,p) {
       let out,sc,pn;
       const o=[],g=[],vp=[],fp=[],r=[];
       const f=440*Math.pow(2,(n-69 + this.masterTuningC + this.tuningC[ch] + (this.masterTuningF + this.tuningF[ch]/8192 + this.scaleTuning[ch][n%12]))/12);
@@ -1075,7 +1075,7 @@ function WebAudioTinySynthCore(target) {
         o[i].start(t);
         if(this.rhythm[ch]){
 
-          o[i].onended = ()=>{
+          o[i].onended = function(){
             try {
               if (o[i].detune) this.chmod[ch].disconnect(o[i].detune);
             }
@@ -1087,13 +1087,13 @@ function WebAudioTinySynthCore(target) {
       if(!this.rhythm[ch])
         this.notetab.push({t:t,e:99999,ch:ch,n:n,o:o,g:g,t2:t+pn.a,v:vp,r:r,f:0});
     },
-    _setParamTarget:(p,v,t,d)=>{
+    _setParamTarget:function(p,v,t,d) {
       if(d!=0)
         p.setTargetAtTime(v,t,d);
       else
         p.setValueAtTime(v,t);
     },
-    _releaseNote:(nt,t)=>{
+    _releaseNote:function(nt,t) {
       if(nt.ch!=9){
         for(let k=nt.g.length-1;k>=0;--k){
           nt.g[k].gain.cancelScheduledValues(t);
@@ -1107,22 +1107,22 @@ function WebAudioTinySynthCore(target) {
       nt.e=t+nt.r[0]*this.releaseRatio;
       nt.f=1;
     },
-    setModulation:(ch,v,t)=>{
+    setModulation:function(ch,v,t){
       this.chmod[ch].gain.setValueAtTime(v*100/127,this._tsConv(t));
     },
-    setChVol:(ch,v,t)=>{
+    setChVol:function(ch,v,t){
       this.vol[ch]=3*v*v/(127*127);
       this.chvol[ch].gain.setValueAtTime(this.vol[ch]*this.ex[ch],this._tsConv(t));
     },
-    setPan:(ch,v,t)=>{
+    setPan:function(ch,v,t){
       if(this.chpan[ch])
         this.chpan[ch].pan.setValueAtTime((v-64)/64,this._tsConv(t));
     },
-    setExpression:(ch,v,t)=>{
+    setExpression:function(ch,v,t){
       this.ex[ch]=v*v/(127*127);
       this.chvol[ch].gain.setValueAtTime(this.vol[ch]*this.ex[ch],this._tsConv(t));
     },
-    setSustain:(ch,v,t)=>{
+    setSustain:function(ch,v,t){
       this.sustain[ch]=v;
       t=this._tsConv(t);
       if(v<64){
@@ -1133,7 +1133,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    allSoundOff:(ch)=>{
+    allSoundOff:function(ch) {
       for(let i=this.notetab.length-1;i>=0;--i){
         const nt=this.notetab[i];
         if(nt.ch==ch){
@@ -1142,7 +1142,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    resetAllControllers:(ch)=>{
+    resetAllControllers:function(ch) {
       this.bend[ch]=0; this.ex[ch]=1.0;
       this.rpnidx[ch]=0x3fff; this.sustain[ch]=0;
       if(this.chvol[ch]){
@@ -1150,15 +1150,15 @@ function WebAudioTinySynthCore(target) {
         this.chmod[ch].gain.value=0;
       }
     },
-    setBendRange:(ch,v)=>{
+    setBendRange:function(ch,v) {
       this.brange[ch]=v;
     },
-    setProgram:(ch,v)=>{
+    setProgram:function(ch,v) {
       if(this.debug)
         console.log("Pg("+ch+")="+v);
       this.pg[ch]=v;
     },
-    _tsConv:(t)=>{
+    _tsConv:function(t) {
       if(t==undefined||t<=0){
         t=0;
         if(this.actx)
@@ -1170,7 +1170,7 @@ function WebAudioTinySynthCore(target) {
       }
       return t;
     },
-    setBend:(ch,v,t)=>{
+    setBend:function(ch,v,t){
       t=this._tsConv(t);
       const br=this.brange[ch]*100/127;
       this.bend[ch]=(v-8192)*br/8192;
@@ -1184,7 +1184,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    noteOff:(ch,n,t)=>{
+    noteOff:function(ch,n,t) {
       if(this.rhythm[ch])
         return;
       t=this._tsConv(t);
@@ -1197,7 +1197,7 @@ function WebAudioTinySynthCore(target) {
         }
       }
     },
-    noteOn:(ch,n,v,t)=>{
+    noteOn:function(ch,n,v,t) {
       if(v==0){
         this.noteOff(ch,n,t);
         return;
@@ -1210,10 +1210,10 @@ function WebAudioTinySynthCore(target) {
       }
       this._note(t,ch,n,v,this.program[this.pg[ch]].p);
     },
-    setTsMode:(tsmode)=>{
+    setTsMode:function(tsmode) {
       this.tsmode=tsmode;
     },
-    send:(msg,t)=>{    /* send midi message */
+    send:function(msg,t) {    /* send midi message */
       const ch=msg[0]&0xf;
       const cmd=msg[0]&~0xf;
       if(cmd<0x80||cmd>=0x100)
@@ -1310,17 +1310,17 @@ function WebAudioTinySynthCore(target) {
         break;
       }
     },
-    _createWave:(w)=>{
+    _createWave:function(w){
       const imag=new Float32Array(w.length);
       const real=new Float32Array(w.length);
       for(let i=1;i<w.length;++i)
         imag[i]=w[i];
       return this.actx.createPeriodicWave(real,imag);
     },
-    getAudioContext:()=>{
+    getAudioContext:function(){
       return this.actx;
     },
-    setAudioContext:(actx,dest)=>{
+    setAudioContext:function(actx,dest) {
       this.audioContext=this.actx=actx;
       this.dest=dest;
       if(!dest)
@@ -1394,101 +1394,148 @@ function WebAudioTinySynthCore(target) {
     },
   });
 }
-if(window && window.customElements){
-  class WebAudioTinySynthElement extends HTMLElement {
-    constructor(){
-      super();
-    }
-    connectedCallback(){
-      const div = document.createElement("div");
-      div.innerHTML=
-  `<canvas
-    id='wa-canvas' width='300' height='32'
-    touch-action='none' tabindex='0'
-    style='
-      position:relative;
-      margin:0;
-      border:none;
-      width:300px;
-      height:32px;
-    '
-  ></canvas>
-  <div id='wa-logo'
-    style='
-      display:none;
-      position:absolute;
-      top:5px;
-      left:5px;
-      color:#fff;
-      font-size:8px;
-      background:rgba(0,0,0,0.5);
-    '
-  >TinySynth</div>`;
+if (window && document.attachEvent && !window.customElements) {
+  // IE8 不支持 customElements 和 class 语法
+  function WebAudioTinySynthElement() {
+      HTMLElement.call(this); // 继承 HTMLElement 的属性
 
-      this.getAttr = (n,def)=>{
-        let v=this.getAttribute(n);
-        if(v==""||v==null) return def;
-        switch(typeof(def)){
-        case "number":
-          if(v=="true") return 1;
-          v=+v;
-          if(isNaN(v)) return 0;
+      // 创建并初始化属性和 DOM 元素
+      this.init();
+  }
+
+  // 继承 HTMLElement 的方法
+  WebAudioTinySynthElement.prototype = Object.create(HTMLElement.prototype);
+  WebAudioTinySynthElement.prototype.constructor = WebAudioTinySynthElement;
+
+  // 连接到 DOM 时调用的回调
+  WebAudioTinySynthElement.prototype.init = function() {
+      var div = document.createElement("div");
+      div.innerHTML = 
+          "<canvas" +
+          " id='wa-canvas' width='300' height='32'" +
+          " touch-action='none' tabindex='0'" +
+          " style='" +
+          " position:relative;" +
+          " margin:0;" +
+          " border:none;" +
+          " width:300px;" +
+          " height:32px;" +
+          "'>" +
+          "</canvas>" +
+          "<div id='wa-logo'" +
+          " style='" +
+          " display:none;" +
+          " position:absolute;" +
+          " top:5px;" +
+          " left:5px;" +
+          " color:#fff;" +
+          " font-size:8px;" +
+          " background:rgba(0,0,0,0.5);" +
+          "'>" +
+          "TinySynth</div>";
+
+      var self = this;
+
+      // 获取属性的辅助方法
+      this.getAttr = function(n, def) {
+          var v = self.getAttribute(n);
+          if (v === "" || v == null) return def;
+          switch (typeof(def)) {
+              case "number":
+                  if (v === "true") return 1;
+                  v = +v;
+                  if (isNaN(v)) return 0;
+                  return v;
+          }
           return v;
-        }
-        return v;
       };
 
       this.canvas = div.children[0];
       this.appendChild(div);
-      WebAudioTinySynthCore.bind(this)(this);
-      const plist=this.properties;
-      for(let k in plist){
-        const v = plist[k];
-        if(v.observer){
-          this["_"+k] = v.value;
-          Object.defineProperty(this, k, {
-            get:()=>{return this["_"+k]},
-            set:(val)=>{
-              this["_"+k] = val;
-              this[v.observer]();
-            }
-          });
-        }
-        else{
-          this[k]=v;
-        }
+
+      // 假设 WebAudioTinySynthCore 是一个全局函数
+      WebAudioTinySynthCore.call(this);
+
+      var plist = this.properties || {}; // 假设 properties 是一个对象
+      for (var k in plist) {
+          if (plist.hasOwnProperty(k)) {
+              var v = plist[k];
+              if (v.observer) {
+                  this["_" + k] = v.value;
+                  (function(key, observer) {
+                      Object.defineProperty(self, key, {
+                          get: function() { return self["_" + key]; },
+                          set: function(val) {
+                              self["_" + key] = val;
+                              self[observer]();
+                          }
+                      });
+                  })(k, v.observer);
+              } else {
+                  this[k] = v;
+              }
+          }
       }
-      for(let k in plist){
-        const v = plist[k];
-        this[k] = this.getAttr(k,v.value);
+
+      for (var k in plist) {
+          if (plist.hasOwnProperty(k)) {
+              var v = plist[k];
+              this[k] = this.getAttr(k, v.value);
+          }
       }
+
       this.setQuality(1);
       this.init();
-      this._guiInit.bind(this)();
-      setInterval(this._guiUpdate.bind(this),100);
-    }
-  }
-  window.customElements.define('webaudio-tinysynth', WebAudioTinySynthElement);
+      this._guiInit();
+      setInterval(this._guiUpdate.bind(this), 100);
+  };
+
+  // 为 IE8 自定义的标签注册方法
+  document.attachEvent('onreadystatechange', function() {
+      if (document.readyState === 'complete') {
+          // IE8 处理自定义标签的方式
+          var elements = document.getElementsByTagName('webaudio-tinysynth');
+          for (var i = 0; i < elements.length; i++) {
+              WebAudioTinySynthElement.call(elements[i]);
+          }
+      }
+  });
 }
 
-class WebAudioTinySynth {
-  constructor(opt){
-    WebAudioTinySynthCore.bind(this)(this);
-    for(let k in this.properties){
-      this[k]=this.properties[k].value;
-    }
-    this.setQuality(1);
-    if(opt){
-      if(opt.useReverb!=undefined)
-        this.useReverb=opt.useReverb;
-      if(opt.quality!=undefined)
-        this.setQuality(opt.quality);
-      if(opt.voices!=undefined)
-        this.setVoices(opt.voices);
-    }
-    this.init();
+function WebAudioTinySynth(opt) {
+  // 调用 WebAudioTinySynthCore 并绑定到当前实例
+  WebAudioTinySynthCore.call(this, this);
+
+  // 将 this.properties 中的值赋给当前实例的属性
+  for (var k in this.properties) {
+      if (this.properties.hasOwnProperty(k)) {
+          this[k] = this.properties[k].value;
+      }
   }
+
+  this.setQuality(1);
+
+  // 如果提供了 opt 参数，根据 opt 设置属性
+  if (opt) {
+      if (opt.useReverb !== undefined) {
+          this.useReverb = opt.useReverb;
+      }
+      if (opt.quality !== undefined) {
+          this.setQuality(opt.quality);
+      }
+      if (opt.voices !== undefined) {
+          this.setVoices(opt.voices);
+      }
+  }
+
+  // 初始化
+  this.init();
 }
+
+// 你需要确保 WebAudioTinySynthCore 是一个函数并且定义在这个代码的某个地方
+// WebAudioTinySynth.prototype = Object.create(SomeBaseClass.prototype); 
+// 如果有继承的话，需要在这里设置原型链
+
 
 if(typeof exports === 'object' && typeof module !== 'undefined'){
   module.exports = WebAudioTinySynth;

@@ -275,7 +275,7 @@ window.addEventListener(EndEvent, function (e) {
 
 
 //-----------------------keymap
-const onUploadFile = (e) => {
+const onUploadFile = function(e){
     const _files = e.target.files;
     if (_files.length == 0) {
         return;
@@ -284,6 +284,6 @@ const onUploadFile = (e) => {
     fs.createUniqueFile("/Phone",_file.name,_file)
 };
 
-window.addEventListener("load", () => {
+window.addEventListener("load", function(){
     document.getElementById("File").addEventListener("change", onUploadFile); 
 })

@@ -120,16 +120,20 @@ if (inBrowser && !HTMLCanvasElement.prototype.toBlob) {
     }
   })();
 }
-;if (!Map.prototype.clear) {
+;
+
+if (!Map.prototype.clear) {
   Map.prototype.clear = function() {
-    for (var keyVal of this) {
-      this.delete(keyVal[0]);
+
+    for (var i = 0; i < this.length; i++) {  
+      this.delete(this[i][0]);  
     }
   };
 }
 if (!Map.prototype.forEach) {
   Map.prototype.forEach = function(callback, thisArg) {
-    for (var keyVal of this) {
+    for (var i = 0; i < this.length; i++) {  
+      var keyVal=this[i];
       callback.call(thisArg || null, keyVal[1], keyVal[0], this);
     }
   };
@@ -1551,7 +1555,9 @@ if (typeof module === "object") {
     return bytes;
   }
   function loadFile(fileName) {
-    for (var jarName of jars.keys()) {
+    var datas = jars.keys(); 
+    for (var i = 0; i < jars.size; i++) {  
+      var jarName=datas.next().value;
       var data = loadFileFromJAR(jarName, fileName);
       if (data) {
         return data;
@@ -3444,7 +3450,10 @@ var fs = function() {
     openedFile.record.size = openedFile.size;
     store.setItem(openedFile.path, openedFile.record);
     openedFile.dirty = false;
-    for (var entry of openedFiles) {
+
+    var datas = openedFiles;
+    for (var i = 0; i < datas.length; i++) {   
+      var entry=datas[i];
       if (!entry[1].dirty && entry[1].path === openedFile.path) {
         entry[1].mtime = openedFile.mtime;
         entry[1].size = openedFile.size;
@@ -3453,7 +3462,9 @@ var fs = function() {
     }
   }
   function flushAll() {
-    for (var entry of openedFiles) {
+    var datas = openedFiles;
+    for (var i = 0; i < datas.length; i++) {   
+      var entry=datas[i];
       if (entry[1].dirty) {
         flush(entry[0]);
       }
@@ -3461,7 +3472,9 @@ var fs = function() {
     syncStore();
   }
   function flushAllRms() { 
-    for (var entry of openedFiles) {
+    var datas = openedFiles;
+    for (var i = 0; i < datas.length; i++) {   
+      var entry=datas[i];
       if (entry[1].dirty && entry[1].path.startsWith(RECORD_STORE_BASE))  {
         flush(entry[0]);
       }
@@ -3538,7 +3551,10 @@ var fs = function() {
     if (DEBUG_FS) {
       console.log("fs remove " + path);
     }
-    for (var file of openedFiles.values()) {
+
+    var datas = openedFiles.values();
+    for (var i = 0; i < openedFiles.size; i++) {   
+      var file=datas.next().value; 
       if (file.path === path) {
         if (DEBUG_FS) {
           console.log("file is open");
@@ -3554,7 +3570,9 @@ var fs = function() {
       return false;
     }
     if (record.isDir) {
-      for (var value of store.map.values()) {
+      var datas = store.map.values();
+      for (var i = 0; i < store.map.size; i++) {   
+        var value=datas.next().value; 
         if (value && value.parentDir === path) {
           if (DEBUG_FS) {
             console.log("directory is not empty");
@@ -3650,7 +3668,9 @@ var fs = function() {
     if (DEBUG_FS) {
       console.log("fs rename " + oldPath + " -> " + newPath);
     }
-    for (var file of openedFiles.values()) {
+    var datas = openedFiles.values();
+    for (var i = 0; i < openedFiles.size; i++) {   
+      var file=datas.next().value;  
       if (file.path === oldPath) {
         if (DEBUG_FS) {
           console.log("file is open");
@@ -3663,7 +3683,9 @@ var fs = function() {
       return false;
     }
     if (oldRecord.isDir) {
-      for (var value of store.map.values()) {
+      var datas = store.map.values();
+      for (var i = 0; i < datastore.maps.size; i++) {   
+        var value=datas.next().value;   
         if (value && value.parentDir === oldPath) {
           console.error("rename directory containing files not implemented: " + oldPath + " to " + newPath);
           return false;
@@ -6131,7 +6153,11 @@ var saveAs = saveAs || typeof navigator !== "undefined" && navigator.msSaveOrOpe
   }, save_link = doc.createElementNS("http://www.w3.org/1999/xhtml", "a"), can_use_save_link = "download" in save_link, click = function(node) {
     var event = doc.createEvent("MouseEvents");
     event.initMouseEvent("click", true, false, view, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    try{
     node.dispatchEvent(event);
+    }catch(err){
+      console.log(err);
+    }
   }, webkit_req_fs = view.webkitRequestFileSystem, req_fs = view.requestFileSystem || webkit_req_fs || view.mozRequestFileSystem, throw_outside = function(ex) {
     (view.setImmediate || view.setTimeout)(function() {
       throw ex;
@@ -6350,7 +6376,12 @@ if (typeof module !== "undefined" && module.exports) {
       deviceCanvas.style.height = deviceCanvas.height + "px";
       deviceCanvas.style.width = deviceCanvas.width + "px";
       deviceCanvas.style.top = headerHeight + "px";
+      try{
       deviceCanvas.dispatchEvent(new Event("canvasresize"));
+      }catch(err)
+      {
+        console.log(err)
+      }
     }
     //console.log(config.canvasSize);
     if(config.canvasSize)
@@ -6366,7 +6397,11 @@ if (typeof module !== "undefined" && module.exports) {
             deviceCanvas.style.height = deviceCanvas.height + "px";
             deviceCanvas.style.width = deviceCanvas.width + "px";
             deviceCanvas.style.top = headerHeight + "px";
+            try{
             deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+          }catch(err){
+            console.log(err);
+          }
         } 
         else{
             var canx ="100%";
@@ -6374,7 +6409,11 @@ if (typeof module !== "undefined" && module.exports) {
             deviceCanvas.style.height = deviceCanvas.height;
             deviceCanvas.style.width = deviceCanvas.width;
             deviceCanvas.style.top = headerHeight + "px";
+            try{
             deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+          }catch(err){
+            console.log(err);
+          }
             
         }
       }catch(err)
@@ -6425,7 +6464,12 @@ if (typeof module !== "undefined" && module.exports) {
             
 
             deviceCanvas.style.top = headerHeight + "px";
-            deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+            try{
+              deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+              }catch(err)
+              {
+                console.log(err)
+              }
  
         }
 
@@ -11747,7 +11791,9 @@ Media.ListCache = {create:function(data) {
 Media.extToFormat = new Map([["mp3", "MPEG_layer_3"], ["jpg", "JPEG"], ["jpeg", "JPEG"], ["png", "PNG"], ["wav", "wav"], ["ogg", "ogg"], ["mp4", "MPEG4"], ["webm", "WebM"], ["amr", "amr"]]);
 Media.contentTypeToFormat = new Map([["audio/ogg", "ogg"],["audio/midi", "mid"], ["audio/mid", "mid"],["audio/amr", "amr"], ["audio/x-wav", "wav"], ["audio/mpeg", "MPEG_layer_3"], ["image/jpeg", "JPEG"], ["image/png", "PNG"], ["video/mp4", "MPEG4"], ["video/webm", "WebM"]]);
 Media.formatToContentType = new Map;
-for (var elem of Media.contentTypeToFormat) {
+var datas = Media.contentTypeToFormat;
+for (var i = 0; i < datas.length; i++) {   
+  var elem=datas[i];    
   Media.formatToContentType.set(elem[1], elem[0]);
 }
 Media.supportedAudioFormats = ["MPEG_layer_3", "wav", "amr", "ogg", "mid"];
@@ -12526,7 +12572,7 @@ PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
     if(this.getMediaFormat()=='amr')
     {
       this.amr = new BenzAMRRecorder();
-      this.amr.initWithArrayBuffer(uint8).then(()=>{ 
+      this.amr.initWithArrayBuffer(uint8).then(function(){ 
         resolve(bufferSize);
       }); 
       return;
@@ -13061,7 +13107,7 @@ function getPlayer(handle)
 {
   return  Media.PlayerCache[handle];
   var ret;
-  forEach(element => {
+  forEach(function(element) {
     if(element.pId==handle)
     {
       ret = element;
@@ -14014,17 +14060,28 @@ Native["com/sun/javame/sensor/NativeChannel.doMeasureData.(II)[B"] = function(ad
     return;
   }
   document.querySelector("#console-clear").addEventListener("click", function() {
+    try{
     window.dispatchEvent(new CustomEvent("console-clear"));
+  }catch(err){
+    console.log(err);
+  }
   });
   document.querySelector("#console-save").addEventListener("click", function() {
+    try{
     window.dispatchEvent(new CustomEvent("console-save"));
+  }catch(err){
+    console.log(err);
+  }
   });
   var logLevelSelect = document.querySelector("#loglevel");
   var consoleFilterTextInput = document.querySelector("#console-filter-input");
   function updateFilters() {
     minLogLevel = logLevelSelect.value;
     CONSOLES.page.currentFilterText = consoleFilterTextInput.value.toLowerCase();
-    window.dispatchEvent(new CustomEvent("console-filters-changed"));
+    try{
+    window.dispatchEvent(new CustomEvent("console-filters-changed")); }catch(err){
+      console.log(err);
+    }
   }
   logLevelSelect.value = minLogLevel;
   logLevelSelect.addEventListener("change", updateFilters);
@@ -14085,7 +14142,7 @@ loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data)
 if(config.localjar)
 { 
    JARStore.loadJAR(config.localjar).then(
-    (res)=>{
+    function(res){
       console.log(res);
       mffile = res.jar['META-INF/MANIFEST.MF'];
       mfdata=''
@@ -14213,8 +14270,14 @@ function startTimeline() {
     for (var i = 0;i < buffers.length;i++) {
       buffers[i].reset(jsGlobal.START_TIME);
     }
-    for (var runtime of J2ME.RuntimeTemplate.all) {
-      for (var ctx of runtime.allCtxs) {
+
+     var datas = J2ME.RuntimeTemplate.all;
+for (var i = 0; i < datas.length; i++) {   
+  var runtime=datas[i];     
+
+  var ctxs = runtime.allCtxs;
+  for (var i = 0; i < ctxs.length; i++) {   
+    var ctx=ctxs[i];    
         ctx.restartMethodTimeline();
       }
     }

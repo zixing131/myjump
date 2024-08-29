@@ -275,7 +275,11 @@
   	      link.download = filename || 'output.wav';
   	      var click = document.createEvent("Event");
   	      click.initEvent("click", true, true);
+          try{
   	      link.dispatchEvent(click);
+        }catch(err){
+            console.log(err);
+          }
   	    };
 
   	    var recorder = Recorder;
