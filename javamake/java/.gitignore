@@ -2,3 +2,4 @@ build
 build-srcs.txt
 classes.jar
 build-srcs
+*.class
