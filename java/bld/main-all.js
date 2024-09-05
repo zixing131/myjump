@@ -6317,6 +6317,9 @@ if (typeof module !== "undefined" && module.exports) {
   }
 }
 ;var MIDP = function() {
+  if(isIndex){
+    return {};
+  }
   var deviceCanvas = document.getElementById("canvas");
   var deviceContext = deviceCanvas.getContext("2d");
   var FG = function() {
@@ -8217,7 +8220,7 @@ Native["com/sun/midp/crypto/ARC4.nativetx.([B[I[I[BII[BI)V"] = function(addr, SA
 var FONT_HEIGHT_MULTIPLIER = 1.3;
 var currentlyFocusedTextEditor;
 (function(Native) {
-  if (!inBrowser) {
+  if (!inBrowser || isIndex) {
     return;
   }
   var offscreenCanvas = document.createElement("canvas");
@@ -11709,33 +11712,38 @@ Native["com/nokia/mid/ui/DeviceControl.startVibra.(IJ)V"] = function(addr, freq,
 Native["com/nokia/mid/ui/DeviceControl.stopVibra.()V"] = function(addr) {
   navigator.vibrate(0);
 };
-var fgMidletNumber;
-var fgMidletClass;
-var display = document.getElementById("display");
-var splashScreen = document.getElementById("splash-screen");
-display.removeChild(splashScreen);
-splashScreen.style.display = "block";
-function showSplashScreen() {
-  display.appendChild(splashScreen);
-}
-function hideSplashScreen() {
-  if (splashScreen.parentNode) {
-    splashScreen.parentNode.removeChild(splashScreen);
+
+if(!isIndex)
+{
+
+  var fgMidletNumber;
+  var fgMidletClass;
+  var display = document.getElementById("display");
+  var splashScreen = document.getElementById("splash-screen");
+  display.removeChild(splashScreen);
+  splashScreen.style.display = "block";
+  function showSplashScreen() {
+    display.appendChild(splashScreen);
   }
-}
-var downloadDialog = document.getElementById("download-screen");
-display.removeChild(downloadDialog);
-downloadDialog.style.display = "block";
-function showDownloadScreen() {
-  display.appendChild(downloadDialog);
-}
-function hideDownloadScreen() {
-  if (downloadDialog.parentNode) {
-    downloadDialog.parentNode.removeChild(downloadDialog);
+  function hideSplashScreen() {
+    if (splashScreen.parentNode) {
+      splashScreen.parentNode.removeChild(splashScreen);
+    }
   }
+  var downloadDialog = document.getElementById("download-screen");
+  display.removeChild(downloadDialog);
+  downloadDialog.style.display = "block";
+  function showDownloadScreen() {
+    display.appendChild(downloadDialog);
+  }
+  function hideDownloadScreen() {
+    if (downloadDialog.parentNode) {
+      downloadDialog.parentNode.removeChild(downloadDialog);
+    }
+  }
+  
 }
 
- 
 function CloseWebPage() {   
   if (navigator.userAgent.indexOf("MSIE") > 0) {   
       if (navigator.userAgent.indexOf("MSIE 6.0") > 0) {   
