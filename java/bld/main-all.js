@@ -6592,6 +6592,12 @@ if (typeof module !== "undefined" && module.exports) {
   Native["com/sun/midp/main/MIDletSuiteUtils.isAmsIsolate.()Z"] = function(addr) {
     return AMS.isAMSIsolate($.ctx.runtime.isolateId) ? 1 : 0;
   };
+
+  Native["com/sun/midp/events/EventQueue.handleFatalError.(Ljava/lang/Throwable;)V"] = function(addr, th) {
+    var thdata= J2ME.getClassInfo(th);
+    console.log('com/sun/midp/events/EventQueue.handleFatalError.(Ljava/lang/Throwable;)V Enter '+ th + " ");
+    console.log("handleFatalError:"+thdata._name);
+  }; 
   var loadingMIDletPromisesResolved = false;
   Native["com/sun/midp/main/MIDletSuiteUtils.vmBeginStartUp.(I)V"] = function(addr, midletIsolateId) {
     if (loadingMIDletPromisesResolved) {
@@ -8247,7 +8253,7 @@ var currentlyFocusedTextEditor;
     return J2ME.Constants.NULL;
   };
   Native["com/sun/midp/lcdui/DisplayDevice.isDisplayPrimary0.(I)Z"] = function(addr, id) {
-    console.warn("DisplayDevice.isDisplayPrimary0.(I)Z not implemented (" + id + ")");
+    //console.warn("DisplayDevice.isDisplayPrimary0.(I)Z not implemented (" + id + ")");
     return 1;
   };
   Native["com/sun/midp/lcdui/DisplayDevice.isbuildInDisplay0.(I)Z"] = function(addr, id) {
@@ -8778,6 +8784,8 @@ var currentlyFocusedTextEditor;
     var abgrData = new Int32Array(context.getImageData(x, y, width, height).data.buffer);
     converterFunc(abgrData, pixels, width, height, offset, scanlength);
   };
+
+
   Native["com/nokia/mid/ui/DirectGraphicsImp.drawPixels.([SZIIIIIIII)V"] = function(addr, pixelsAddr, transparency, offset, scanlength, x, y, width, height, manipulation, format) {
     console.log("DirectGraphicsImp",x, y, width, height)
     var self = getHandle(addr);
@@ -8820,6 +8828,19 @@ function trans10to16(num10) { //十进制转十六进制
     return result;
 }
 
+Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/Image;IIII)V"] = function(addr, imageAddr, x, y, anchor,unknow) { 
+  if (imageAddr === J2ME.Constants.NULL) {
+    throw $.newNullPointerException("image is null");
+  }
+  
+  var self = getHandle(addr);
+  var image = getHandle(imageAddr);
+  var imageData = getHandle(image.imageData);
+  //console.log(imageData,x, y)
+  var c = NativeMap.get(self.graphics).getGraphicsContext(); 
+  renderRegion(c, NativeMap.get(image.imageData).context.canvas, 0, 0, imageData.width, imageData.height, TRANS_NONE, x, y, anchor);
+};
+ 
   Native["com/nokia/mid/ui/DirectGraphicsImp.fillPolygon.([II[IIII)V"] = function(addr, xPointsAddr,  xOffset,  yPointsAddr,  yOffset,  nPoints,  argbColor) {
     if(nPoints<=0)
     {
@@ -8879,6 +8900,8 @@ function trans10to16(num10) { //十进制转十六进制
     //console.log(imageData,x, y)
     renderRegion(NativeMap.get(addr).getGraphicsContext(), NativeMap.get(image.imageData).context.canvas, 0, 0, imageData.width, imageData.height, TRANS_NONE, x, y, anchor);
   };
+
+
   function GraphicsInfo(contextInfo) {
     this.contextInfo = contextInfo;
     this.transX = 0;
@@ -9697,6 +9720,7 @@ function trans10to16(num10) { //十进制转十六进制
   var STOP = 6;
   Native["javax/microedition/lcdui/NativeMenu.updateCommands.([Ljavax/microedition/lcdui/Command;I[Ljavax/microedition/lcdui/Command;I)V"] = function(addr, itemCommandsAddr, numItemCommands, commandsAddr, numCommands) {
     
+    try{
     if (numItemCommands !== 0) {
       console.error("NativeMenu.updateCommands: item commands not yet supported");
     }
@@ -9795,6 +9819,9 @@ function trans10to16(num10) { //十进制转十六进制
     //     backBtn.style.display = "none";
     //   }
    }
+  }catch(err){
+    console.log("updateCommands Error : "+err)
+  }
 
   };
 })(Native);
@@ -12386,7 +12413,10 @@ PlayerContainer.prototype.close = function() {
       this.amr.stop();   
       return;
     }
-    this.source.stop();
+    if(this.source && this.source.stop)
+    { 
+      this.source.stop();
+    }
     return;
   }
   if (this.player) {
@@ -12706,7 +12736,10 @@ PlayerContainer.prototype.pause = function() {
         this.amr.playOrPauseOrResume();
         return;
       }
-      this.source.pause();
+      if(this.source && this.source.stop)
+      { 
+        this.source.stop();
+      } 
       return;
     }
     //this.player.pause();
@@ -13155,13 +13188,21 @@ Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,c
   //console.log('com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V '+count);
   if(player.getMediaFormat()=='amr')
   { 
-    return player.amr.getCurrentPosition()*100*10000; 
-    return;
+     player.amr.getCurrentPosition()*100*10000; 
+     return
   } 
+  if(player.getMediaFormat()=='wav')
+  {
+    player.playcount=count;
+    return;
+  }
   
   if(midimode==2)
   {
-    player.tinysynth.setLoop(count);
+    if(player.tinysynth)
+    { 
+      player.tinysynth.setLoop(count);
+    }
   }
   else if(midimode==3)
   {

@@ -3407,17 +3407,23 @@ var J2ME;
         Thread.prototype.throwException = function (fp, sp, pc, type, a) {
             this.set(fp, sp, pc);
             switch (type) {
+                //这里拦截了报错
                 case 1 /* ArrayIndexOutOfBoundsException */:
-                    J2ME.throwArrayIndexOutOfBoundsException(a);
+                    console.log('throwArrayIndexOutOfBoundsException'+a)
+                    //J2ME.throwArrayIndexOutOfBoundsException(a);
                     break;
                 case 0 /* ArithmeticException */:
-                    J2ME.throwArithmeticException();
+                    console.log('ArithmeticException')
+                    //J2ME.throwArithmeticException();
                     break;
                 case 2 /* NegativeArraySizeException */:
-                    J2ME.throwNegativeArraySizeException();
+                    
+                    console.log('throwNegativeArraySizeException')
+                    //J2ME.throwNegativeArraySizeException();
                     break;
                 case 3 /* NullPointerException */:
-                    J2ME.throwNullPointerException();
+                    console.log('throwNullPointerException')
+                    //J2ME.throwNullPointerException();
                     break;
             }
         };
@@ -3593,7 +3599,15 @@ var J2ME;
                     return;
                 }
             }
-            var v = interpret(thread);
+            var v=0;
+            try{ 
+                v = interpret(thread);
+                //console.log('interpret '+v)
+            }
+            catch(err){
+                console.log('interpret error:'+err);
+                return v;
+            } 
             if (U) {
                 // Splice out the marker frame so the interpreter doesn't return early when execution is resumed.
                 // The simple solution of using the calleeFP to splice the frame cannot be used since the frame
@@ -5229,6 +5243,7 @@ var J2ME;
                         detailMessage=J2ME.fromStringAddr(e.detailMessage);
                     }
                     console.log("error occurs at : "+e.constructor.prototype.classInfo._name +" detailMessage: "+detailMessage);
+                    console.error(e);
                 }else{
                     console.error(e);
                 } 
@@ -6690,7 +6705,9 @@ var J2ME;
     }
     J2ME.throwArrayIndexOutOfBoundsException = throwArrayIndexOutOfBoundsException;
     function throwArithmeticException() {
-        throw $.newArithmeticException("/ by zero");
+        //hide this!!!! - by zixing
+        //console.log("error / by zero")
+        //throw $.newArithmeticException("/ by zero");
     }
     J2ME.throwArithmeticException = throwArithmeticException;
     function checkArrayStore(arrayAddr, valueAddr) {
