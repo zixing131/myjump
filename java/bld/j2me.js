@@ -3422,7 +3422,7 @@ var J2ME;
                     //J2ME.throwNegativeArraySizeException();
                     break;
                 case 3 /* NullPointerException */:
-                    console.log('throwNullPointerException')
+                    //console.log('throwNullPointerException')
                     //J2ME.throwNullPointerException();
                     break;
             }
@@ -3554,6 +3554,20 @@ var J2ME;
     })();
     J2ME.Thread = Thread;
     function prepareInterpretedMethod(methodInfo) {
+
+        //console.log("methodInfo",methodInfo)
+        // if(ReplaceMethod)
+        // {
+        //     //这里实现替换java中的方法
+        //     var methodjs=ReplaceMethod[methodInfo.implKey];
+        //     if(methodjs)
+        //     {
+        //         console.log(methodInfo.implKey,"replaced!");
+        //         methodInfo.fn = methodjs;
+        //         methodInfo.state=1;
+        //     }   
+        // }
+
         var method = function fastInterpreterFrameAdapter() {
             J2ME.runtimeCounter && J2ME.runtimeCounter.count("fastInterpreterFrameAdapter"); 
             var calleeStats = methodInfo.stats;
@@ -5084,6 +5098,19 @@ var J2ME;
                         if(calleeTargetMethodInfo==null){
                             break;
                         }
+                        // if(ReplaceMethod){
+                        //      //call js func 
+                        //     //这里实现替换java中的方法
+                        //     var methodjs=ReplaceMethod[calleeTargetMethodInfo.implKey];
+                        //     if(methodjs)
+                        //     {
+                        //         console.log(calleeTargetMethodInfo.implKey,"replaced!");
+                        //         calleeTargetMethodInfo.fn = methodjs; 
+                        //         calleeTargetMethodInfo.state=1;
+                        //         //break;
+                        //     } 
+                        // }
+
                         var callMethod = calleeTargetMethodInfo.isNative || calleeTargetMethodInfo.state === 1 /* Compiled */;
                         var calleeStats = calleeTargetMethodInfo.stats;
                         calleeStats.interpreterCallCount++;
@@ -5242,7 +5269,7 @@ var J2ME;
                     if(e.detailMessage){
                         detailMessage=J2ME.fromStringAddr(e.detailMessage);
                     }
-                    console.log("error occurs at : "+e.constructor.prototype.classInfo._name +" detailMessage: "+detailMessage);
+                    console.warn("error occurs at : "+e.constructor.prototype.classInfo._name +" detailMessage: "+detailMessage);
                     console.error(e);
                 }else{
                     console.error(e);
@@ -5389,10 +5416,10 @@ var J2ME;
     J2ME.baselineMethodCounter = release ? null : new J2ME.Metrics.Counter(true);
     J2ME.asyncCounter = release ? null : new J2ME.Metrics.Counter(true);
     J2ME.unwindCount = 0;
-    if (typeof Shumway !== "undefined") {
-        J2ME.timeline = new Shumway.Tools.Profiler.TimelineBuffer("Runtime");
-        J2ME.threadTimeline = new Shumway.Tools.Profiler.TimelineBuffer("Threads");
-    }
+    // if (typeof Shumway !== "undefined") {
+    //     J2ME.timeline = new Shumway.Tools.Profiler.TimelineBuffer("Runtime");
+    //     J2ME.threadTimeline = new Shumway.Tools.Profiler.TimelineBuffer("Threads");
+    // }
     function enterTimeline(name, data) {
         J2ME.timeline && J2ME.timeline.enter(name, data);
     }
@@ -5597,6 +5624,28 @@ var J2ME;
                 release || J2ME.Debug.assert(!U, "Unexpected unwind during preInitializeClasses.");
                 J2ME.preemptionLockLevel--;
             }
+
+            //这里可以初始一些代码
+            //这里写宽高
+            // var MobileCls=J2ME.CLASSES.getClass('org/recompile/mobile/Mobile');
+            // var MobilePlatformCls = J2ME.CLASSES.getClass('org/recompile/mobile/MobilePlatform');
+            // //console.log("MobileCls,MobilePlatformCls ",MobileCls,MobilePlatformCls)
+            // if(MobileCls && MobilePlatformCls)
+            // {
+            //     //这里执行初始化操作
+            //     // this.classInitCheck(MobileCls);
+            //     // this.classInitCheck(MobilePlatformCls);
+            //     var setPlatformMethod = MobileCls.getMethodByNameString("setPlatform", "(Lorg/recompile/mobile/MobilePlatform;)V");
+                
+            //     var MobilePlatformClsInitMethod = MobilePlatformCls.getMethodByNameString("<init>", "(II)V");
+
+            //     var setPlatformMethodFn=J2ME.prepareInterpretedMethod(setPlatformMethod);
+            //     var MobilePlatformClsInitMethodFn=J2ME.prepareInterpretedMethod(MobilePlatformClsInitMethod);
+            //     var MobilePlatformInstance = MobilePlatformClsInitMethodFn(lcdWidth,lcdHeight);
+            //     setPlatformMethodFn(MobilePlatformInstance);
+                
+            // }
+
             ctx.clearCurrentContext();
             if (prevCtx) {
                 prevCtx.setAsCurrentContext();
@@ -5726,6 +5775,8 @@ var J2ME;
             return $.ctx.createException("java/lang/IllegalMonitorStateException", str);
         };
         RuntimeTemplate.prototype.newClassCastException = function (str) {
+            //return null;//屏蔽error
+            console.log("java/lang/ClassCastException "+str);
             return $.ctx.createException("java/lang/ClassCastException", str);
         };
         RuntimeTemplate.prototype.newArithmeticException = function (str) {
@@ -5736,8 +5787,9 @@ var J2ME;
             return $.ctx.createException("java/lang/ClassNotFoundException", str);
         };
         RuntimeTemplate.prototype.newIllegalArgumentException = function (str) { 
-            //return null;
-            return $.ctx.createException("java/lang/IllegalArgumentException", str);
+            console.warn('newIllegalArgumentException',str)
+            return null;//屏蔽error
+            //return $.ctx.createException("java/lang/IllegalArgumentException", str);
         };
         RuntimeTemplate.prototype.newIllegalStateException = function (str) {
             return $.ctx.createException("java/lang/IllegalStateException", str);
@@ -5971,6 +6023,27 @@ var J2ME;
         };
     }
     function findNativeMethodImplementation(methodInfo) {
+        //这里可以进行调试函数信息
+        if(ReplaceMethod)
+            {
+                // if(methodInfo.implKey.indexOf('javax')>-1)
+                // {
+                //     console.log('findNativeMethodImplementation',methodInfo.implKey,methodInfo);
+                // }else{
+                //     console.log('findNativeMethodImplementation',methodInfo.implKey,methodInfo);
+                // }                
+                
+                //这里实现替换java中的方法
+                var methodjs=ReplaceMethod[methodInfo.implKey];
+                if(methodjs)
+                {
+                    console.log(methodInfo.implKey,"replaced!");
+                    methodInfo.fn = methodjs;
+                    methodInfo.state=1;
+                    J2ME.linkedMethods[methodInfo.id] = methodjs;
+                    return methodjs;
+                }   
+            }  
         // Look in bindings first.
         var binding = findNativeMethodBinding(methodInfo);
         if (binding) {
@@ -5989,6 +6062,7 @@ var J2ME;
                 };
             }
         }
+        
         return null;
     }
     var frameView = new J2ME.FrameView();
@@ -6165,6 +6239,27 @@ var J2ME;
         return wrapper;
     }
     function getLinkedMethod(methodInfo) {
+        //这里可以进行调试函数信息
+        if(ReplaceMethod && methodInfo)
+        {
+            // if(methodInfo.implKey.indexOf('javax')>-1)
+            // {
+            //     console.log('getLinkedMethod ',methodInfo.implKey,methodInfo);
+            // }else{
+            //     console.log('getLinkedMethod ',methodInfo.implKey,methodInfo);
+            // }                
+            
+            //这里实现替换java中的方法
+            var methodjs=ReplaceMethod[methodInfo.implKey];
+            if(methodjs)
+            {
+                console.log(methodInfo.implKey,"replaced!");
+                methodInfo.fn = methodjs;
+                methodInfo.state=1;
+                J2ME.linkedMethods[methodInfo.id] = methodjs;
+                return methodjs;
+            }   
+        }  
         if (methodInfo.fn) {
             return methodInfo.fn;
         }
@@ -6337,9 +6432,26 @@ var J2ME;
         return fn;
     }
     function linkMethodFunction(methodInfo, fn, methodType) {
+
+
+        // if(ReplaceMethod)
+        // {
+        //     //这里实现替换java中的方法
+        //     var methodjs=ReplaceMethod[methodInfo.implKey];
+        //     if(methodjs)
+        //     {
+        //         console.log(methodInfo.implKey,"replaced!");
+        //         methodInfo.fn = methodjs;
+        //         methodInfo.state=1;
+        //         J2ME.linkedMethods[methodInfo.id] = methodjs;
+        //         return;
+        //     }   
+        // } 
+
         if (profile || J2ME.traceWriter) {
             fn = wrapMethod(fn, methodInfo, methodType);
         }
+        
         methodInfo.fn = fn;
         J2ME.linkedMethods[methodInfo.id] = fn;
     }
@@ -6637,7 +6749,7 @@ var J2ME;
     }
     J2ME.throwNegativeArraySizeException = throwNegativeArraySizeException;
     function throwNullPointerException() {
-        console.log('newNullPointerException');
+        //console.log('newNullPointerException');
         //throw $.newNullPointerException();
     }
     J2ME.throwNullPointerException = throwNullPointerException;
@@ -6745,6 +6857,7 @@ var J2ME;
     }
     J2ME.monitorExit = monitorExit;
     function translateException(e) {
+        console.log('translateException',e);
         if (e.name === "TypeError") {
             // JavaScript's TypeError is analogous to a NullPointerException.
             return $.newNullPointerException(e.message);
@@ -7618,17 +7731,36 @@ var J2ME;
             return a.join("");
         };
         ByteStream.readString = function (buffer) {
+
+            var ret = '';
             var length = buffer.length;
             if (length === 1) {
                 var c = buffer[0];
                 if (c <= 0x7f) {
-                    return String.fromCharCode(c);
+                    ret= String.fromCharCode(c);
+                    if(debugString)
+                    { 
+                        console.log('ByteStream.readString '+ret);
+                    }
+                    return ret;
                 }
             }
             else if (length < 128) {
-                return ByteStream.readStringFast(buffer);
+                
+                ret = ByteStream.readStringFast(buffer);
+                if(debugString)
+                { 
+                    console.log('ByteStream.readString(readStringFast) '+ret);
+                }
+                return ret;
             }
-            return ByteStream.readStringSlow(buffer);
+
+            ret = ByteStream.readStringSlow(buffer);
+            if(debugString)
+            { 
+                console.log('ByteStream.readString(readStringSlow) '+ret);
+            }
+            return ret; 
         };
         ByteStream.readStringSlow = function (buffer) {
             // First try w/ TextDecoder, fallback to manually parsing if there was an
@@ -8299,6 +8431,9 @@ var J2ME;
             s.seek(this.constantPool.offset);
             this.accessFlags = s.readU2();
             this.utf8Name = this.constantPool.resolveUtf8ClassName(s.readU2());
+            if(debugString){
+                console.log('this.utf8Name',this.utf8Name);
+            }
             this.utf8SuperName = this.constantPool.resolveUtf8ClassName(s.readU2());
             this.vTable = [];
             this.fTable = [];
@@ -8307,6 +8442,9 @@ var J2ME;
             this.scanMethods();
             this.scanClassInfoAttributes();
             this.mangledName = mangleClassName(this.utf8Name);
+            if(debugString){
+                console.log('this.mangledName ',this.mangledName );
+            }
             J2ME.leaveTimeline("ClassInfo");
             sealObjects && Object.seal(this);
         }
@@ -8569,11 +8707,27 @@ var J2ME;
             return null;
         };
         ClassInfo.prototype.getMethodByName = function (utf8Name, utf8Signature) {
+
+          
             var c = this;
             do {
                 var i = c.indexOfMethod(utf8Name, utf8Signature);
                 if (i >= 0) {
-                    return c.getMethodByIndex(i);
+                    var method = c.getMethodByIndex(i);
+                    // if(ReplaceMethod)
+                    // {
+                    //     var methodInfo=method;
+                    //     //这里实现替换java中的方法
+                    //     var methodjs=ReplaceMethod[methodInfo.implKey];
+                    //     if(methodjs)
+                    //     {
+                    //         console.log(methodInfo.implKey,"replaced!"); 
+                    //         method.fn = methodjs;
+                    //         method.state=1;
+                    //         return method;
+                    //     }   
+                    // } 
+                    return method;
                 }
                 c = c.superClass;
             } while (c);
@@ -8582,6 +8736,19 @@ var J2ME;
                 for (var n = 0; n < interfaces.length; ++n) {
                     var method = interfaces[n].getMethodByName(utf8Name, utf8Signature);
                     if (method) {
+                        // if(ReplaceMethod)
+                        // {
+                        //     var methodInfo=method;
+                        //     //这里实现替换java中的方法
+                        //     var methodjs=ReplaceMethod[methodInfo.implKey];
+                        //     if(methodjs)
+                        //     {
+                        //         console.log(methodInfo.implKey,"replaced!"); 
+                        //         method.fn = methodjs;
+                        //         method.state=1;
+                        //         return method; 
+                        //     }   
+                        // }  
                         return method;
                     }
                 }
@@ -9218,7 +9385,11 @@ var J2ME;
                 "java/lang/IndexOutOfBoundsException",
                 "java/lang/StringIndexOutOfBoundsException",
                 // Preload the Isolate class, that is needed to start the VM (see jvm.ts)
-                "com/sun/cldc/isolate/Isolate",
+                "com/sun/cldc/isolate/Isolate", 
+                // "java/io/InputStream",
+                // "org/recompile/mobile/MobilePlatform",
+                // "org/recompile/mobile/Mobile",
+                // "org/recompile/mobile/PlatformImage"
             ];
             for (var i = 0; i < classNames.length; i++) {
                 this.preInitializedClasses.push(this.loadClass(classNames[i]));
@@ -9230,6 +9401,8 @@ var J2ME;
                 this.getClass("[" + primitiveTypes[i]);
             }
             J2ME.leaveTimeline("initializeBuiltinClasses");
+
+            
         };
         ClassRegistry.prototype.isPreInitializedClass = function (classInfo) {
             if (classInfo instanceof J2ME.PrimitiveClassInfo) {
@@ -9734,6 +9907,55 @@ var J2ME;
         J2ME.BindingsMap.put(J2ME.toUTF8(k), Bindings[k]);
     }
 })(J2ME || (J2ME = {}));
+
+
+//js替代的java方法
+var ReplaceMethod = Object.create(null);
+ 
+
+// ReplaceMethod["org/recompile/mobile/Mobile.getPlatform()Lorg/recompile/mobile/MobilePlatform;"] = function (addr) { 
+    
+//     console.log("getPlatform",addr);
+        
+// };
+// ReplaceMethod["org/recompile/mobile/Mobile.getPlatform.()Lorg/recompile/mobile/MobilePlatform;"] = function (addr) { 
+    
+//     console.log("getPlatform",addr);
+        
+// };
+ 
+
+//javax/microedition/lcdui/game/LayerManager.<init>()V
+ReplaceMethod["javax/microedition/lcdui/game/LayerManager.<init>.()V"] = function (addr) { 
+    
+    console.log("LayerManager.init",addr);
+        
+}; 
+
+// ReplaceMethod["javax/microedition/lcdui/Image.getWidth.()I"] = function (addr) { 
+    
+//     console.log("getWidth",addr);
+ 
+//     return J2ME.returnLongValue(240);
+// };
+// ReplaceMethod["javax/microedition/lcdui/Image.getHeight.()I"] = function (addr) { 
+    
+//     console.log("getHeight",addr);
+//     return J2ME.returnLongValue(320);
+// };
+
+ReplaceMethod["javax/microedition/lcdui/Image.createImage.(II)Ljavax/microedition/lcdui/Image;"] = function (addr) { 
+    
+    console.log("Image.createImage",addr);
+        
+};
+
+// ReplaceMethod["javax/microedition/lcdui/Image.createImage(II)Ljavax/microedition/lcdui/Image;"] = function (addr) { 
+    
+//     console.log("Image.createImage",addr);
+        
+// };
+
 var Native = Object.create(null);
 /**
  * Asm.js heap buffer and views.
@@ -9913,6 +10135,7 @@ var J2ME;
         }
     };
     Native["java/lang/Throwable.fillInStackTrace.()V"] = function (addr) {
+ 
         var frame = $.ctx.nativeThread.frame;
         var tp = $.ctx.nativeThread.tp;
         var fp = frame.fp;
@@ -9937,7 +10160,7 @@ var J2ME;
         frame.pc = pc;
     };
     Native["java/lang/Throwable.obtainBackTrace.()Ljava/lang/Object;"] = function (addr) {
-        var resultAddr = 0 /* NULL */;
+        var resultAddr = 0 /* NULL */;    
         var stackTrace = J2ME.NativeMap.get(addr);
         if (stackTrace) {
             var depth = stackTrace.length;
@@ -10266,6 +10489,7 @@ var J2ME;
     /**
      * Toggle VM tracing here.
      */
+    //这里可以进行调试
     J2ME.writers = WriterFlags.None;
     Array.prototype.push2 = function (value) {
         this.push(value);
@@ -10303,6 +10527,9 @@ var J2ME;
         JVM.prototype.createIsolateCtx = function () {
             var runtime = new J2ME.Runtime(this);
             var ctx = new Context(runtime);
+
+            
+
             ctx.threadAddress = runtime.mainThread = J2ME.allocObject(J2ME.CLASSES.java_lang_Thread);
             J2ME.setNative(ctx.threadAddress, ctx);
             var thread = J2ME.getHandle(ctx.threadAddress);
@@ -10583,8 +10810,11 @@ var J2ME;
         Context.prototype.wait = function (objectAddr, timeout) {
             var lock = J2ME.getMonitor(objectAddr);
             if (timeout < 0)
-                //console.log('throw $.newIllegalArgumentException();')
-                throw $.newIllegalArgumentException();
+            {    
+                console.log('throw $.newIllegalArgumentException();') 
+                //throw $.newIllegalArgumentException();
+                return
+            }
             if (!lock || lock.threadAddress !== this.threadAddress)
                 throw $.newIllegalMonitorStateException();
             var lockLevel = lock.level;
