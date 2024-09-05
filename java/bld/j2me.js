@@ -6637,8 +6637,8 @@ var J2ME;
     }
     J2ME.throwNegativeArraySizeException = throwNegativeArraySizeException;
     function throwNullPointerException() {
-        //console.log('newNullPointerException');
-        throw $.newNullPointerException();
+        console.log('newNullPointerException');
+        //throw $.newNullPointerException();
     }
     J2ME.throwNullPointerException = throwNullPointerException;
     function newObjectArray(size) {
@@ -6700,8 +6700,8 @@ var J2ME;
     }
     J2ME.checkArrayBounds = checkArrayBounds;
     function throwArrayIndexOutOfBoundsException(index) {
-        //console.log("newArrayIndexOutOfBoundsException ");
-        throw $.newArrayIndexOutOfBoundsException(String(index));
+        console.log("newArrayIndexOutOfBoundsException ");
+        //throw $.newArrayIndexOutOfBoundsException(String(index));
     }
     J2ME.throwArrayIndexOutOfBoundsException = throwArrayIndexOutOfBoundsException;
     function throwArithmeticException() {
