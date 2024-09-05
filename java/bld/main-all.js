@@ -1,13 +1,13 @@
 //var midiplayer;
-//var pAudio;
-//var pAudioList = {};
 //是否是主页
 var isIndex = window.location.href.indexOf('main.html')==-1;
 var isLoadJarFinished = false;
 var myflushAll=undefined;
 var mytitle="";
 var mycontent="";
-//1是pAudio
+//缩放大小，为了支持缩放后的触摸
+var gamesca=1;
+//1是pAudio, pAudio已经被移除
 //2是webaudio-tinysynth
 //3是Audio标签
 var midimode=2;
@@ -544,6 +544,22 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
     return J2ME.newString("");
   }
 };
+
+//--Conv.java
+Native["com/sun/cldc/i18n/j2me/Conv.getHandler.(Ljava/lang/String;)I"] = function(addr) {
+  return 0;
+};
+
+Native["com/sun/cldc/i18n/j2me/Conv.getMaxByteLength.(I)I"] = function(addr) {
+  return 0;
+};
+
+Native["com/sun/cldc/i18n/j2me/Conv.sizeOfByteInUnicode.(I[BII)I"] = function(addr,aBuffer, aOffset, aLen) {
+  return 0;
+};
+//--Conv.java
+
+
 Native["java/lang/System.currentTimeMillis.()J"] = function(addr) {
   return J2ME.returnLongValue(Date.now());
 };
@@ -619,15 +635,15 @@ Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAd
   //console.warn("nameAddr ",nameAddr,J2ME.fromStringAddr(nameAddr));
   if(nameAddr>=0xffffff)
   {
-    console.warn("ClassNotFoundException");
-    //throw $.newClassNotFoundException("'" + e.message + "' not found.");
+    //console.warn("ClassNotFoundException");
+    throw $.newClassNotFoundException("'" + e.message + "' not found.");
     return;
   } 
   try {
     
     if (nameAddr === J2ME.Constants.NULL) {
-      //throw new J2ME.ClassNotFoundException;
-      console.warn('ClassNotFoundException');
+      throw new J2ME.ClassNotFoundException;
+      //console.warn('ClassNotFoundException');
       return;
     }
     var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/"); 
@@ -643,8 +659,9 @@ Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAd
     }
     console.error(e);
     //throw e;
-  } 
-  //J2ME.classInitCheck(classInfo);
+  }
+  //this maybe removed
+  J2ME.classInitCheck(classInfo);
   if (U) {
     $.nativeBailout(J2ME.Kind.Void, J2ME.Bytecode.Bytecodes.INVOKESTATIC);
   }
@@ -663,7 +680,7 @@ Native["java/lang/Class.forName1.(Ljava/lang/String;)Ljava/lang/Class;"] = funct
     return address;
   }catch(err)
   {
-    console.error(err);
+    console.log(err);
     return J2ME.Constants.NULL;
   }
 };
@@ -678,7 +695,7 @@ Native["java/lang/Class.newInstance0.()Ljava/lang/Object;"] = function(addr) {
   }
   if (classInfo instanceof J2ME.ArrayClassInfo) {
     //throw $.newInstantiationException("Can't instantiate array classes");
-    console.error("Can't instantiate array classes");
+     console.error("Can't instantiate array classes");
      return
   }
   return J2ME.allocObject(classInfo);
@@ -687,8 +704,8 @@ Native["java/lang/Class.newInstance1.(Ljava/lang/Object;)V"] = function(addr, oA
   var classInfo = J2ME.getClassInfo(oAddr);
   var methodInfo = classInfo.getLocalMethodByNameString("<init>", "()V", false);
   if (!methodInfo) {
-    //throw $.newInstantiationException("Can't instantiate classes without a nullary constructor");
-    console.error("Can't instantiate classes without a nullary constructor");
+     //throw $.newInstantiationException("Can't instantiate classes without a nullary constructor");
+     console.error("Can't instantiate classes without a nullary constructor");
     return;
   }
   J2ME.getLinkedMethod(methodInfo)(oAddr);
@@ -1033,15 +1050,7 @@ Native["org/mozilla/internal/Sys.startProfile.()V"] = function(addr) {
 };
 var profileSaved = false;
 Native["org/mozilla/internal/Sys.stopProfile.()V"] = function(addr) {
-  if (profile === 4) {
-    if (!profileSaved) {
-      profileSaved = true;
-      console.log("Stop profile at: " + performance.now());
-      setZeroTimeout(function() {
-        stopAndSaveTimeline();
-      });
-    }
-  }
+ 
 };
 function load(file, responseType) {
   
@@ -6424,6 +6433,14 @@ if (typeof module !== "undefined" && module.exports) {
         if(config.gameresize)
         {
             var sca = 1;
+            if(config.gameresize=="resize-0x5")
+              {
+                sca=0.5;
+              }
+            if(config.gameresize=="resize-0x75")
+            {
+              sca=0.75;
+            }
             if(config.gameresize=="resize-1x5")
             {
               sca=1.5;
@@ -6439,6 +6456,7 @@ if (typeof module !== "undefined" && module.exports) {
             {
               sca=3;
             } 
+            gamesca=sca;
 
 
             var cxt = deviceCanvas.getContext("2d"); 
@@ -6682,9 +6700,11 @@ if (typeof module !== "undefined" && module.exports) {
     };
   }
   function sendPenEvent(pt, whichType) {
+    
     FG.sendNativeEventToForeground({type:PEN_EVENT, intParam1:whichType, intParam2:pt.x, intParam3:pt.y}, true);
   }
   function sendGestureEvent(pt, distancePt, whichType, aFloatParam1, aIntParam7, aIntParam8, aIntParam9) {
+    
     FG.sendNativeEventToForeground({type:GESTURE_EVENT, intParam1:whichType, intParam2:distancePt && distancePt.x || 0, intParam3:distancePt && distancePt.y || 0, intParam5:pt.x, intParam6:pt.y, floatParam1:Math.fround(aFloatParam1 || 0), intParam7:aIntParam7 || 0, intParam8:aIntParam8 || 0, intParam9:aIntParam9 || 0, intParam10:0, intParam11:0, intParam12:0, intParam13:0, intParam14:0, intParam15:0, intParam16:0}, true);
   }
   var supportsTouch = "ontouchstart" in document.documentElement;
@@ -6694,8 +6714,15 @@ if (typeof module !== "undefined" && module.exports) {
     sendRotationEvent();
   });
   function getEventPoint(event) {
-    var item = event.touches && event.touches[0] || event.changedTouches && event.changedTouches[0] || event;
-    return {x:item.pageX - (canvasRect.left | 0), y:item.pageY - (canvasRect.top | 0)};
+  
+    var item = event.touches && event.touches[0] || event.changedTouches && event.changedTouches[0] || event; 
+    var ret = {x:item.pageX - (canvasRect.left | 0), y:item.pageY - (canvasRect.top | 0)}; 
+    if(gamesca!=1){ 
+      //兼容缩放后的触摸操作 
+      ret.x=parseInt(ret.x/gamesca);
+      ret.y=parseInt(ret.y/gamesca);    
+     } 
+    return ret;
   }
   var LONG_PRESS_TIMEOUT = 1E3;
   var MIN_DRAG_DISTANCE_SQUARED = 5 * 5;
@@ -6969,7 +6996,7 @@ if (typeof module !== "undefined" && module.exports) {
     obj.stringParam5 = J2ME.newString(e.stringParam5);
     obj.stringParam6 = J2ME.newString(e.stringParam6);
   }
-  function sendNativeEvent(e, isolateId) {
+  function sendNativeEvent(e, isolateId) { 
     var elem = waitingNativeEventQueue[isolateId];
     if (!elem) {
       nativeEventQueues[isolateId].push(e);
@@ -7369,7 +7396,8 @@ if (typeof module !== "undefined" && module.exports) {
   addUnimplementedNative("com/nokia/mid/ui/VirtualKeyboard.hideOpenKeypadCommand.(Z)V");
   addUnimplementedNative("com/nokia/mid/ui/VirtualKeyboard.suppressSizeChanged.(Z)V");
   Native["com/nokia/mid/ui/VirtualKeyboard.getCustomKeyboardControl.()Lcom/nokia/mid/ui/CustomKeyboardControl;"] = function(addr) {
-    throw $.newIllegalArgumentException("VirtualKeyboard::getCustomKeyboardControl() not implemented");
+    console.warn("VirtualKeyboard::getCustomKeyboardControl() not implemented");
+    //throw $.newIllegalArgumentException("VirtualKeyboard::getCustomKeyboardControl() not implemented");
   };
   var keyboardVisibilityListener = J2ME.Constants.NULL;
   Native["com/nokia/mid/ui/VirtualKeyboard.setVisibilityListener.(Lcom/nokia/mid/ui/KeyboardVisibilityListener;)V"] = function(addr, listenerAddr) {
@@ -8250,12 +8278,7 @@ var currentlyFocusedTextEditor;
     hideSplashScreen();
     if (!emoji.loaded) {
       asyncImpl("V", Promise.all(loadingFGPromises));
-    }
-    if (profile === 2 || profile === 3) {
-      setTimeout(function() {
-        stopAndSaveTimeline();
-      }, 0);
-    }
+    } 
   };
   Native["com/sun/midp/lcdui/DisplayDeviceAccess.vibrate0.(IZ)Z"] = function(addr, displayId, on) {
     return 1;
@@ -11923,7 +11946,6 @@ AudioPlayer.prototype.start = function() {
   if(this.mimeType =="audio/midi" || this.mimeType =="audio/mid" )
   {
     console.log("播放音乐");
-    //pAudio.play();
     //midiplayer.start();
     return;
   }
@@ -11945,7 +11967,6 @@ AudioPlayer.prototype.pause = function() {
   if(this.mimeType =="audio/midi" || this.mimeType =="audio/mid" )
   {
     console.log("暂停音乐");
-    //pAudio.pause();
     //midiplayer.pause();
     return;
   }
@@ -11959,7 +11980,6 @@ AudioPlayer.prototype.resume = function() {
   if(this.mimeType =="audio/midi" || this.mimeType =="audio/mid" )
   {
     console.log("恢复音乐");
-    //pAudio.resume();
     //midiplayer.pause();
     return;
   }
@@ -12263,8 +12283,7 @@ function PlayerContainer(url, pId) {
   this.audioCtx = new AudioContext()
   if(midimode==1)
   {  
-    this.pAudio = new PicoAudio({debug: true}); // debug
-    this.pAudio.init(); 
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     this.tinysynth= new WebAudioTinySynth();
@@ -12368,10 +12387,7 @@ PlayerContainer.prototype.close = function() {
 
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      this.pAudio.pause();
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12384,8 +12400,7 @@ PlayerContainer.prototype.close = function() {
     { 
       this.audio.stop();
     }
-  } 
-
+  }
 };
 PlayerContainer.prototype.getMediaTime = function() { 
  
@@ -12499,37 +12514,40 @@ function convertDataURIToBinary(base64data) {   //编码转换
   }
   return array;
 }
-var context = new AudioContext();
-function concatenateAudioBuffers(buffer1, buffer2) {
-  if(!buffer1)
-  {
-    return buffer2;
-  }
-  if (!buffer1 || !buffer2) {
-      console.log("no buffers!");
-      return null;
-  }
 
-  if (buffer1.numberOfChannels != buffer2.numberOfChannels) {
-      console.log("number of channels is not the same!");
-      return null;
-  }
+if(!isIndex)
+{
+  var context = new AudioContext();
+  function concatenateAudioBuffers(buffer1, buffer2) {
+    if(!buffer1)
+    {
+      return buffer2;
+    }
+    if (!buffer1 || !buffer2) {
+        console.log("no buffers!");
+        return null;
+    }
 
-  if (buffer1.sampleRate != buffer2.sampleRate) {
-      console.log("sample rates don't match!");
-      return null;
-  }
+    if (buffer1.numberOfChannels != buffer2.numberOfChannels) {
+        console.log("number of channels is not the same!");
+        return null;
+    }
 
-  var tmp = context.createBuffer(buffer1.numberOfChannels, buffer1.length + buffer2.length, buffer1.sampleRate);
+    if (buffer1.sampleRate != buffer2.sampleRate) {
+        console.log("sample rates don't match!");
+        return null;
+    }
 
-  for (var i=0; i<tmp.numberOfChannels; i++) {
-      var data = tmp.getChannelData(i);
-      data.set(buffer1.getChannelData(i));
-      data.set(buffer2.getChannelData(i),buffer1.length);
-  }
-  return tmp;
-};
+    var tmp = context.createBuffer(buffer1.numberOfChannels, buffer1.length + buffer2.length, buffer1.sampleRate);
 
+    for (var i=0; i<tmp.numberOfChannels; i++) {
+        var data = tmp.getChannelData(i);
+        data.set(buffer1.getChannelData(i));
+        data.set(buffer2.getChannelData(i),buffer1.length);
+    }
+    return tmp;
+  };
+}
 // 播放音频
 PlayerContainer.prototype.playSound = function(buffer) {
   this.wavBuffer = concatenateAudioBuffers(this.wavBuffer,buffer);
@@ -12606,11 +12624,7 @@ PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
   }
   if(midimode==1)
   {  
-    var smfData = new Uint8Array(buffer); 
-    this.pAudio.initStatus();
-    var parseData = this.pAudio.parseSMF(smfData); 
-    this.pAudio.setData(parseData); 
-    resolve(bufferSize);
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12655,10 +12669,7 @@ PlayerContainer.prototype.start = function() {
   this.player.start();
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      this.pAudio.play();
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12693,10 +12704,7 @@ PlayerContainer.prototype.pause = function() {
     //this.player.pause();
     if(midimode==1)
     {  
-      if(this.pAudio)
-      {
-        this.pAudio.pause();
-      }
+      console.log('pAudio is removed!');
     }
     else if(midimode==2){
       if(this.tinysynth)
@@ -12731,10 +12739,7 @@ PlayerContainer.prototype.resume = function() {
   this.player.resume();
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      this.pAudio.resume();
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12758,10 +12763,7 @@ PlayerContainer.prototype.getVolume = function() {
   //console.log("播放音乐");
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      return this.pAudio.getMasterVolume();
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12781,10 +12783,7 @@ PlayerContainer.prototype.setVolume = function(level) {
   console.log('设置音量： '+level) 
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      this.pAudio.setMasterVolume(level);
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -13101,8 +13100,7 @@ Native["com/sun/mmedia/DirectMIDI.nBuffering.([BI)I"] = function(addr, bufferAdd
   // pAudio.setData(parseData);
   return 1;
 };
-
-
+ 
 function getPlayer(handle)
 {
   return  Media.PlayerCache[handle];
@@ -13114,9 +13112,7 @@ function getPlayer(handle)
     }
   });
   return ret;
-} 
-
-
+}  
 Native["com/sun/mmedia/DirectMIDI.ndoGetDuration.(I)J"] = function(addr, handle1) { 
   var player1 = getPlayer(handle1); 
   var time1 = player1.getDuration();
@@ -13138,21 +13134,17 @@ Native["com/sun/mmedia/DirectMIDI.ndoSetMediaTime.(IJ)J"] = function(addr, handl
 
 Native["com/sun/mmedia/DirectMIDI.nStart.(I)V"] = function(addr,handle) {
   var player = getPlayer(handle);
-  //console.log("nStart",addr);
   player.start();
-  //pAudio.play();
 };
 
 Native["com/sun/mmedia/DirectMIDI.nStop.(I)V"] = function(addr,handle) {
   var player = getPlayer(handle);
   player.pause();
-  //pAudio.pause();
 };
 
 Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,count) {
   var player = getPlayer(handle);
   //console.log('com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V '+count);
-   
   if(player.getMediaFormat()=='amr')
   { 
     return player.amr.getCurrentPosition()*100*10000; 
@@ -13167,13 +13159,10 @@ Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,c
   {
     player.audio.loop=count;
   }
-  if(count==-1)
-  {
-    if(player.pAudio)
-    {  
-      player.pAudio.setLoop(true);
-    }  
-  } 
+  // if(count==-1)
+  // {
+  //   console.log('pAudio is removed!');
+  // } 
 };
 
 Native["javax/microedition/io/file/FileSystemEventHandlerBase.registerListener.()V"] = function(addr) {
@@ -14055,54 +14044,52 @@ Native["com/sun/javame/sensor/NativeChannel.doMeasureData.(II)[B"] = function(ad
     var blob = new Blob([l.join("\n")], {type:"text/plain"});
     saveAs(blob, "console-" + Date.now() + ".txt");
   }};
-  var CONSOLES = {web:new WebConsole, page:new PageConsole("#consoleContainer"), native:new NativeConsole, raw:new RawConsoleForTests("#raw-console"), terminal:typeof Terminal === "undefined" ? new WebConsole : new TerminalConsole("#consoleContainer")};
-  if (ENABLED_CONSOLE_TYPES.length === 1 && ENABLED_CONSOLE_TYPES[0] === "web") {
-    return;
-  }
-  document.querySelector("#console-clear").addEventListener("click", function() {
-    try{
-    window.dispatchEvent(new CustomEvent("console-clear"));
-  }catch(err){
-    console.log(err);
-  }
-  });
-  document.querySelector("#console-save").addEventListener("click", function() {
-    try{
-    window.dispatchEvent(new CustomEvent("console-save"));
-  }catch(err){
-    console.log(err);
-  }
-  });
-  var logLevelSelect = document.querySelector("#loglevel");
-  var consoleFilterTextInput = document.querySelector("#console-filter-input");
-  function updateFilters() {
-    minLogLevel = logLevelSelect.value;
-    CONSOLES.page.currentFilterText = consoleFilterTextInput.value.toLowerCase();
-    try{
-    window.dispatchEvent(new CustomEvent("console-filters-changed")); }catch(err){
-      console.log(err);
-    }
-  }
-  logLevelSelect.value = minLogLevel;
-  logLevelSelect.addEventListener("change", updateFilters);
-  consoleFilterTextInput.value = "";
-  consoleFilterTextInput.addEventListener("input", updateFilters);
-  var logAtLevel = function(levelName) {
-    var item = new LogItem(levelName, Array.prototype.slice.call(arguments, 1));
-    ENABLED_CONSOLE_TYPES.forEach(function(consoleType) {
-      CONSOLES[consoleType].push(item);
-    });
-  };
-  window.console = Object.create(windowConsole, {trace:{value:logAtLevel.bind(null, "trace")}, log:{value:logAtLevel.bind(null, "log")}, info:{value:logAtLevel.bind(null, "info")}, warn:{value:logAtLevel.bind(null, "warn")}, error:{value:logAtLevel.bind(null, "error")}});
+  // var CONSOLES = {web:new WebConsole, page:new PageConsole("#consoleContainer"), native:new NativeConsole, raw:new RawConsoleForTests("#raw-console"), terminal:typeof Terminal === "undefined" ? new WebConsole : new TerminalConsole("#consoleContainer")};
+  // if (ENABLED_CONSOLE_TYPES.length === 1 && ENABLED_CONSOLE_TYPES[0] === "web") {
+  //   return;
+  // }
+  // document.querySelector("#console-clear").addEventListener("click", function() {
+  //   try{
+  //   window.dispatchEvent(new CustomEvent("console-clear"));
+  // }catch(err){
+  //   console.log(err);
+  // }
+  // });
+  // document.querySelector("#console-save").addEventListener("click", function() {
+  //   try{
+  //   window.dispatchEvent(new CustomEvent("console-save"));
+  // }catch(err){
+  //   console.log(err);
+  // }
+  // });
+  // var logLevelSelect = document.querySelector("#loglevel");
+  // var consoleFilterTextInput = document.querySelector("#console-filter-input");
+  // function updateFilters() {
+  //   minLogLevel = logLevelSelect.value;
+  //   CONSOLES.page.currentFilterText = consoleFilterTextInput.value.toLowerCase();
+  //   try{
+  //   window.dispatchEvent(new CustomEvent("console-filters-changed")); }catch(err){
+  //     console.log(err);
+  //   }
+  // }
+  // logLevelSelect.value = minLogLevel;
+  // logLevelSelect.addEventListener("change", updateFilters);
+  // consoleFilterTextInput.value = "";
+  // consoleFilterTextInput.addEventListener("input", updateFilters);
+  // var logAtLevel = function(levelName) {
+  //   var item = new LogItem(levelName, Array.prototype.slice.call(arguments, 1));
+  //   ENABLED_CONSOLE_TYPES.forEach(function(consoleType) {
+  //     CONSOLES[consoleType].push(item);
+  //   });
+  // };
+  //window.console = Object.create(windowConsole, {trace:{value:logAtLevel.bind(null, "trace")}, log:{value:logAtLevel.bind(null, "log")}, info:{value:logAtLevel.bind(null, "info")}, warn:{value:logAtLevel.bind(null, "warn")}, error:{value:logAtLevel.bind(null, "error")}});
 })();
-var release;
-var profile;
+var release = 1;
+var profile = 0;
 var jvm = new JVM;
 if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
   document.documentElement.classList.add("gamepad");
-}
-
-
+} 
 //console.log(config.gamepadSize)
 if(config.gamepad)
 {
@@ -14130,56 +14117,61 @@ var getMobileInfo = new Promise(function(resolve, reject) {
     resolve();
   });
 });
-
-showDownloadScreen();
-var loadingMIDletPromises = [getMobileInfo];
-var loadingPromises = [initFS];
-loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data) {
-  JARStore.addBuiltIn("java/classes.jar", data);
-  CLASSES.initializeBuiltinClasses();
-}));
+if(!isIndex)
+{
+  showDownloadScreen();
+  var loadingMIDletPromises = [getMobileInfo];
+  var loadingPromises = [initFS];
+  loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data) {
+    JARStore.addBuiltIn("java/classes.jar", data);
+    CLASSES.initializeBuiltinClasses();
+  }));
+} 
 //console.log(config.localjar)
-if(config.localjar)
-{ 
-   JARStore.loadJAR(config.localjar).then(
-    function(res){
-      console.log(res);
-      mffile = res.jar['META-INF/MANIFEST.MF'];
-      mfdata=''
-      switch(mffile.compression_method) {
-        case 0:
-          mfdata= mffile.compressed_data;
-		  break;
-        case 8:
-          mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
-		  break;
-      }
-      mfdata=new TextDecoder('utf-8').decode(mfdata);
-      console.log(mfdata);
-      processJAD(mfdata);
-      var a=MIDP.manifest['MIDlet-1'];
-      a=a.substr(a.lastIndexOf(',')+1).trim()
-      config.midletClassName = a;
-      console.log("load main class :",config.midletClassName); 
-      
-      setTimeout(function(){ 
-        hideDownloadScreen();
-        isLoadJarFinished=true;
-      },0)
+if(!isIndex)
+{
+  if(config.localjar )
+  { 
+    JARStore.loadJAR(config.localjar).then(
+      function(res){
+        console.log(res);
+        mffile = res.jar['META-INF/MANIFEST.MF'];
+        mfdata=''
+        switch(mffile.compression_method) {
+          case 0:
+            mfdata= mffile.compressed_data;
+        break;
+          case 8:
+            mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+        break;
+        }
+        mfdata=new TextDecoder('utf-8').decode(mfdata);
+        console.log(mfdata);
+        processJAD(mfdata);
+        var a=MIDP.manifest['MIDlet-1'];
+        a=a.substr(a.lastIndexOf(',')+1).trim()
+        config.midletClassName = a;
+        console.log("load main class :",config.midletClassName); 
+        
+        setTimeout(function(){ 
+          hideDownloadScreen();
+          isLoadJarFinished=true;
+        },0)
+      });
+    jars=config.localjar; 
+  }
+  else{
+      jars.forEach(function(jar) {
+      loadingMIDletPromises.push(load(jar, "arraybuffer").then(function(data) {
+        JARStore.addBuiltIn(jar, data,false);  
+        hideDownloadScreen(); 
+        setTimeout(function(){ 
+          hideDownloadScreen();
+          isLoadJarFinished=true;
+        },0)
+      }));
     });
-   jars=config.localjar; 
-}
-else{
-    jars.forEach(function(jar) {
-    loadingMIDletPromises.push(load(jar, "arraybuffer").then(function(data) {
-      JARStore.addBuiltIn(jar, data,false);  
-      hideDownloadScreen(); 
-      setTimeout(function(){ 
-        hideDownloadScreen();
-        isLoadJarFinished=true;
-      },0)
-    }));
-  });
+  }
 }
 
 function processJAD(data) {
@@ -14294,53 +14286,11 @@ function stopTimeline(cb) {
     cb(buffers);
   });
 }
-function stopAndSaveTimeline() {
-  console.log("Saving profile, please wait ...");
-  var traceFormat = Shumway.Tools.Profiler.TraceFormat[profileFormat.toUpperCase()];
-  var output = [];
-  var writer = new J2ME.IndentingWriter(false, function(s) {
-    output.push(s);
-  });
-  if (traceFormat === Shumway.Tools.Profiler.TraceFormat.CSV) {
-    writer.writeLn("Name,Count,Self (ms),Total (ms)");
-  }
-  stopTimeline(function(buffers) {
-    var snapshots = [];
-    for (var i = 0;i < buffers.length;i++) {
-      snapshots.push(buffers[i].createSnapshot());
-    }
-    for (var i = 0;i < snapshots.length;i++) {
-      writer.writeLn("Timeline Statistics: " + snapshots[i].name);
-      snapshots[i].traceStatistics(writer, 1, traceFormat);
-    }
-    writer.writeLn("Timeline Statistics: All Threads");
-    var methodSnapshots = snapshots.slice(2);
-    (new Shumway.Tools.Profiler.TimelineBufferSnapshotSet(methodSnapshots)).traceStatistics(writer, 1, traceFormat);
-    for (var i = 0;i < snapshots.length;i++) {
-      writer.writeLn("Timeline Events: " + snapshots[i].name);
-      snapshots[i].trace(writer, .1);
-    }
-  });
-  var text = output.join("\n");
-  var fileExtension, mediaType;
-  switch(traceFormat) {
-    case Shumway.Tools.Profiler.TraceFormat.CSV:
-      fileExtension = "csv";
-      mediaType = "text/csv";
-      break;
-    case Shumway.Tools.Profiler.PLAIN:
-    ;
-    default:
-      fileExtension = "txt";
-      mediaType = "text/plain";
-      break;
-  }
-  var profileFilename = "profile." + fileExtension;
-  var blob = new Blob([text], {type:mediaType});
-  saveAs(blob, profileFilename);
-  console.log("Saved profile in: adb pull /sdcard/downloads/" + profileFilename);
-}
+
 function start() {
+  if(isIndex){
+    return;
+  }
   var deferStartup = config.deferStartup | 0;
   if (deferStartup && typeof Benchmark !== "undefined") {
     setTimeout(function() {
@@ -14373,11 +14323,6 @@ function start() {
 if (!config.midletClassName) {
   loadingPromises = loadingPromises.concat(loadingMIDletPromises);
 }
-
-document.getElementById("start").onclick = function() {
-  start();
-};
-
 if(config.canvasSize)
 {
 	Array.prototype.forEach.call(document.body.classList, function(c) {
@@ -14389,285 +14334,22 @@ if(config.canvasSize)
 	MIDP.updatePhysicalScreenSize();
 	MIDP.updateCanvas();
 	//start();
-}
- 
-document.getElementById("canvasSize").onchange = function() {
-  Array.prototype.forEach.call(document.body.classList, function(c) {
-    if (c.indexOf("size-") == 0) {
-      document.body.classList.remove(c);
-    }
-  });
-  if (this.value) {
-    document.body.classList.add(this.value);
-  }
-  MIDP.updatePhysicalScreenSize();
-  MIDP.updateCanvas();
-  //start();
-};
-if (typeof Benchmark !== "undefined") {
-  Benchmark.initUI("benchmark");
-}
+} 
+
 window.onload = function() {
   CompiledMethodCache.clear().then(function() {
     console.log("cleared compiled method cache");
-  });
-  
+ 
+    if(isIndex)
+      {
+        return;
+      } 
+
   Promise.all(loadingPromises).then(start, function(reason) {
     console.error('Loading failed: "' + reason + '"');
   });
-
-  document.getElementById("deleteDatabases").onclick = function() {
-    fs.deleteDatabase().then(function() {
-      console.log("Deleted fs database.");
-    }).catch(function(error) {
-      console.log("Error deleting fs database: " + error);
-    });
-    CompiledMethodCache.deleteDatabase().then(function() {
-      console.log("Deleted CompiledMethodCache database.");
-    }).catch(function(error) {
-      console.log("Error deleting CompiledMethodCache database: " + error);
-    });
-    JARStore.deleteDatabase().then(function() {
-      console.log("Deleted JARStore database.");
-    }).catch(function(error) {
-      console.log("Error deleting JARStore database: " + error);
-    });
-  };
-  document.getElementById("exportstorage").onclick = function() {
-    fs.exportStore(function(blob) {
-      saveAs(blob, "fs-" + Date.now() + ".json");
-    });
-  };
-  document.getElementById("importstorage").onclick = function() {
-    function performImport(file) {
-      fs.importStore(file, function() {
-        DumbPipe.close(DumbPipe.open("alert", "Import completed."));
-      });
-    }
-    var file = document.getElementById("importstoragefile").files[0];
-    if (file) {
-      performImport(file);
-    } else {
-      load(document.getElementById("importstorageurl").value, "blob").then(function(blob) {
-        performImport(blob);
-      });
-    }
-  };
-  document.getElementById("clearCompiledMethodCache").onclick = function() {
-    CompiledMethodCache.clear().then(function() {
-      console.log("cleared compiled method cache");
-    });
-  };
-  document.getElementById("printAllExceptions").onclick = function() {
-    VM.DEBUG_PRINT_ALL_EXCEPTIONS = !VM.DEBUG_PRINT_ALL_EXCEPTIONS;
-    toggle(this);
-  };
-  document.getElementById("clearCounters").onclick = function() {
-    clearCounters();
-  };
-  function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  }
-  setInterval(function() {
-    var el = document.getElementById("bytecodeCount");
-    el.textContent = numberWithCommas(J2ME.bytecodeCount);
-    var el = document.getElementById("interpreterCount");
-    el.textContent = numberWithCommas(J2ME.interpreterCount);
-    var el = document.getElementById("compiledCount");
-    el.textContent = numberWithCommas(J2ME.compiledMethodCount) + "/" + numberWithCommas(J2ME.cachedMethodCount) + "/" + numberWithCommas(J2ME.aotMethodCount) + "/" + numberWithCommas(J2ME.notCompiledMethodCount);
-    var el = document.getElementById("onStackReplacementCount");
-    el.textContent = numberWithCommas(J2ME.onStackReplacementCount);
-    var el = document.getElementById("unwindCount");
-    el.textContent = numberWithCommas(J2ME.unwindCount);
-    var el = document.getElementById("preemptionCount");
-    el.textContent = numberWithCommas(J2ME.preemptionCount);
-  }, 500);
-  function dumpCounters() {
-    var writer = new J2ME.IndentingWriter;
-    writer.writeLn("Frame Count: " + J2ME.frameCount);
-    writer.writeLn("Unwind Count: " + J2ME.unwindCount);
-    writer.writeLn("Bytecode Count: " + J2ME.bytecodeCount);
-    writer.writeLn("OSR Count: " + J2ME.onStackReplacementCount);
-    if (J2ME.interpreterCounter) {
-      writer.enter("interpreterCounter");
-      J2ME.interpreterCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.interpreterMethodCounter) {
-      writer.enter("interpreterMethodCounter");
-      J2ME.interpreterMethodCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.baselineMethodCounter) {
-      writer.enter("baselineMethodCounter");
-      J2ME.baselineMethodCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.baselineCounter) {
-      writer.enter("baselineCounter");
-      J2ME.baselineCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.nativeCounter) {
-      writer.enter("nativeCounter");
-      J2ME.nativeCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.runtimeCounter) {
-      writer.enter("runtimeCounter");
-      J2ME.runtimeCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.asyncCounter) {
-      writer.enter("asyncCounter");
-      J2ME.asyncCounter.traceSorted(writer);
-      writer.outdent();
-    }
-  }
-  function clearCounters() {
-    J2ME.frameCount = 0;
-    J2ME.unwindCount = 0;
-    J2ME.bytecodeCount = 0;
-    J2ME.interpreterCount = 0;
-    J2ME.onStackReplacementCount = 0;
-    J2ME.interpreterCounter && J2ME.interpreterCounter.clear();
-    J2ME.interpreterMethodCounter && J2ME.interpreterMethodCounter.clear();
-    J2ME.nativeCounter && J2ME.nativeCounter.clear();
-    J2ME.runtimeCounter && J2ME.runtimeCounter.clear();
-    J2ME.asyncCounter && J2ME.asyncCounter.clear();
-    J2ME.baselineMethodCounter && J2ME.baselineMethodCounter.clear();
-    J2ME.baselineCounter && J2ME.baselineCounter.clear();
-  }
-  document.getElementById("dumpCounters").onclick = function() {
-    dumpCounters();
-  };
-  document.getElementById("sampleCounters1").onclick = function() {
-    clearCounters();
-    dumpCounters();
-    setTimeout(function() {
-      dumpCounters();
-    }, 1E3);
-  };
-  document.getElementById("sampleCounters2").onclick = function() {
-    clearCounters();
-    function sample() {
-      var c = 1;
-      function tick() {
-        if (c-- > 0) {
-          dumpCounters();
-          clearCounters();
-          setTimeout(tick, 16);
-        }
-      }
-      setTimeout(tick, 100); 
-    }
-    setTimeout(sample, 2E3);
-  };
-};
-function requestTimelineBuffers(fn) {
-  if (J2ME.timeline) {
-    var activeTimeLines = [J2ME.threadTimeline, J2ME.timeline];
-    var methodTimeLines = J2ME.methodTimelines;
-    for (var i = 0;i < methodTimeLines.length;i++) {
-      activeTimeLines.push(methodTimeLines[i]);
-    }
-    fn(activeTimeLines);
-    return;
-  }
-  return fn([]);
-}
-var perfWriterCheckbox = document.querySelector("#perfWriter");
-perfWriterCheckbox.checked = !!(J2ME.writers & J2ME.WriterFlags.Perf);
-perfWriterCheckbox.addEventListener("change", function() {
-  if (perfWriterCheckbox.checked) {
-    J2ME.writers |= J2ME.WriterFlags.Perf;
-  } else {
-    J2ME.writers &= !J2ME.WriterFlags.Perf;
-  }
-});
  
-var profiler = profile === 1 ? function() {
-  var elPageContainer = document.getElementById("pageContainer");
-  elPageContainer.classList.add("profile-mode");
-  var elProfilerContainer = document.getElementById("profilerContainer");
-  var elProfilerToolbar = document.getElementById("profilerToolbar");
-  var elProfilerMessage = document.getElementById("profilerMessage");
-  var elProfilerPanel = document.getElementById("profilePanel");
-  var elBtnStartStop = document.getElementById("profilerStartStop");
-  var elBtnAdjustHeight = document.getElementById("profilerAdjustHeight");
-  var controller;
-  var startTime;
-  var timerHandle;
-  var timeoutHandle;
-  var Profiler = function() {
-    controller = new Shumway.Tools.Profiler.Controller(elProfilerPanel);
-    elBtnStartStop.addEventListener("click", this._onStartStopClick.bind(this));
-    elBtnAdjustHeight.addEventListener("click", this._onAdjustHeightClick.bind(this));
-    var self = this;
-    window.addEventListener("keypress", function(event) {
-      if (event.altKey && event.keyCode === 114) {
-        self._onStartStopClick();
-      }
-    }, false);
-  };
-  Profiler.prototype.start = function(maxTime, resetTimelines) {
-    startTimeline();
-    controller.deactivateProfile();
-    maxTime = maxTime || 0;
-    elProfilerToolbar.classList.add("withEmphasis");
-    elBtnStartStop.textContent = "Stop";
-    startTime = Date.now();
-    timerHandle = setInterval(showTimeMessage, 1E3);
-    if (maxTime) {
-      timeoutHandle = setTimeout(this.createProfile.bind(this), maxTime);
-    }
-    showTimeMessage();
-  };
-  Profiler.prototype.createProfile = function() {
-    stopTimeline(function(buffers) {
-      controller.createProfile(buffers);
-      elProfilerToolbar.classList.remove("withEmphasis");
-      elBtnStartStop.textContent = "Start";
-      clearInterval(timerHandle);
-      clearTimeout(timeoutHandle);
-      timerHandle = 0;
-      timeoutHandle = 0;
-      showTimeMessage(false);
-    });
-  };
-  Profiler.prototype.openPanel = function() {
-    elProfilerContainer.classList.remove("collapsed");
-  };
-  Profiler.prototype.closePanel = function() {
-    elProfilerContainer.classList.add("collapsed");
-  };
-  Profiler.prototype.resize = function() {
-    controller.resize();
-  };
-  Profiler.prototype._onAdjustHeightClick = function(e) {
-    elProfilerContainer.classList.toggle("max");
-  };
-  Profiler.prototype._onMinimizeClick = function(e) {
-    if (elProfilerContainer.classList.contains("collapsed")) {
-      this.openPanel();
-    } else {
-      this.closePanel();
-    }
-  };
-  Profiler.prototype._onStartStopClick = function(e) {
-    if (timerHandle) {
-      this.createProfile();
-      this.openPanel();
-    } else {
-      this.start(0, true);
-    }
-  };
-  function showTimeMessage(show) {
-    show = typeof show === "undefined" ? true : show;
-    var time = Math.round((Date.now() - startTime) / 1E3);
-    elProfilerMessage.textContent = show ? "Running: " + time + " Seconds" : "";
-  }
-  return new Profiler;
-}() : undefined;
+  }); 
 
-//# sourceMappingURL=main-all.js.map
+}; 
+var profiler =undefined; 

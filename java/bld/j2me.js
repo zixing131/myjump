@@ -16,7 +16,7 @@
 /** @const */ var release = true;
 /** @const */ var profile = 0;
 /** @const */ var profileFormat = "PLAIN";
-/** @const */ var asmJsTotalMemory = 8192 * 1024 * 1024;
+/** @const */ var asmJsTotalMemory = 64 * 1024 * 1024;
 /*
  * Copyright 2014 Mozilla Foundation
  *
@@ -3164,6 +3164,10 @@ var J2ME;
         });
         Object.defineProperty(FrameView.prototype, "parameterOffset", {
             get: function () {
+                // if(this.methodInfo && !this.methodInfo.codeAttribute)
+                // {
+                //     return 0;
+                // }
                 return this.methodInfo ? -this.methodInfo.codeAttribute.max_locals : 0;
             },
             enumerable: true,
@@ -3404,7 +3408,7 @@ var J2ME;
             this.set(fp, sp, pc);
             switch (type) {
                 case 1 /* ArrayIndexOutOfBoundsException */:
-                    //J2ME.throwArrayIndexOutOfBoundsException(a);
+                    J2ME.throwArrayIndexOutOfBoundsException(a);
                     break;
                 case 0 /* ArithmeticException */:
                     J2ME.throwArithmeticException();
@@ -3413,7 +3417,7 @@ var J2ME;
                     J2ME.throwNegativeArraySizeException();
                     break;
                 case 3 /* NullPointerException */:
-                    //J2ME.throwNullPointerException();
+                    J2ME.throwNullPointerException();
                     break;
             }
         };
@@ -5014,7 +5018,11 @@ var J2ME;
                         }
                         else {
                             address = i32[sp - calleeMethodInfo.argumentSlots];
-                            classInfo = (address !== 0 /* NULL */) ? J2ME.classIdToClassInfoMap[i32[address >> 2]] : null;
+                           
+                            classInfo = (address !== 0 /* NULL */) ? J2ME.classIdToClassInfoMap[i32[address >> 2]] : null; 
+                            // if(!classInfo){
+                            //     break;
+                            // }
                         }
                         //console.log("classInfo",classInfo,address)
                         if (isStatic) {
@@ -5034,8 +5042,7 @@ var J2ME;
                             case 182 /* INVOKEVIRTUAL */:
                                 try{
                                     if(classInfo==null)
-                                    {
-                                        
+                                    { 
                                         break;
                                     }
                                 calleeTargetMethodInfo = classInfo.vTable[calleeMethodInfo.vTableIndex];
@@ -5046,13 +5053,23 @@ var J2ME;
                                 }
                                 break;
                             case 185 /* INVOKEINTERFACE */:
-                                calleeTargetMethodInfo = classInfo.iTable[calleeMethodInfo.mangledName];
+                                try{ 
+                                    if(classInfo==null){
+                                        classInfo = calleeMethodInfo.classInfo;
+                                    }
+                                    calleeTargetMethodInfo = classInfo.iTable[calleeMethodInfo.mangledName];
+                                }catch(err){
+                                    console.log(calleeMethodInfo.mangledName+" error : "+err);
+                                }
                                 break;
                             default:
                                 release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
                                 assert(false, "Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
                         }
                         // Call Native or Compiled Method.
+                        if(calleeTargetMethodInfo==null){
+                            break;
+                        }
                         var callMethod = calleeTargetMethodInfo.isNative || calleeTargetMethodInfo.state === 1 /* Compiled */;
                         var calleeStats = calleeTargetMethodInfo.stats;
                         calleeStats.interpreterCallCount++;
@@ -5153,7 +5170,15 @@ var J2ME;
                         // Call Interpreted Method.
                         release || J2ME.traceWriter && J2ME.traceWriter.writeLn(">> I " + calleeTargetMethodInfo.implKey);
                         mi = calleeTargetMethodInfo;
-                        maxLocals = mi.codeAttribute.max_locals;
+                        
+                        if(!mi.codeAttribute)
+                        {
+                            throw new J2ME.JavaRuntimeException("mi.codeAttribute is null");
+                            maxLocals = 0;
+                        }
+                        else{  
+                            maxLocals = mi.codeAttribute.max_locals;
+                        }
                         ci = mi.classInfo;
                         cp = ci.constantPool;
                         var callerFPOffset = fp;
@@ -5181,7 +5206,10 @@ var J2ME;
                                 return;
                             }
                         }
-                        code = mi.codeAttribute.code;
+                        if(mi.codeAttribute)
+                        { 
+                            code = mi.codeAttribute.code;
+                        }
                         release || J2ME.traceWriter && J2ME.traceWriter.indent();
                         continue;
                     default:
@@ -5193,8 +5221,18 @@ var J2ME;
             catch (e) {
                 release || J2ME.traceWriter && J2ME.traceWriter.redLn("XXX I Caught: " + e + ", details: " + toName(e));
                 release || J2ME.traceWriter && J2ME.traceWriter.writeLn(e.stack);
-                console.error(e.stack);
-                
+
+                if(e && e.constructor && e.constructor.prototype && e.constructor.prototype.classInfo && e.constructor.prototype.classInfo._name)
+                {
+                    var detailMessage=''
+                    if(e.detailMessage){
+                        detailMessage=J2ME.fromStringAddr(e.detailMessage);
+                    }
+                    console.log("error occurs at : "+e.constructor.prototype.classInfo._name +" detailMessage: "+detailMessage);
+                }else{
+                    console.error(e);
+                } 
+
                 // release || traceWriter && traceWriter.writeLn(jsGlobal.getBacktrace());
                 // If an exception is thrown from a native there will be a native marker frame at the top of the stack
                 // which will be cut off when the the fp is set on the thread below. To keep the nativeFrameCount in
@@ -5215,11 +5253,15 @@ var J2ME;
                 sp = thread.sp | 0;
                 pc = thread.pc | 0;
                 mi = thread.frame.methodInfo;
-                maxLocals = mi.codeAttribute.max_locals;
+                if( mi.codeAttribute){ 
+                    maxLocals = mi.codeAttribute.max_locals;
+                }
                 lp = fp - maxLocals | 0;
                 ci = mi.classInfo;
                 cp = ci.constantPool;
-                code = mi.codeAttribute.code;
+                if(mi.codeAttribute){ 
+                    code = mi.codeAttribute.code; 
+                }
                 continue;
             }
         }
@@ -5578,7 +5620,7 @@ var J2ME;
             return this.classObjectAddresses[id];
         }catch(err)
         {
-            console.error(err);
+            console.log(err);
             return 0;
         }
         };
@@ -5675,11 +5717,11 @@ var J2ME;
             return $.ctx.createException("java/lang/ArithmeticException", str);
         };
         RuntimeTemplate.prototype.newClassNotFoundException = function (str) {
-            return null;
+            //return null;
             return $.ctx.createException("java/lang/ClassNotFoundException", str);
         };
         RuntimeTemplate.prototype.newIllegalArgumentException = function (str) { 
-            return null;
+            //return null;
             return $.ctx.createException("java/lang/IllegalArgumentException", str);
         };
         RuntimeTemplate.prototype.newIllegalStateException = function (str) {
@@ -6580,8 +6622,8 @@ var J2ME;
     }
     J2ME.throwNegativeArraySizeException = throwNegativeArraySizeException;
     function throwNullPointerException() {
-        console.log('newNullPointerException');
-        //throw $.newNullPointerException();
+        //console.log('newNullPointerException');
+        throw $.newNullPointerException();
     }
     J2ME.throwNullPointerException = throwNullPointerException;
     function newObjectArray(size) {
@@ -6644,7 +6686,7 @@ var J2ME;
     J2ME.checkArrayBounds = checkArrayBounds;
     function throwArrayIndexOutOfBoundsException(index) {
         //console.log("newArrayIndexOutOfBoundsException ");
-        //throw $.newArrayIndexOutOfBoundsException(String(index));
+        throw $.newArrayIndexOutOfBoundsException(String(index));
     }
     J2ME.throwArrayIndexOutOfBoundsException = throwArrayIndexOutOfBoundsException;
     function throwArithmeticException() {
@@ -6658,8 +6700,8 @@ var J2ME;
         var arrayClassInfo = J2ME.classIdToClassInfoMap[i32[arrayAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         var valueClassInfo = J2ME.classIdToClassInfoMap[i32[valueAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         if (!isAssignableTo(valueClassInfo, arrayClassInfo.elementClass)) {
-            //throw $.newArrayStoreException(); 
-            console.log('newArrayStoreException');
+            throw $.newArrayStoreException(); 
+            //console.log('newArrayStoreException');
         }
     }
     J2ME.checkArrayStore = checkArrayStore;
@@ -9220,10 +9262,10 @@ var J2ME;
             var bytes = JARStore.loadFile(fileName);
             //console.log(bytes)
             if (!bytes) {
-                console.warn("ClassNotFoundException"+fileName);
+                console.warn("ClassNotFoundException "+fileName);
                 //J2ME.loadWriter && J2ME.loadWriter.leave("< ClassNotFoundException");
                 throw new (J2ME.ClassNotFoundException)(fileName);
-                return;
+                //return;
             }
             var self = this;
             var classInfo = this.loadClassBytes(bytes);
@@ -10423,7 +10465,7 @@ var J2ME;
                 this.nativeThread.run();
             }
             catch (e) {
-                console.error(e);
+                console.error(e); 
                 /*
                 // The exception was never caught and the thread must be terminated.
                 this.kill();

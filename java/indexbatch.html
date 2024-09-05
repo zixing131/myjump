@@ -5,15 +5,7 @@
 		<title>j2me在线模拟器-批量安装版本</title>
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
-        <script>
-        var _hmt = _hmt || [];
-        (function() {
-        var hm = document.createElement("script");
-        hm.src = "https://hm.baidu.com/hm.js?9940f26304b1f1a1a415df829cd440f3";
-        var s = document.getElementsByTagName("script")[0]; 
-        s.parentNode.insertBefore(hm, s);
-        })();
-        </script>
+       
 
 		<!-- Required for non-UTF encodings -->
 		<script src="libs/encoding.js"></script>
@@ -649,7 +641,9 @@
 			</select>
 
 			<select id="gameresize" class="filter-box">
-				<option value="resize-1" selected>无缩放</option>
+				<option value="resize-1" selected>无缩放</option> 
+				<option value="resize-0x5">缩放0.5倍</option>
+				<option value="resize-0x75">缩放0.75倍</option>
 				<option value="resize-1x5">缩放1.5倍</option>
 				<option value="resize-2">缩放2倍</option>
 				<option value="resize-2x5">缩放2.5倍</option>
@@ -720,7 +714,6 @@
 				}
 
 				select {
-					background-image: url(backdropdown.png);
 					background-position: 222px 9px;
 					font-family: Roboto;
 					font-size: 12px;
@@ -743,24 +736,24 @@
 				}
 
 				.btn {
-					background: #eb94d0;
+					background: #2079b0;
 					/* 创建渐变 */
-					background-image: -webkit-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: -moz-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: -ms-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: -o-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: linear-gradient(to bottom, #eb94d0, #2079b0);
+					/* background-image: -webkit-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -moz-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -ms-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -o-linear-gradient(top, #2079b0, #2079b0);
+					background-image: linear-gradient(to bottom, #2079b0, #2079b0); */
 					/* 给按钮添加圆角 */
 					-webkit-border-radius: 8;
 					-moz-border-radius: 8;
 					border-radius: 8px;
-					text-shadow: 3px 2px 1px #9daef5;
+					/* text-shadow: 3px 2px 1px #9daef5; */
 					-webkit-box-shadow: 6px 5px 24px #666666;
 					-moz-box-shadow: 6px 5px 24px #666666;
 					box-shadow: 6px 5px 24px #666666;
 					font-family: Arial;
 					color: #fafafa;
-					font-size: 9px;
+					font-size: 12px;
 					padding: 10px;
 					text-decoration: none;
 					margin-right: 5px;
@@ -769,11 +762,11 @@
 				/* 悬停样式 */
 				.btn:hover {
 					background: #2079b0;
-					background-image: -webkit-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: -moz-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: -ms-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: -o-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: linear-gradient(to bottom, #2079b0, #eb94d0);
+					/* background-image: -webkit-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -moz-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -ms-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -o-linear-gradient(top, #2079b0, #2079b0);
+					background-image: linear-gradient(to bottom, #2079b0, #2079b0); */
 					text-decoration: none;
 				}
 
@@ -894,7 +887,6 @@
 				}
 
 				select {
-					background-image: url(backdropdown.png);
 					background-position: 222px 9px;
 					font-family: Roboto;
 					font-size: 12px;
@@ -912,30 +904,30 @@
 					border-radius: 5px;
 					text-align: center;
 					margin-top: 10px;
-					font-size: 9px;
+					font-size: 12px;
 					padding-bottom: 10px;
 				}
 
 				.btn {
 					margin-top: 5px;
-					background: #eb94d0;
+					background: #2079b0;
 					/* 创建渐变 */
-					background-image: -webkit-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: -moz-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: -ms-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: -o-linear-gradient(top, #eb94d0, #2079b0);
-					background-image: linear-gradient(to bottom, #eb94d0, #2079b0);
+					/* background-image: -webkit-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -moz-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -ms-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -o-linear-gradient(top, #2079b0, #2079b0);
+					background-image: linear-gradient(to bottom, #2079b0, #2079b0); */
 					/* 给按钮添加圆角 */
 					-webkit-border-radius: 8;
 					-moz-border-radius: 8;
 					border-radius: 8px;
-					text-shadow: 3px 2px 1px #9daef5;
+					/* text-shadow: 3px 2px 1px #9daef5; */
 					-webkit-box-shadow: 6px 5px 24px #666666;
 					-moz-box-shadow: 6px 5px 24px #666666;
 					box-shadow: 6px 5px 24px #666666;
 					font-family: Arial;
 					color: #fafafa;
-					font-size: 9px;
+					font-size: 12px;
 					padding: 10px;
 					text-decoration: none;
 					margin-right: 5px;
@@ -944,11 +936,11 @@
 				/* 悬停样式 */
 				.btn:hover {
 					background: #2079b0;
-					background-image: -webkit-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: -moz-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: -ms-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: -o-linear-gradient(top, #2079b0, #eb94d0);
-					background-image: linear-gradient(to bottom, #2079b0, #eb94d0);
+					/* background-image: -webkit-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -moz-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -ms-linear-gradient(top, #2079b0, #2079b0);
+					background-image: -o-linear-gradient(top, #2079b0, #2079b0);
+					background-image: linear-gradient(to bottom, #2079b0, #2079b0); */
 					text-decoration: none;
 				}
 
@@ -1036,5 +1028,16 @@
 				}
 			}
 		</style>
+
+		<script>
+			var _hmt = _hmt || [];
+			(function() {
+				var hm = document.createElement("script");
+				hm.src = "http://hm.baidu.com/hm.js?9940f26304b1f1a1a415df829cd440f3";
+				var s = document.getElementsByTagName("script")[0];
+				s.parentNode.insertBefore(hm, s);
+			})();
+		</script>
+
 	</body>
 </html>
