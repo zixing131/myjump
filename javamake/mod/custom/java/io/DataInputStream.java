@@ -191,7 +191,7 @@ class DataInputStream extends InputStream implements DataInput {
      * @exception  IOException   if an I/O error occurs.
      */
     public final boolean readBoolean() throws IOException {
-        int ch = read();
+        int ch = in.read();
         if (ch < 0) {
             throw new EOFException();
         }
@@ -211,7 +211,7 @@ class DataInputStream extends InputStream implements DataInput {
      * @exception  IOException   if an I/O error occurs.
      */
     public final byte readByte() throws IOException {
-        int ch = read();
+        int ch = in.read();
         if (ch < 0) {
             throw new EOFException();
         }
@@ -231,7 +231,7 @@ class DataInputStream extends InputStream implements DataInput {
      * @exception  IOException   if an I/O error occurs.
      */
     public final int readUnsignedByte() throws IOException {
-        int ch = read();
+        int ch = in.read();
         if (ch < 0) {
             throw new EOFException();
         }
@@ -252,7 +252,12 @@ class DataInputStream extends InputStream implements DataInput {
      * @exception  IOException   if an I/O error occurs.
      */
     public final short readShort() throws IOException {
-        return (short)readUnsignedShort();
+        int ch1 = in.read();
+        int ch2 = in.read();
+        if ((ch1 | ch2) < 0) {
+             throw new EOFException();
+        }
+        return (short)((ch1 << 8) + (ch2 << 0));
     }
 
     /**
@@ -269,8 +274,8 @@ class DataInputStream extends InputStream implements DataInput {
      * @exception  IOException   if an I/O error occurs.
      */
     public final int readUnsignedShort() throws IOException {
-        int ch1 = read();
-        int ch2 = read();
+        int ch1 = in.read();
+        int ch2 = in.read();
         if ((ch1 | ch2) < 0) {
              throw new EOFException();
         }
@@ -308,10 +313,10 @@ class DataInputStream extends InputStream implements DataInput {
      * @exception  IOException   if an I/O error occurs.
      */
     public final int readInt() throws IOException {
-        int ch1 = read();
-        int ch2 = read();
-        int ch3 = read();
-        int ch4 = read();
+        int ch1 = in.read();
+        int ch2 = in.read();
+        int ch3 = in.read();
+        int ch4 = in.read();
         if ((ch1 | ch2 | ch3 | ch4) < 0) {
              throw new EOFException();
         }
@@ -392,8 +397,6 @@ class DataInputStream extends InputStream implements DataInput {
         return readUTF(this);
     }
 
-    static native String bytesToUTF(byte[] array);
-
     /**
      * Reads from the
      * stream <code>in</code> a representation
@@ -415,10 +418,52 @@ class DataInputStream extends InputStream implements DataInput {
      */
     public final static String readUTF(DataInput in) throws IOException {
         int utflen = in.readUnsignedShort();
+        char str[] = new char[utflen];
         byte bytearr [] = new byte[utflen];
+        int c, char2, char3;
+        int count = 0;
+        int strlen = 0;
+
         in.readFully(bytearr, 0, utflen);
 
-        return bytesToUTF(bytearr);
+        while (count < utflen) {
+            c = (int) bytearr[count] & 0xff;
+            switch (c >> 4) {
+                case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+                    /* 0xxxxxxx*/
+                    count++;
+                    str[strlen++] = (char)c;
+                    break;
+                case 12: case 13:
+                    /* 110x xxxx   10xx xxxx*/
+                    count += 2;
+                    if (count > utflen)
+                        throw new UTFDataFormatException();
+                    char2 = (int) bytearr[count-1];
+                    if ((char2 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+                    str[strlen++] = (char)(((c & 0x1F) << 6) | (char2 & 0x3F));
+                    break;
+                case 14:
+                    /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                    count += 3;
+                    if (count > utflen)
+                        throw new UTFDataFormatException();
+                    char2 = (int) bytearr[count-2];
+                    char3 = (int) bytearr[count-1];
+                    if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
+                        throw new UTFDataFormatException();
+                    str[strlen++] = (char)(((c     & 0x0F) << 12) |
+                                           ((char2 & 0x3F) << 6)  |
+                                           ((char3 & 0x3F) << 0));
+                    break;
+                default:
+                    /* 10xx xxxx,  1111 xxxx */
+                    throw new UTFDataFormatException();
+                }
+        }
+        // The number of chars produced may be less than utflen
+        return new String(str, 0, strlen);
     }
 
     /**

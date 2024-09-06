@@ -148,8 +148,8 @@ public class Object {
      * @return  a string representation of the object.
      */
     public String toString() {
-        return getClass().getName() + "@" + Integer.toHexString(hashCode());
-    }
+        return new StringBuffer().append(getClass().getName()).append("@").append(Integer.toHexString(hashCode())).toString();
+    } 
 
     /**
      * Wakes up a single thread that is waiting on this object's

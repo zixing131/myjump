@@ -163,10 +163,10 @@ class IsolateMonitor implements MIDletProxyListListener {
         int midletCount = 0;
 
         if (isolate != null) {
-            Enumeration enumtmp = isolates.elements();
+            Enumeration enumtemp = isolates.elements();
 
-            while (enumtmp.hasMoreElements()) {
-                Isolate current = (Isolate)enumtmp.nextElement();
+            while (enumtemp.hasMoreElements()) {
+                Isolate current = (Isolate)enumtemp.nextElement();
 
                 if (current == isolate) {
                     midletCount++;

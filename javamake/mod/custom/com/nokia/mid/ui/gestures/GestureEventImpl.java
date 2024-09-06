@@ -1,107 +1,71 @@
 package com.nokia.mid.ui.gestures;
 
-public class GestureEventImpl implements GestureEvent
-{
-    private final int type;
-    private final int dragDistanceX;
-    private final int dragDistanceY;
-    private final int startX;
-    private final int startY;
-    private final float flickDirection;
-    private final int flickSpeed;
-    private final int flickSpeedX;
-    private final int flickSpeedY;
-    private final int pinchDistanceStarting;
-    private final int pinchDistanceCurrent;
-    private final int pinchDistanceChange;
-    private final int pinchCenterX;
-    private final int pinchCenterY;
-    private final int pinchCenterChangeX;
-    private final int pinchCenterChangeY;
+import com.sun.midp.events.NativeEvent;
 
-    public GestureEventImpl(int type, int dragDistanceX, int dragDistanceY, int startX, int startY,
-                            float flickDirection, int flickSpeed, int flickSpeedX, int flickSpeedY,
-                            int pinchDistanceStarting, int pinchDistanceCurrent, int pinchDistanceChange,
-                            int pinchCenterX, int pinchCenterY, int pinchCenterChangeX, int pinchCenterChangeY) {
-        this.type = type;
-        this.dragDistanceX = dragDistanceX;
-        this.dragDistanceY = dragDistanceY;
-        this.startX = startX;
-        this.startY = startY;
-        this.flickDirection = flickDirection;
-        this.flickSpeed = flickSpeed;
-        this.flickSpeedX = flickSpeedX;
-        this.flickSpeedY = flickSpeedY;
-        this.pinchDistanceStarting = pinchDistanceStarting;
-        this.pinchDistanceCurrent = pinchDistanceCurrent;
-        this.pinchDistanceChange = pinchDistanceChange;
-        this.pinchCenterX = pinchCenterX;
-        this.pinchCenterY = pinchCenterY;
-        this.pinchCenterChangeX = pinchCenterChangeX;
-        this.pinchCenterChangeY = pinchCenterChangeY;
-    }
+public class GestureEventImpl implements GestureEvent {
+    protected NativeEvent nativeEvent;
 
     public int getType() {
-        return type;
+        return nativeEvent.intParam1;
     }
 
     public int getDragDistanceX() {
-        return dragDistanceX;
+        return nativeEvent.intParam2;
     }
 
     public int getDragDistanceY() {
-        return dragDistanceY;
+        return nativeEvent.intParam3;
     }
 
     public int getStartX() {
-        return startX;
+        return nativeEvent.intParam5;
     }
 
     public int getStartY() {
-        return startY;
+        return nativeEvent.intParam6;
     }
 
     public float getFlickDirection() {
-        return flickDirection;
+        return nativeEvent.floatParam1;
     }
 
     public int getFlickSpeed() {
-        return flickSpeed;
+        return nativeEvent.intParam7;
     }
 
     public int getFlickSpeedX() {
-        return flickSpeedX;
+        return nativeEvent.intParam8;
     }
 
     public int getFlickSpeedY() {
-        return flickSpeedY;
+        return nativeEvent.intParam9;
     }
 
     public int getPinchDistanceStarting() {
-        return pinchDistanceStarting;
+        return nativeEvent.intParam10;
     }
 
     public int getPinchDistanceCurrent() {
-        return pinchDistanceCurrent;
+        return nativeEvent.intParam11;
     }
 
     public int getPinchDistanceChange() {
-        return pinchDistanceChange;
+        return nativeEvent.intParam12;
     }
 
     public int getPinchCenterX() {
-        return pinchCenterX;
+        return nativeEvent.intParam13;
     }
 
     public int getPinchCenterY() {
-        return pinchCenterY;
+        return nativeEvent.intParam14;
     }
 
     public int getPinchCenterChangeX() {
-        return pinchCenterChangeX;
+        return nativeEvent.intParam15;
     }
 
     public int getPinchCenterChangeY() {
-        return pinchCenterChangeY;
+        return nativeEvent.intParam16;
     }
 }

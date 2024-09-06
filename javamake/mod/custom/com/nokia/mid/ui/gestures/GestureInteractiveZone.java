@@ -1,14 +1,6 @@
 package com.nokia.mid.ui.gestures;
 
-class GestureRectangle {
-    public int x;
-    public int y;
-    public int width;
-    public int height;
-}
-
-public class GestureInteractiveZone
-{
+public class GestureInteractiveZone {
     public static final int GESTURE_TAP = 0x1;
     public static final int GESTURE_LONG_PRESS = 0x2;
     public static final int GESTURE_DRAG = 0x4;
@@ -21,8 +13,12 @@ public class GestureInteractiveZone
     public static final int GESTURE_RECOGNITION_END = 0x8000;
     public static final int GESTURE_ALL = 0xC0FF;
 
-    private int gestures;
-    private GestureRectangle rect = null;
+    int gestures;
+    int x;
+    int y;
+    int endX;
+    int endY;
+    boolean rectSet = false;
 
     public GestureInteractiveZone(int gestures) throws IllegalArgumentException {
         this.gestures = gestures;
@@ -33,11 +29,11 @@ public class GestureInteractiveZone
     }
 
     public void setRectangle(int x, int y, int width, int height) throws IllegalArgumentException {
-        rect = new GestureRectangle();
-        rect.x = x;
-        rect.y = y;
-        rect.width = width;
-        rect.height = height;
+        this.x = x;
+        this.y = y;
+        this.endX = x + width;
+        this.endY = y + height;
+        this.rectSet = true;
     }
 
     native public void setLongPressTimeInterval(int timeInterval) throws IllegalArgumentException;
@@ -51,13 +47,9 @@ public class GestureInteractiveZone
     native public static boolean isSupported(int gestureEventIdentity);
 
     public boolean contains(int x, int y) {
-        if (rect == null ||
-            x >= rect.x && x <= (rect.x+rect.width) &&
-            y >= rect.y && y <= (rect.y+rect.height)) {
-                return true;
-        }
-
-        return false;
+        return !rectSet ||
+               (x >= this.x && x <= this.endX &&
+                y >= this.y && y <= this.endY);
     }
 
     public boolean supports(int type) {

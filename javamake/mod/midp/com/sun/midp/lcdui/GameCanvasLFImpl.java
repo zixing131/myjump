@@ -103,12 +103,12 @@ public class GameCanvasLFImpl {
              * midlets don't care about new size resulting in garbled display
              */
             synchronized(gVector) {
-                Enumeration enumtmp = gVector.elements();
+                Enumeration enumtemp = gVector.elements();
                 
                 Graphics g = null;
                 WeakReference wr = null;
-                while (enumtmp.hasMoreElements()) {
-                    wr = (WeakReference)enumtmp.nextElement();
+                while (enumtemp.hasMoreElements()) {
+                    wr = (WeakReference)enumtemp.nextElement();
                     g = (Graphics)wr.get();
                     if (g != null) {
                         graphicsAccess.setDimensions(g, w, h);
@@ -149,12 +149,12 @@ public class GameCanvasLFImpl {
             synchronized(gVector) {
                 gVector.addElement(new WeakReference(g));
 
-                Enumeration enumtmp = gVector.elements();
+                Enumeration enumtemp = gVector.elements();
 
                 // clear the empty references
                 WeakReference wr = null;
-                while (enumtmp.hasMoreElements()) {
-                    wr = (WeakReference)enumtmp.nextElement();
+                while (enumtemp.hasMoreElements()) {
+                    wr = (WeakReference)enumtemp.nextElement();
                     if (wr.get() == null) {
                         gVector.removeElement(wr);
                     }
