@@ -1,8 +1,310 @@
-html, body, iframe {
-  margin: 0;
-  border: 0;
-  padding: 0;
-  position: absolute;
-  width: 100%;
-  height: 100%;
+
+@media screen and (min-width: 1080px) {
+  body {
+    margin: 0 auto;
+    padding-left: 20%;
+    padding-right: 20%;
+    padding-top: 50px;
+  } 
+
+  .filter-box {
+    width: 240px;
+    height: 34px;
+    background-color: #ffffff;
+    border: solid 1px #dcdcdc;
+    font-family: Roboto;
+    font-size: 12px;
+    font-weight: normal;
+    font-style: normal;
+    font-stretch: normal;
+    letter-spacing: normal;
+    text-align: left;
+    color: #3d3d3d;
+    padding-left: 10px;
+    border-color: #dcdcdc;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-position: 222px 9px;
+    font-family: Roboto;
+    font-size: 12px;
+    color: #3d3d3d;
+    background-repeat: no-repeat;
+  }
+
+  .game {
+    height: 100px;
+    width: 80px;
+    text-align: center;
+    width: 120px;
+    height: 100px;
+    border: 1px solid silver;
+    margin-right: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .btn {
+    background: #2079b0;
+    -webkit-border-radius: 8;
+    -moz-border-radius: 8;
+    border-radius: 8px;
+    -webkit-box-shadow: 6px 5px 24px #666666;
+    -moz-box-shadow: 6px 5px 24px #666666;
+    box-shadow: 6px 5px 24px #666666;
+    font-family: Arial;
+    color: #fafafa;
+    font-size: 12px;
+    padding: 10px;
+    text-decoration: none;
+    margin-right: 5px;
+  }
+
+  .btn:hover {
+    background: #2079b0;
+    text-decoration: none;
+  }
+
+  .blink {
+    font-size: 46px;
+    color: #4cc134;
+    margin: 10px;
+    animation: changeshadow 1s ease-in infinite;
+    -webkit-animation: changeshadow 1s linear infinite;
+    -moz-animation: changeshadow 1s linear infinite;
+    -ms-animation: changeshadow 1s linear infinite;
+    -o-animation: changeshadow 1s linear infinite;
+  }
+
+  @keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  @-webkit-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  @-moz-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  @-ms-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  @-o-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+}
+
+@media screen and (min-width: 300px) and (max-width: 1080px) {
+  body {
+    /* 		margin: 0 auto;
+    padding-left: 10%;
+    padding-right: 10%;
+    padding-top: 10px; */
+  }
+
+  #gameListDiv {
+    justify-content: center;
+  }
+
+
+  .filter-box {
+    width: 100%;
+    height: 34px;
+    background-color: #ffffff;
+    border: solid 1px #dcdcdc;
+    font-family: Roboto;
+    font-size: 12px;
+    font-weight: normal;
+    font-style: normal;
+    font-stretch: normal;
+    letter-spacing: normal;
+    text-align: left;
+    color: #3d3d3d;
+    padding-left: 10px;
+    border-color: #dcdcdc;
+    margin-top: 5px;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-position: 222px 9px;
+    font-family: Roboto;
+    font-size: 12px;
+    color: #3d3d3d;
+    background-repeat: no-repeat;
+  }
+
+  .game {
+    height: 80px;
+    width: 90px;
+    text-align: center;
+    border: 1px solid silver;
+    margin-right: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    margin-top: 10px;
+    font-size: 12px;
+    padding-bottom: 10px;
+  }
+
+  .btn {
+    margin-top: 5px;
+    background: #2079b0;
+    -webkit-border-radius: 8;
+    -moz-border-radius: 8;
+    border-radius: 8px;
+    -webkit-box-shadow: 6px 5px 24px #666666;
+    -moz-box-shadow: 6px 5px 24px #666666;
+    box-shadow: 6px 5px 24px #666666;
+    font-family: Arial;
+    color: #fafafa;
+    font-size: 12px;
+    padding: 10px;
+    text-decoration: none;
+    margin-right: 5px;
+  }
+
+  .btn:hover {
+    background: #2079b0;
+    text-decoration: none;
+  }
+
+  .blink {
+    font-size: 46px;
+    color: #4cc134;
+    margin: 10px;
+    animation: changeshadow 1s ease-in infinite;
+    -webkit-animation: changeshadow 1s linear infinite;
+    -moz-animation: changeshadow 1s linear infinite;
+    -ms-animation: changeshadow 1s linear infinite;
+    -o-animation: changeshadow 1s linear infinite;
+  }
+
+  @keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  /* 添加兼容性前缀 */
+  @-webkit-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  @-moz-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  @-ms-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
+
+  @-o-keyframes changeshadow {
+    0% {
+      text-shadow: 0 0 4px #4cc134
+    }
+
+    50% {
+      text-shadow: 0 0 40px #4cc134
+    }
+
+    100% {
+      text-shadow: 0 0 4px #4cc134
+    }
+  }
 }

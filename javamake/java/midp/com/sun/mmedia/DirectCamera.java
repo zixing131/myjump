@@ -45,7 +45,7 @@ public class DirectCamera extends DirectPlayer
     public DirectCamera() {
     }
 
-    protected Control doGetControl(String type) {
+    public Control doGetControl(String type) {
         Control c = super.doGetControl(type);
         if (c == null) {
             if (type.startsWith(JSR234_CAMERA_PACKAGE_NAME)) {

@@ -27,6 +27,7 @@ package com.sun.mmedia;
 
 import  javax.microedition.media.*;
 import  javax.microedition.media.control.*;
+import javax.microedition.media.control.VolumeControl;
 import  javax.microedition.media.protocol.SourceStream;
 import  javax.microedition.media.protocol.DataSource;
 import  java.util.Enumeration;

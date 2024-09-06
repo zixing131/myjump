@@ -57,7 +57,7 @@ public class FileSystemRegistry {
     private static boolean isListenerRegistered = false;
 
     /** Constructor. */
-    FileSystemRegistry() {
+    protected FileSystemRegistry() {
     }
 
     // JAVADOC COMMENT ELIDED

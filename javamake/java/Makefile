@@ -1,19 +1,15 @@
-SRC_DIRS=cldc1.1.1 vm midp custom
+SRC_DIRS=gbkwriter freej2me cldc1.1.1 vm midp custom
 JPP_DEFS=-ENABLE_JSR_205 -ENABLE_SSL -ENABLE_PUBLICKEYSTORE -ENABLE_JSR_211 -ENABLE_MULTIPLE_ISOLATES -RECORD -USE_FILE_CONNECTION -ENABLE_JSR_234
+ 
 
-ifeq ($(JSR_256),1)
+
 SRC_DIRS += jsr-256
 JPP_DEFS += -ENABLE_JSR_256
-endif
 
-ifeq ($(JSR_082),1)
 SRC_DIRS += jsr-082
-endif
 
-ifeq ($(JSR_179),1)
 SRC_DIRS += jsr-179
 JPP_DEFS += -ENABLE_JSR_179
-endif
 
 SRCS=$(shell find $(SRC_DIRS) -name *.java)
 JPP_SRCS=$(shell find $(SRC_DIRS) -name *.jpp)
@@ -25,7 +21,7 @@ classes.jar: $(SRCS) $(JPP_DESTS) $(EXTRA)
 	mkdir build build-src
 	$(foreach dir,$(SRC_DIRS),cp -a $(dir)/. build-src/;)
 	find ./build-src -name *.java > build-srcs.txt
-	javac -cp build-src -g:none -source 1.7 -target 1.7 -bootclasspath "" -extdirs "" -d ./build @build-srcs.txt > /dev/null
+	javac -cp build-src -g:none -source 8 -target 8 -bootclasspath "" -extdirs "" -d ./build @build-srcs.txt > /dev/null
 	rm -rf build-src
 	# TODO: Re-enable Soot optimizations once tests with baseline JIT enabled
 	#       for all methods pass.

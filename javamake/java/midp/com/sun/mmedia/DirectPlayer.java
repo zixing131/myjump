@@ -1,981 +1,617 @@
-// #define RECORD
-/*
- * Copyright  1990-2009 Sun Microsystems, Inc. All Rights Reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version
- * 2 only, as published by the Free Software Foundation.
- * 
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License version 2 for more details (a copy is
- * included at /legal/license.txt).
- * 
- * You should have received a copy of the GNU General Public License
- * version 2 along with this work; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
- * 
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa
- * Clara, CA 95054 or visit www.sun.com if you need additional
- * information or have any questions.
- */
-
-/*
- * - Conditional Compile Flags -
- * 
- * ENABLE_MULTIPLE_ISOLATES : MVM mode ?
- * RECORD : Support Recording ?
- */
-
 package com.sun.mmedia;
 
-import java.io.IOException;
-import java.util.*;
 import com.sun.j2me.log.Logging;
-import com.sun.j2me.log.LogChannels;
-
-import com.sun.mmedia.DefaultConfiguration;
-import com.sun.mmedia.DirectVolume;
-import com.sun.mmedia.DirectMetaData;
-import javax.microedition.media.Player;
-import javax.microedition.media.PlayerListener;
-import javax.microedition.media.MediaException;
-import javax.microedition.media.Control;
-import com.sun.mmedia.Configuration;
+import com.sun.midp.log.LogChannels;
 import com.sun.mmedia.protocol.BasicDS;
+import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
+import javax.microedition.media.Control;
+import javax.microedition.media.MediaException;
+import javax.microedition.media.PlayerListener;
 
-import javax.microedition.media.control.StopTimeControl;
-
-import com.sun.mmedia.DirectRecord;
-
-
-/**
- * Media direct player base class
- * This class depends on native library to handle media data
- */ 
-public class DirectPlayer extends BasicPlayer implements VideoSource 
-
-
-
-{
-    // Temp buffer shared by all of Player from the same isolate
-    private static byte[] buffer;    
-    
-    // Package variables
+public class DirectPlayer extends BasicPlayer implements VideoSource {
+    private static byte[] buffer;
     DirectVolume dVolumeControl;
     DirectMetaData dMetaDataControl;
-
-    private long remained;      // remained content length
-
-    private Timer stopTimer;    // To support StopTimeControl
-    private static final long STOP_TIME_ADVANCE = 100; // ms
-
-    private DirectRecord recordControl = null;
-
+    private long remained;
+    private Timer stopTimer;
+    private static final long STOP_TIME_ADVANCE = 100;
     private DirectMIDIControl midiControl;
     private Control tunerControl;
     private Control rdsControl;
-
-    
-
-
-
-
-    
+    private boolean isWaitingForSnapshot;
+    private DirectRecord recordControl = null;
     private boolean isStreaming = false;
     private boolean isFirstStart = true;
-
     protected boolean wholeDataDownloaded = false;
-
-    // this field will be checked in the native finalizer
     private boolean hasTakenRadioAccess = false;
-
     private DirectVideo videoControl = null;
-    
     private Object snapshotLock = new Object();
+    private boolean colorKeyOn = false;
 
-// Native functions /////////////////////////////////////////////////
-    
-    // Terminate native library
-    protected native int nTerm(int handle);
-    // Get Content Type
-    protected native String nGetContentType(int handle);
-    // Access to Radio Tuner for a Java Player is exclusive. 
-    // Acquire it or return false if it is not available
+    public class StopTimeController extends TimerTask {
+        StopTimeController() {
+        }
+
+        
+        public void run() {
+            synchronized (DirectPlayer.this) {
+                long doGetMediaTime = DirectPlayer.this.doGetMediaTime();
+                long doGetDuration = DirectPlayer.this.doGetDuration();
+                while (doGetMediaTime != -1 && doGetMediaTime < DirectPlayer.this.stopTime && (doGetDuration <= 0 || doGetMediaTime < doGetDuration)) {
+                    try {
+                        Thread.sleep(10L);
+                    } catch (InterruptedException e) {
+                    }
+                    doGetMediaTime = DirectPlayer.this.doGetMediaTime();
+                }
+                try {
+                    DirectPlayer.this.doPreStop();
+                    DirectPlayer.this.doStop();
+                } catch (MediaException e2) {
+                    Logging.report(2, LogChannels.LC_MMAPI, "Exception during stop by stop timer");
+                }
+            }
+            DirectPlayer.this.satev();
+        }
+    }
+
+    protected native int nTerm(int i);
+
+    protected native String nGetContentType(int i);
+
     private native boolean nAcquireRadioAccess();
-    // Device is available?
-    protected native boolean nAcquireDevice(int handle);
-    // Relase device reference
-    protected native void nReleaseDevice(int handle);
-    // Access to Radio Tuner for a Java Player is exclusive. Release it
+
+    protected native boolean nAcquireDevice(int i);
+
+    protected native void nReleaseDevice(int i);
+
     private native void nReleaseRadioAccess();
-    // Clear buffered data
-    protected native boolean nFlushBuffer(int handle);
-    // Start playing
-    protected native boolean nStart(int handle);
-    // Stop playing
-    protected native boolean nStop(int handle);
-    // Get current media time as ms
-    protected native int nGetMediaTime(int handle);
-    // Set media time as ms
-    protected native int nSetMediaTime(int handle, long ms);
-    // Get total duration of media data
-    protected native int nGetDuration(int handle);
-    // Pause
-    protected native boolean nPause(int handle);
-    // Resume
-    protected native boolean nResume(int handle);
-    // Need buffering from Java side?
-    protected native boolean nIsNeedBuffering(int handle);
-    // Switch to foreground
-    private native boolean nSwitchToForeground(int hNative, int options);
-    // Switch to background
-    private native boolean nSwitchToBackground(int hNative, int options);
 
-    
+    protected native boolean nFlushBuffer(int i);
 
+    protected native boolean nStart(int i);
+
+    protected native boolean nStop(int i);
+
+    protected native int nGetMediaTime(int i);
+
+    protected native int nSetMediaTime(int i, long j);
+
+    protected native int nGetDuration(int i);
+
+    protected native boolean nPause(int i);
+
+    protected native boolean nResume(int i);
+
+    protected native boolean nIsNeedBuffering(int i);
+
+    private native boolean nSwitchToForeground(int i, int i2);
+
+    private native boolean nSwitchToBackground(int i, int i2);
 
     private native void finalize();
-    
 
-    // Ask for PcmAudio support
-    private native boolean nPcmAudioPlayback(int hNative);
+    private native boolean nPcmAudioPlayback(int i);
 
-    // Start Prefetch of Native Player
-    protected native boolean nPrefetch(int hNative);
-    // Is Control supported by native or not
-    protected static native boolean nIsFramePositioningControlSupported(int hNative);
-    protected static native boolean nIsMetaDataControlSupported(int hNative);
-    protected static native boolean nIsMIDIControlSupported(int hNative);
-    protected static native boolean nIsPitchControlSupported(int hNative);
-    protected static native boolean nIsRateControlSupported(int hNative);
-    protected static native boolean nIsRecordControlSupported(int hNative);
-    protected static native boolean nIsStopTimeControlSupported(int hNative);
-    protected static native boolean nIsTempoControlSupported(int hNative);
-    protected static native boolean nIsVideoControlSupported(int hNative);
-    protected static native boolean nIsToneControlSupported(int hNative);
-    protected static native boolean nIsVolumeControlSupported(int hNative);
+    protected native boolean nPrefetch(int i);
 
-    // -----------------------------
-    // Video related native methods
-    // -----------------------------
+    protected static native boolean nIsFramePositioningControlSupported(int i);
 
-    // Get video width
-    protected native int nGetWidth(int handle);
+    protected static native boolean nIsMetaDataControlSupported(int i);
 
-    // Get video height
-    protected native int nGetHeight(int handle);
+    public static native boolean nIsMIDIControlSupported(int i);
 
-    // Set display location of video
-    protected native boolean nSetLocation(int handle, int x, int y, int w, int h);
+    protected static native boolean nIsPitchControlSupported(int i);
 
-    // Get snapshot
-    protected native void nStartSnapshot( int handle, String imageType );
-    protected native byte[] nGetSnapshotData( int handle );
-    
-    // Set fullscreen
-    protected native boolean nSetFullScreenMode(int handle, boolean fullscreen);
+    protected static native boolean nIsRateControlSupported(int i);
 
-    // Set visible
-    protected native boolean nSetVisible(int handle, boolean visible);
+    protected static native boolean nIsRecordControlSupported(int i);
 
-    // Turn on or off color key
-    private native boolean nSetColorKey(int handle, boolean on, int colorKey);
-    
-    // Member functions /////////////////////////////////////////////////
+    protected static native boolean nIsStopTimeControlSupported(int i);
 
-    /**
-     * Constructor
-     */
-    public DirectPlayer()
-    {
-        super();
+    protected static native boolean nIsTempoControlSupported(int i);
 
-        
+    protected static native boolean nIsVideoControlSupported(int i);
 
+    public static native boolean nIsToneControlSupported(int i);
 
+    protected static native boolean nIsVolumeControlSupported(int i);
 
-    }
-    
-    public int getNativeHandle()
-    {
-        return hNative;
+    protected native int nGetWidth(int i);
+
+    protected native int nGetHeight(int i);
+
+    protected native boolean nSetLocation(int i, int i2, int i3, int i4, int i5);
+
+    protected native void nStartSnapshot(int i, String str);
+
+    protected native byte[] nGetSnapshotData(int i);
+
+    protected native boolean nSetFullScreenMode(int i, boolean z);
+
+    protected native boolean nSetVisible(int i, boolean z);
+
+    private native boolean nSetColorKey(int i, boolean z, int i2);
+
+    public int getNativeHandle() {
+        return this.hNative;
     }
 
-    /**
-     * StopTimeControl implementation of DirectPlayer
-     *
-     * @param time the time in microseconds at which the <code>Player</code>
-     * should stop.
-     */
-    protected void doSetStopTime(long time) {
-        if (time == StopTimeControl.RESET && stopTimer != null) {
-            stopTimer.cancel();
-            stopTimer = null;
-
-        } else if (time != StopTimeControl.RESET && state == STARTED) {
-            long currentTime = doGetMediaTime();
-            if (time >= currentTime) {
-                scheduleStopTimer(time);
+    
+    protected void doSetStopTime(long j) {
+        if (j == Long.MAX_VALUE && this.stopTimer != null) {
+            this.stopTimer.cancel();
+            this.stopTimer = null;
+        } else {
+            if (j == Long.MAX_VALUE || this.state != 400 || j < doGetMediaTime()) {
+                return;
             }
+            scheduleStopTimer(j);
         }
     }
-    
-    private boolean scheduleStopTimer(long time) {
-        long tempo = 100000, rate = 100000;
-        boolean isRateControlSupported = false;
-        boolean isTempoControlSupported = false;
-        boolean stopped = false;
-        long duration = doGetDuration();
-        long currentTime = doGetMediaTime();
-        
-        if (currentTime == TIME_UNKNOWN) {
+
+    private boolean scheduleStopTimer(long j) {
+        long j2 = 100000;
+        long j3 = 100000;
+        boolean z = false;
+        boolean z2 = false;
+        boolean z3 = false;
+        doGetDuration();
+        long doGetMediaTime = doGetMediaTime();
+        if (doGetMediaTime == -1) {
             return false;
         }
-        
-        if (hNative != 0) {
-            isRateControlSupported = nIsRateControlSupported(hNative);
-            isTempoControlSupported = nIsTempoControlSupported(hNative);
+        if (this.hNative != 0) {
+            z = nIsRateControlSupported(this.hNative);
+            z2 = nIsTempoControlSupported(this.hNative);
         }
-        if (midiControl == null &&
-                (isRateControlSupported || isTempoControlSupported)) {
-            midiControl = new DirectMIDIControl(this);
+        if (this.midiControl == null && (z || z2)) {
+            this.midiControl = new DirectMIDIControl(this);
         }
-        if (midiControl != null) {
-            if (isRateControlSupported) {
-                rate = midiControl.getRateControl().getRate();
+        if (this.midiControl != null) {
+            if (z) {
+                j3 = this.midiControl.getRateControl().getRate();
             }
-            if (isTempoControlSupported) {
-                tempo = midiControl.getTempoControl().getTempo();
+            if (z2) {
+                j2 = this.midiControl.getTempoControl().getTempo();
             }
         }
-        
-        if (stopTimer != null) {
-            stopTimer.cancel();
-            stopTimer = null;
+        if (this.stopTimer != null) {
+            this.stopTimer.cancel();
+            this.stopTimer = null;
         }
-        long scheduleTime = (time - currentTime - STOP_TIME_ADVANCE) / 1000 * 100000 * 100000 / (rate * tempo);
-        if (scheduleTime <= 0) {
+        long j4 = (((((j - doGetMediaTime) - STOP_TIME_ADVANCE) / 1000) * 100000) * 100000) / (j3 * j2);
+        if (j4 <= 0) {
             synchronized (this) {
                 try {
                     doPreStop();
                     doStop();
                 } catch (MediaException e) {
-                    Logging.report(Logging.ERROR, LogChannels.LC_MMAPI,
-                        "Exception during stop by stop timer");
+                    Logging.report(2, LogChannels.LC_MMAPI, "Exception during stop by stop timer");
                 }
             }
             satev();
-            
-            stopped = true;
+            z3 = true;
         } else {
-            stopTimer = new Timer();
-            stopTimer.schedule(new StopTimeController(), scheduleTime);
+            this.stopTimer = new Timer();
+            this.stopTimer.schedule(new StopTimeController(), j4);
         }
-        return stopped;
+        return z3;
     }
 
-    /**
-     * Read header information from media data and determine media Format
-     *
-     * @exception  MediaException  Description of the Exception
-     */
+    
     protected void doRealize() throws MediaException {
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // Is straming source?
-        isStreaming = isStreamingSource();
-        
-        if( isVideoPlayer() )
-        {
-            videoControl = new DirectVideo( this, nGetWidth( hNative ), 
-                                         nGetHeight( hNative ) );
+        this.isStreaming = isStreamingSource();
+        if (isVideoPlayer()) {
+            this.videoControl = new DirectVideo(this, nGetWidth(this.hNative), nGetHeight(this.hNative));
         }
     }
-    
-    private boolean isRadioPlayer()
-    {
-        return ( null != source.getLocator() && 
-            source.getLocator().startsWith( 
-                DefaultConfiguration.RADIO_CAPTURE_LOCATOR ) );
+
+    private boolean isRadioPlayer() {
+        return null != this.source.getLocator() && this.source.getLocator().startsWith(Configuration.RADIO_CAPTURE_LOCATOR);
     }
-    
-    private void prefetchData() throws MediaException
-    {
-        /* prefetch native player */
-        if (!nPrefetch(hNative)) {
+
+    private void prefetchData() throws MediaException {
+        if (!nPrefetch(this.hNative)) {
             throw new MediaException("Can not prefetch");
         }
-
-        if (!handledByDevice) {
-            /* predownload media data to fill native buffers */
-            if (mediaDownload != null) {
-                try {
-                    mediaDownload.fgDownload();
-                } catch (IOException ex) {
-                    throw new MediaException("Can not start media download thread : " + ex);
-                }
-            }
+        if (this.handledByDevice || this.mediaDownload == null) {
+            return;
+        }
+        try {
+            this.mediaDownload.fgDownload();
+        } catch (IOException e) {
+            throw new MediaException("Can not start media download thread : " + e);
         }
     }
-    
-    private void acquireDevice() throws MediaException
-    {
-        if( isRadioPlayer() )
-        {
-            if( !nAcquireRadioAccess() )
-            {
-                throw new MediaException( "Radio Tuner is already used " +
-                        "by a Java Player" );
-            }
-            hasTakenRadioAccess = true;
-        }
 
-        if(!nAcquireDevice(hNative)) {
-            releaseRadioAccess();
-            throw new MediaException("Can not acquire device");
+    private void acquireDevice() throws MediaException {
+        if (isRadioPlayer()) {
+            if (!nAcquireRadioAccess()) {
+                throw new MediaException("Radio Tuner is already used by a Java Player");
+            }
+            this.hasTakenRadioAccess = true;
         }
+        if (nAcquireDevice(this.hNative)) {
+            return;
+        }
+        releaseRadioAccess();
+        throw new MediaException("Can not acquire device");
     }
+
     
-    /**
-     * 1. Get all data from stream and buffering it to native library
-     *
-     * @exception  MediaException  Description of the Exception
-     */
     protected void doPrefetch() throws MediaException {
-
         prefetchData();
         acquireDevice();
-        
-        if (nPcmAudioPlayback(hNative)) {
+        if (nPcmAudioPlayback(this.hNative)) {
             AudioTunnel.getInstance().start();
         }
     }
 
-    /**
-     * Overrides from BasicPlayer
-     */
-
-    protected void doReceiveRSL()
-    {
-        if (Logging.REPORT_LEVEL <= Logging.INFORMATION) {
-            Logging.report(Logging.INFORMATION, LogChannels.LC_MMAPI,
-            "[direct] received RSL");
-        }
-        
-        if (recordControl != null) {
-            recordControl.recordSizeLimitReached();
+    
+    public void doReceiveRSL() {
+        if (this.recordControl != null) {
+            this.recordControl.recordSizeLimitReached();
         }
     }
+
     
     protected void doPostStart() {
-        if (dVolumeControl != null) {
-            dVolumeControl.setToThisPlayerLevel();     /* set to this player's volume level */
-            dVolumeControl.setToPlayerMute();          /* set to this player's mute state */
+        if (this.dVolumeControl != null) {
+            this.dVolumeControl.setToThisPlayerLevel();
+            this.dVolumeControl.setToPlayerMute();
         }
-
-        if (stopTime != StopTimeControl.RESET) {
-            if (scheduleStopTimer(stopTime)) { // Media stop-time has already passed
-                return;
+        if (this.stopTime == Long.MAX_VALUE || !scheduleStopTimer(this.stopTime)) {
+            if (this.recordControl != null) {
+                this.recordControl.playerStarted();
             }
-        }
-
-        if (recordControl != null) {
-            recordControl.playerStarted();
-        }
-        
-        if (midiControl != null) {
-            midiControl.playerStarted();
-        }
-        
-        if (mediaDownload != null) {
-            try {
-                mediaDownload.bgDownload();
-            } catch(Exception ex) {
+            if (this.midiControl != null) {
+                this.midiControl.playerStarted();
+            }
+            if (this.mediaDownload != null) {
                 try {
-                    stop();
-                } catch(MediaException mEx) {
+                    this.mediaDownload.bgDownload();
+                } catch (Exception e) {
+                    try {
+                        stop();
+                    } catch (MediaException e2) {
+                    }
                 }
             }
         }
     }
+
     
-    /**
-     * Override method in BasicPlayer to do the actual starting of the
-     * <code>Player</code>
-     *
-     * @return <code>true</code> if player start was successful,
-     *         <code>false</code> otherwise.
-     */
     protected boolean doStart() {
-        boolean ret = false;
-        
-        if( null != videoControl )
-        {
-            videoControl.start();
+        boolean nStart;
+        if (null != this.videoControl) {
+            this.videoControl.start();
         }
-        
-        if (isFirstStart || (0 == getMediaTime())) {
-            ret = nStart(hNative);
-            isFirstStart = false;
+        if (this.isFirstStart || 0 == getMediaTime()) {
+            nStart = nStart(this.hNative);
+            this.isFirstStart = false;
         } else {
-            ret = nResume(hNative);    
+            nStart = nResume(this.hNative);
         }
-        
-        return ret;
+        return nStart;
     }
 
-    protected void continueDownload() {
-        /* predownload media data to fill native buffers */
-        if (mediaDownload != null) {
-            mediaDownload.continueDownload();
+    
+    public void continueDownload() {
+        if (this.mediaDownload != null) {
+            this.mediaDownload.continueDownload();
         }
     }
+
     
-    /**
-     * Override method in BasicPlayer to get the media time
-     * of the <code>Player</code>
-     *
-     * @return The <code>Player</code>'s current media time.
-     */
     protected long doGetMediaTime() {
-        int ret = nGetMediaTime(hNative);
-        if (ret != Player.TIME_UNKNOWN) {
-            return (ret * 1000);
-        }
-        return ret;
+        int nGetMediaTime = nGetMediaTime(this.hNative);
+        return ((long) nGetMediaTime) != -1 ? nGetMediaTime * 1000 : nGetMediaTime;
     }
-    
-    /**
-     * Overrides from BasicPlayer (pre works for stop)
-     */
-    protected void doPreStop() {
-        if (stopTimer != null) {
-            stopTimer.cancel();
-            stopTimer = null;
-        }
-        
-        if (recordControl != null) {
-            recordControl.playerStopped();
-        }
-        
-        if (midiControl != null) {
-            midiControl.playerStopped();
-        }
-    }
-    
-    /**
-     * Subclasses need to implement this to realize
-     * the <code>Player</code>.
-     *
-     * @exception  MediaException  Description of the Exception
-     */
-    protected void doStop() throws MediaException {
 
-        if ( null != videoControl )
-        {
-            videoControl.stop();
+    
+    protected void doPreStop() {
+        if (this.stopTimer != null) {
+            this.stopTimer.cancel();
+            this.stopTimer = null;
         }
-        
-        if (false == nPause(hNative)) {
+        if (this.recordControl != null) {
+            this.recordControl.playerStopped();
+        }
+        if (this.midiControl != null) {
+            this.midiControl.playerStopped();
+        }
+    }
+
+    
+    protected void doStop() throws MediaException {
+        if (null != this.videoControl) {
+            this.videoControl.stop();
+        }
+        if (false == nPause(this.hNative)) {
             throw new MediaException("Player cannot be stopped");
         }
     }
 
-    private void releaseRadioAccess()
-    {
-        if( isRadioPlayer() )
-        {
+    private void releaseRadioAccess() {
+        if (isRadioPlayer()) {
             nReleaseRadioAccess();
-            hasTakenRadioAccess = false;
+            this.hasTakenRadioAccess = false;
         }
     }
+
     
-    /**
-     * Override method in BasicPlayer to deallocate
-     * the <code>Player</code>.
-     */
     protected void doDeallocate() {
-        // release device
-        if (nPcmAudioPlayback(hNative)) {
+        if (nPcmAudioPlayback(this.hNative)) {
             AudioTunnel.getInstance().stop();
         }
-        
         releaseRadioAccess();
-
-        if (mediaDownload != null) {
-            mediaDownload.deallocate();
+        if (this.mediaDownload != null) {
+            this.mediaDownload.deallocate();
         }
-
-        nReleaseDevice(hNative);
-
-        isFirstStart = true;
+        nReleaseDevice(this.hNative);
+        this.isFirstStart = true;
     }
+
     
-    /**
-     * Override method in BasicPlayer to close
-     * the <code>Player</code>.
-     */
     protected void doClose() {
-        if( null != videoControl )
-        {
-            videoControl.close();
-            videoControl = null;
+        if (null != this.videoControl) {
+            this.videoControl.close();
+            this.videoControl = null;
         }
-        
-        
-
-
-
-
-        if (recordControl != null) {
-            recordControl.playerClosed();
-            recordControl = null;
+        if (this.recordControl != null) {
+            this.recordControl.playerClosed();
+            this.recordControl = null;
         }
-        if (midiControl != null) {
-            midiControl.playerClosed();
-            midiControl = null;
+        if (this.midiControl != null) {
+            this.midiControl.playerClosed();
+            this.midiControl = null;
         }
-
-        if (dMetaDataControl != null) {
-            dMetaDataControl.playerClosed();
-            dMetaDataControl = null;
+        if (this.dMetaDataControl != null) {
+            this.dMetaDataControl.playerClosed();
+            this.dMetaDataControl = null;
         }
-
-        if (dVolumeControl != null) {
-            dVolumeControl.playerClosed();
-            dVolumeControl = null;
+        if (this.dVolumeControl != null) {
+            this.dVolumeControl.playerClosed();
+            this.dVolumeControl = null;
         }
-
-        if (hNative != 0) {
-            if ( true == nIsNeedBuffering(hNative) ) {
-                nFlushBuffer(hNative);
+        if (this.hNative != 0) {
+            if (true == nIsNeedBuffering(this.hNative)) {
+                nFlushBuffer(this.hNative);
             }
-            nTerm(hNative);
-            hNative = 0;
+            nTerm(this.hNative);
+            this.hNative = 0;
         }
     }
-    
-    /**
-     * Override method in BasicPlayer to set the media time
-     * of the <code>Player</code>.
-     *
-     * @param now The new media time in microseconds.
-     * @return The actual media time set in microseconds.
-     * @exception MediaException Thrown if the media time cannot be set.
-     */
-    protected long doSetMediaTime(long now) throws MediaException {
-        if (now <= 0) now = 0;
-        
-        long dur = doGetDuration();
 
-        if (TIME_UNKNOWN != dur && now > dur) now = dur;
-        
-        int ret = nSetMediaTime(hNative, now/1000);
-        if (ret == -1) {
-            throw new MediaException("media time cannot be set");
-        }                
-        return (ret * 1000);
-    }
     
-    /**
-     * Override method in BasicPlayer to get the duration
-     * of the <code>Player</code>.
-     *
-     * @return the duration in microseconds or <code>TIME_UNKNOWN</code>
-     */
+    protected long doSetMediaTime(long j) throws MediaException {
+        if (j <= 0) {
+            j = 0;
+        }
+        long doGetDuration = doGetDuration();
+        if (-1 != doGetDuration && j > doGetDuration) {
+            j = doGetDuration;
+        }
+        if (nSetMediaTime(this.hNative, j / 1000) == -1) {
+            throw new MediaException("media time cannot be set");
+        }
+        return j * 1000;
+    }
+
+    
     protected long doGetDuration() {
         if (isCapturePlayer()) {
-            return Player.TIME_UNKNOWN;
-        } else if (isDevicePlayer() && !hasToneSequenceSet) {
-            return 0;
-        } else {
-            int ret = nGetDuration(hNative);
-            if (ret != Player.TIME_UNKNOWN) {
-                return (ret * 1000);    
-            }
-            return ret;
+            return -1L;
         }
+        if (isDevicePlayer() && !this.hasToneSequenceSet) {
+            return 0L;
+        }
+        int nGetDuration = nGetDuration(this.hNative);
+        return ((long) nGetDuration) != -1 ? nGetDuration * 1000 : nGetDuration;
     }
+
     
-    /**
-     * The worker method to actually obtain the control.
-     *
-     * @param  type  the class name of the <code>Control</code>.
-     * @return       <code>Control</code> for the class or interface
-     * name.
-     */
-    protected Control doGetControl(String type) {
-        String prefix = "javax.microedition.media.control.";
-        String shortType = type;
-
-        if (type.startsWith(prefix)) {
-            shortType = type.substring(prefix.length());
+    public Control doGetControl(String str) {
+        String str2 = str;
+        if (str.startsWith("javax.microedition.media.control.")) {
+            str2 = str.substring("javax.microedition.media.control.".length());
         }
-
-        if (shortType.equals(fpcName)) {
-//            if (nIsFramePositioningControlSupported(hNative)) {
-//            }
-        } else if (shortType.equals(mdcName)) {
-            if (nIsMetaDataControlSupported(hNative)) {
-                if (dMetaDataControl == null)
-                    dMetaDataControl = new DirectMetaData(hNative);
-                return dMetaDataControl;
-            }
-        } else if (shortType.equals(micName)) {
-            if (nIsMIDIControlSupported(hNative)) {
-                if (midiControl == null) 
-                    midiControl = new DirectMIDIControl(this);
-                return midiControl.getMIDIControl();
-            }
-        } else if (shortType.equals(picName)) {
-            if (nIsPitchControlSupported(hNative)) {
-                if (midiControl == null) 
-                    midiControl = new DirectMIDIControl(this);
-                return midiControl.getPitchControl();
-            }
-        } else if (shortType.equals(racName)) {
-            if (nIsRateControlSupported(hNative)) {
-                if (midiControl == null) 
-                    midiControl = new DirectMIDIControl(this);
-                return midiControl.getRateControl();
-            }
-        } else if (shortType.equals(recName)) {
-            if (nIsRecordControlSupported(hNative)) {
-                if (recordControl == null) {
-                    recordControl = new DirectRecord(this);
-                }
-                return recordControl;
-            }
-        } else if (shortType.equals(stcName)) {
-            if (!isCapturePlayer()) {
-                return this;
-            }
-//            if (nIsStopTimeControlSupported(hNative)) {
-//            }
-        } else if (shortType.equals(tecName)) {
-            if (nIsTempoControlSupported(hNative)) {
-                if (midiControl == null) 
-                    midiControl = new DirectMIDIControl(this);
-                return midiControl.getTempoControl();
-            }
-        } else if (shortType.equals(vicName)) {
-//            if (nIsVideoControlSupported(hNative)) {
-//            }
-        } else if (shortType.equals(tocName)) {
-//            if (nIsToneControlSupported(hNative)) {
-//            }
-        } else if (shortType.equals(vocName)) {
-            if (nIsVolumeControlSupported(hNative)) {
-                if (dVolumeControl == null) {
-                    dVolumeControl = new DirectVolume(this, hNative);
-                }
-                return dVolumeControl;
-            }
-        }
-
-        if ( null != videoControl ) {
-            if (shortType.equals(vicName)) {        // VideoControl
-                return videoControl;
-            } else if (shortType.equals(guiName)) {  // GUIControl
-                return videoControl;
-            }
-        }
-
-        if ( isRadioPlayer() )
-        {
-            if( type.equals( 
-                    "javax.microedition.amms.control.tuner.RDSControl" ) )
-            {
-                if( null == rdsControl )
-                { 
-                    rdsControl = 
-                            Jsr234Proxy.getInstance().getRDSControl( this );
-                }
-                return rdsControl;
-            } else if (type.equals( 
-                    "javax.microedition.amms.control.tuner.TunerControl" )) {
-                if (null == tunerControl) {
-                    tunerControl =
-                            Jsr234Proxy.getInstance().getTunerControl( this );
-                }
-                return tunerControl;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Is streaming source?
-     */
-    private boolean isStreamingSource() {
-        String theProtocol = null;
-        if (source != null) {
-            String locStr = source.getLocator();
-            if (locStr != null) {
-                locStr = locStr.toLowerCase();
-                int idx = locStr.indexOf(':');
-                if (idx != -1) {
-                    theProtocol = locStr.substring(0, idx);
-                }
-            }
-        }
-
-        if (theProtocol != null && theProtocol.equals("rtsp")) {
-            return true;  
-        }
-
-        return false;
-    }
-
-    /**
-     * Make additional processing of the first block (header)
-     * 
-     * @param  Source buffer
-     * @param  Length of the source buffer
-     */
-    private void processHeader(byte[] buffer, int length) {
-        if (source != null) {
-            // Additional check to differentiate sp-midi and midi
-            String mimeType = getContentType();
-            BasicDS ds = (BasicDS)source;
-            if ((ds != null) && mimeType.equals(Configuration.MIME_AUDIO_MIDI)) {
-                final int MAX_SP_MIDI_SEARCH = 512;
-                int maxSearch = length - 5;
-                if (maxSearch > MAX_SP_MIDI_SEARCH)
-                    maxSearch = MAX_SP_MIDI_SEARCH;
-                    
-                for (int i = 0; i < maxSearch; i++) 
-                    if ((buffer[i] == (byte)0xF0) &&  
-                        (buffer[i + 2] == (byte)0x7F) &&
-                        (buffer[i + 4] == (byte)0x0B) &&
-                        (buffer[i + 5] == (byte)0x01)) {
-                        ds.setContentType(Configuration.MIME_AUDIO_SP_MIDI);
-                        return;
+        if (!str2.equals("FramePositioningControl")) {
+            if (str2.equals("MetaDataControl")) {
+                if (nIsMetaDataControlSupported(this.hNative)) {
+                    if (this.dMetaDataControl == null) {
+                        this.dMetaDataControl = new DirectMetaData(this.hNative);
                     }
-            }
-        }
-    }
-    
-    public String getContentType()
-    {
-        String ctype = super.getContentType();
-        
-        if( null == ctype ) {
-            ctype = nGetContentType(hNative);
-            if( null != ctype ) {
-                int s_pos = ctype.indexOf(' ');
-                if (-1 != s_pos) {
-                    ctype = ctype.substring(0, s_pos);
+                    return this.dMetaDataControl;
                 }
-            }
-            if (ctype == null && source != null) {
-                ctype = DefaultConfiguration.getContentType(source.getLocator());
+            } else if (str2.equals("MIDIControl")) {
+                if (nIsMIDIControlSupported(this.hNative)) {
+                    if (this.midiControl == null) {
+                        this.midiControl = new DirectMIDIControl(this);
+                    }
+                    return this.midiControl.getMIDIControl();
+                }
+            } else if (str2.equals("PitchControl")) {
+                if (nIsPitchControlSupported(this.hNative)) {
+                    if (this.midiControl == null) {
+                        this.midiControl = new DirectMIDIControl(this);
+                    }
+                    return this.midiControl.getPitchControl();
+                }
+            } else if (str2.equals("RateControl")) {
+                if (nIsRateControlSupported(this.hNative)) {
+                    if (this.midiControl == null) {
+                        this.midiControl = new DirectMIDIControl(this);
+                    }
+                    return this.midiControl.getRateControl();
+                }
+            } else if (str2.equals("RecordControl")) {
+                if (nIsRecordControlSupported(this.hNative)) {
+                    if (this.recordControl == null) {
+                        this.recordControl = new DirectRecord(this);
+                    }
+                    return this.recordControl;
+                }
+            } else if (str2.equals("StopTimeControl")) {
+                if (!isCapturePlayer()) {
+                    return this;
+                }
+            } else if (str2.equals("TempoControl")) {
+                if (nIsTempoControlSupported(this.hNative)) {
+                    if (this.midiControl == null) {
+                        this.midiControl = new DirectMIDIControl(this);
+                    }
+                    return this.midiControl.getTempoControl();
+                }
+            } else if (!str2.equals("VideoControl") && !str2.equals("ToneControl") && str2.equals("VolumeControl") && nIsVolumeControlSupported(this.hNative)) {
+                if (this.dVolumeControl == null) {
+                    this.dVolumeControl = new DirectVolume(this, this.hNative);
+                }
+                return this.dVolumeControl;
             }
         }
-        
-        return ctype;
-    }
-    
-    private boolean isVideoPlayer()
-    {
-        return nIsVideoControlSupported(hNative);
-    }
-    
-    public void setSnapshotQuality( int quality )
-    {
+        if (null == this.videoControl || (!str2.equals("VideoControl") && !str2.equals("GUIControl"))) {
+            if (!isRadioPlayer()) {
+                return null;
+            }
+            if (str.equals("javax.microedition.amms.control.tuner.RDSControl")) {
+                if (null == this.rdsControl) {
+                    this.rdsControl = Jsr234Proxy.getInstance().getRDSControl(this);
+                }
+                return this.rdsControl;
+            }
+            if (!str.equals("javax.microedition.amms.control.tuner.TunerControl")) {
+                return null;
+            }
+            if (null == this.tunerControl) {
+                this.tunerControl = Jsr234Proxy.getInstance().getTunerControl(this);
+            }
+            return this.tunerControl;
+        }
+        return this.videoControl;
     }
 
-    /**
-     * Check for the multimedia snapshot permission.
-     *
-     * @exception SecurityException if the permission is not
-     *            allowed by this token
-     */
+    private boolean isStreamingSource() {
+        String locator;
+        String lowerCase;
+        int indexOf;
+        String str = null;
+        if (this.source != null && (locator = this.source.getLocator()) != null && (indexOf = (lowerCase = locator.toLowerCase()).indexOf(58)) != -1) {
+            str = lowerCase.substring(0, indexOf);
+        }
+        return str != null && str.equals("rtsp");
+    }
+
+    private void processHeader(byte[] bArr, int i) {
+        if (this.source != null) {
+            String contentType = getContentType();
+            BasicDS basicDS = (BasicDS) this.source;
+            if (basicDS == null || !contentType.equals("audio/midi")) {
+                return;
+            }
+            int i2 = i - 5;
+            if (i2 > 512) {
+                i2 = 512;
+            }
+            for (int i3 = 0; i3 < i2; i3++) {
+                if (bArr[i3] == -16 && bArr[i3 + 2] == Byte.MAX_VALUE && bArr[i3 + 4] == 11 && bArr[i3 + 5] == 1) {
+                    basicDS.setContentType(Configuration.MIME_AUDIO_SP_MIDI);
+                    return;
+                }
+            }
+        }
+    }
+
+    
+    public String getContentType() {
+        int indexOf;
+        String contentType = super.getContentType();
+        if (null == contentType) {
+            contentType = nGetContentType(this.hNative);
+            if (null != contentType && -1 != (indexOf = contentType.indexOf(32))) {
+                contentType = contentType.substring(0, indexOf);
+            }
+            if (contentType == null && this.source != null) {
+                contentType = DefaultConfiguration.getContentType(this.source.getLocator());
+            }
+        }
+        return contentType;
+    }
+
+    private boolean isVideoPlayer() {
+        return nIsVideoControlSupported(this.hNative);
+    }
+
+    public void setSnapshotQuality(int i) {
+    }
+
     public void checkSnapshotPermission() {
         try {
-            PermissionAccessor.checkPermissions( getLocator(), PermissionAccessor.PERMISSION_SNAPSHOT );
-        } catch( InterruptedException e ) {
-            throw new SecurityException( "Interrupted while trying to ask the user permission" );
+            PermissionAccessor.checkPermissions(getLocator(), 7);
+        } catch (InterruptedException e) {
+            throw new SecurityException("Interrupted while trying to ask the user permission");
         }
     }
 
-    // -------------------------------------------------
-    // The interface VideoSource method implementations
-    // -------------------------------------------------
-
-    // Set display location of video
-    public boolean setVideoLocation(int x, int y, int w, int h)
-    {
-        return nSetLocation( hNative, x, y, w, h );
+    
+    public boolean setVideoLocation(int i, int i2, int i3, int i4) {
+        return nSetLocation(this.hNative, i, i2, i3, i4);
     }
 
-    private boolean isWaitingForSnapshot;
-    // Get snapshot
-    public synchronized byte[] getVideoSnapshot(String imageType) throws MediaException
-    {
-        byte [] ret = null;
+    
+    public synchronized byte[] getVideoSnapshot(String str) throws MediaException {
+        byte[] nGetSnapshotData;
         checkSnapshotPermission();
         try {
-            synchronized ( snapshotLock )
-            {
-                nStartSnapshot( hNative, imageType );
-                isWaitingForSnapshot = true;
-                snapshotLock.wait( 10000 );
-                if( isWaitingForSnapshot )
-                {
-                    isWaitingForSnapshot = false;
-                    throw new MediaException( 
-                            "Timed out while making a Camera Snapshot" );
+            synchronized (this.snapshotLock) {
+                nStartSnapshot(this.hNative, str);
+                this.isWaitingForSnapshot = true;
+                this.snapshotLock.wait(10000L);
+                if (this.isWaitingForSnapshot) {
+                    this.isWaitingForSnapshot = false;
+                    throw new MediaException("Timed out while making a Camera Snapshot");
                 }
-                
-                ret = nGetSnapshotData( hNative );
+                nGetSnapshotData = nGetSnapshotData(this.hNative);
             }
+            return nGetSnapshotData;
+        } catch (InterruptedException e) {
+            throw new MediaException("Camera Snapshot was interrupted by user: " + e.toString());
         }
-        catch ( InterruptedException ie )
-        {
-            throw new MediaException( 
-               "Camera Snapshot was interrupted by user: " + ie.toString() );
-        }
-        return ret;
     }
 
-    void notifySnapshotFinished()
-    {
-        synchronized( snapshotLock )
-        {
-            if( isWaitingForSnapshot )
-            {
-                snapshotLock.notify();
-                isWaitingForSnapshot = false;
+    public void notifySnapshotFinished() {
+        synchronized (this.snapshotLock) {
+            if (this.isWaitingForSnapshot) {
+                this.snapshotLock.notify();
+                this.isWaitingForSnapshot = false;
             }
         }
     }
+
     
-    // Set fullscreen
-    public boolean setVideoFullScreen( boolean fullscreen)
-    {
-        return nSetFullScreenMode( hNative, fullscreen );
+    public boolean setVideoFullScreen(boolean z) {
+        return nSetFullScreenMode(this.hNative, z);
     }
+
     
-    // Set visible
-    public boolean setVideoVisible( boolean visible)
-    {
-        return nSetVisible( hNative, visible );
+    public boolean setVideoVisible(boolean z) {
+        return nSetVisible(this.hNative, z);
     }
+
     
-    private boolean colorKeyOn = false;
-    // Turn on or off color key
-    public boolean setColorKey(boolean on, int colorKey)
-    {
-        if (colorKeyOn != on) {
-            colorKeyOn = on;
-            return nSetColorKey( hNative, on, colorKey );
+    public boolean setColorKey(boolean z, int i) {
+        if (this.colorKeyOn == z) {
+            return true;
         }
-        return true;
+        this.colorKeyOn = z;
+        return nSetColorKey(this.hNative, z, i);
     }
 
-    // Notifies that the Display Size was changed
-    public void notifyDisplaySizeChange()
-    {
-        sendEvent(PlayerListener.SIZE_CHANGED, videoControl);
+    
+    public void notifyDisplaySizeChange() {
+        sendEvent(PlayerListener.SIZE_CHANGED, this.videoControl);
     }
-    
-    /**
-     * Inner class that support StopTimeControl
-     */
-    class StopTimeController extends TimerTask {
-        public void run() {
-            synchronized(DirectPlayer.this) {
-/*
-                try {
-                    doSetMediaTime(stopTime);   // IMPL NOTE - Force set to stop time
-                } catch(MediaException e) {
-                    Logging.report(Logging.ERROR, LogChannels.LC_MMAPI,
-                        "Exception during set time by stop timer");
-                }
-*/
-                /* IMPL_NOTE: Timer used to execute this code uses system time,
-                              which is not exactly in sync with media time, both
-                              may change in relatively large increments. That's 
-                              why we must wait here for media time to actually pass
-                              stop-time point.
-                */
-
-                long mt  = doGetMediaTime();
-                long dur = doGetDuration();
-                
-                while ((mt != -1) && 
-                        (mt < stopTime) && (dur <= 0 || mt < dur)) {
-                    try	{
-                        java.lang.Thread.sleep( 10 );
-                    } catch( InterruptedException e ) {
-                        // just skip it
-                    }
-                    
-                    mt = doGetMediaTime();
-                }
-
-                try {
-                    doPreStop();
-                    doStop();
-                } catch (MediaException e) {
-                    Logging.report(Logging.ERROR, LogChannels.LC_MMAPI,
-                        "Exception during stop by stop timer");
-                }
-            }
-
-            satev();
-        }
-    }
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-

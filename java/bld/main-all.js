@@ -3,6 +3,9 @@
 //debugString ByteStream.readString(readStringFast)
 var debugString=0;
 
+//是否启用兼容模式（兼容模式使用旧的classes.jar）
+var enginemode=0;
+
 //是否是主页
 var isIndex = window.location.href.indexOf('main.html')==-1;
 var isLoadJarFinished = false;
@@ -530,6 +533,8 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
     case "wireless.messaging.sms.smsc":
       value = "+8610086";
       break;
+    case "IMEI":
+      return "123456789012345";
     default:
       if (MIDP.additionalProperties[key]) {
         value = MIDP.additionalProperties[key];
@@ -14204,17 +14209,29 @@ var getMobileInfo = new Promise(function(resolve, reject) {
     resolve();
   });
 });
+
+if(config.enginemode)
+  {
+    enginemode=config.enginemode;
+  }
+ 
 if(!isIndex)
 {
   showDownloadScreen();
   var loadingMIDletPromises = [getMobileInfo];
   var loadingPromises = [initFS];
-  loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data) {
+  var classedjarname='java/classes.jar';
+  if(enginemode==1){
+    //启用兼容模式
+    classedjarname='java/classesold.jar';
+  }
+  loadingPromises.push(load(classedjarname, "arraybuffer").then(function(data) {
     JARStore.addBuiltIn("java/classes.jar", data);
     CLASSES.initializeBuiltinClasses();
   }));
 } 
 //console.log(config.localjar)
+
 if(!isIndex)
 {
   if(config.localjar )

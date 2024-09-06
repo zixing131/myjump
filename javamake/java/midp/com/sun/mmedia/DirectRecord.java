@@ -1,563 +1,391 @@
-/*
- * 
- * Copyright  1990-2009 Sun Microsystems, Inc. All Rights Reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version
- * 2 only, as published by the Free Software Foundation.
- * 
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License version 2 for more details (a copy is
- * included at /legal/license.txt).
- * 
- * You should have received a copy of the GNU General Public License
- * version 2 along with this work; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA
- * 
- * Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa
- * Clara, CA 95054 or visit www.sun.com if you need additional
- * information or have any questions.
- */
- 
 package com.sun.mmedia;
 
-import java.io.*;
-import javax.microedition.media.*;
-import javax.microedition.media.MediaException.*;
-import javax.microedition.media.control.*;
-import javax.microedition.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import javax.microedition.io.ConnectionNotFoundException;
+import javax.microedition.io.Connector;
+import javax.microedition.io.HttpConnection;
+import javax.microedition.io.HttpsConnection;
+import javax.microedition.io.file.FileConnection;
+import javax.microedition.media.MediaException;
+import javax.microedition.media.control.RecordControl;
 
-
-
-
-
-import com.sun.mmedia.*;
-import com.sun.j2me.log.Logging;
-import com.sun.j2me.log.LogChannels;
-
-/**
- * RecordControl implementor
- * It uses native API layer to support recording
- */
 public final class DirectRecord implements RecordControl, DirectControls {
-    // KNI native functions
-    private native int nSetLocator(int handle, String locator);
-    private native int nStart(int handle);
-    private native int nStop(int handle);
-    private native int nPause(int handle);
-    private native int nCommit(int handle);
-    private native int nReset(int handle);
-    private native int nClose(int handle);
-    private native int nSetSizeLimit(int handle, int size);
-    private native int nGetRecordedSize(int handle);
-    private native int nGetRecordedData(int handle, int offset, int size, byte[] buffer);
-    private native String nGetRecordedType(int handle);
+    private String locator;
+    private OutputStream stream;
+    private BasicPlayer player;
+    private boolean recordRequested;
+    private boolean recording;
+    private boolean recordingByNative;
+    private byte[] dataBuffer;
+    private FileConnection fileCon;
+    private HttpConnection httpCon;
+    private HttpsConnection httpsCon;
+    private boolean suspended = false;
+    private boolean extStream = false;
+    private boolean hasDataToCommit = false;
 
-    
+    private native int nSetLocator(int i, String str);
 
+    private native int nStart(int i);
+
+    private native int nStop(int i);
+
+    private native int nPause(int i);
+
+    private native int nCommit(int i);
+
+    private native int nReset(int i);
+
+    private native int nClose(int i);
+
+    private native int nSetSizeLimit(int i, int i2);
+
+    private native int nGetRecordedSize(int i);
+
+    private native int nGetRecordedData(int i, int i2, int i3, byte[] bArr);
+
+    private native String nGetRecordedType(int i);
 
     private native void finalize();
-    
 
-    public DirectRecord(DirectPlayer player) {
-        this.player = player;
+    public DirectRecord(BasicPlayer basicPlayer) {
+        this.player = basicPlayer;
     }
 
-    /**
-     * Set record stream
-     */
-    public synchronized void setRecordStream(OutputStream stream) {
-        if (recordRequested)
-    	    throw new IllegalStateException("startRecord has been called and commit has not been called");
-    	
-    	if (locator != null)
-    	    throw new IllegalStateException("setRecordLocation has been called and commit has not been called");
-    	
-    	if (stream == null)
-    	    throw new IllegalArgumentException("null stream specified");
     
-    	// Check for the record permissions.
-      	checkPermission();
-    
-        recordingByNative = false;
+    public synchronized void setRecordStream(OutputStream outputStream) {
+        if (this.recordRequested) {
+            throw new IllegalStateException("startRecord has been called and commit has not been called");
+        }
+        if (this.locator != null) {
+            throw new IllegalStateException("setRecordLocation has been called and commit has not been called");
+        }
+        if (outputStream == null) {
+            throw new IllegalArgumentException("null stream specified");
+        }
+        checkPermission();
+        this.recordingByNative = false;
         this.locator = null;
-    	this.stream = stream;
-        extStream = true;
+        this.stream = outputStream;
+        this.extStream = true;
     }
+
     
-    /**
-     * Set record location
-     */
-    public synchronized void setRecordLocation(String locator) throws IOException, MediaException {
-        if (player == null)
+    public synchronized void setRecordLocation(String str) throws IOException, MediaException {
+        if (this.player == null) {
             return;
-
-        if (recordRequested)
-    	    throw new IllegalStateException("startRecord has been called and commit has not been called");
-    	
-    	if (stream != null)
-    	    throw new IllegalStateException("setRecordStream has been called and commit has not been called");
-    	
-    	if (locator == null)
-    	    throw new IllegalArgumentException("null locator specified");
-
-        // Check about the string. Is this URL format?
-        int colonIndex = locator.indexOf(":");
-    	if (colonIndex < 0) {
-    	    throw new MediaException("Invalid locator " + locator);
-    	}
-
-        // Check for record permissions
-	    checkPermission();
-
-        // Query if native function can handle this locator
-        int ret = nSetLocator(player.hNative, locator);
-        if (-1 == ret) {
-            throw new MediaException("setRecordLocation: invalid locator " + locator);
-        } else if (0 == ret) {
-
-            
-
-
-
-
-            if (!(locator.startsWith("http:") || locator.startsWith("https:"))) {
+        }
+        if (this.recordRequested) {
+            throw new IllegalStateException("startRecord has been called and commit has not been called");
+        }
+        if (this.stream != null) {
+            throw new IllegalStateException("setRecordStream has been called and commit has not been called");
+        }
+        if (str == null) {
+            throw new IllegalArgumentException("null locator specified");
+        }
+        int indexOf = str.indexOf(":");
+        if (indexOf < 0) {
+            throw new MediaException(new StringBuffer().append("Invalid locator ").append(str).toString());
+        }
+        checkPermission();
+        int nSetLocator = nSetLocator(this.player.hNative, str);
+        if (-1 == nSetLocator) {
+            throw new MediaException(new StringBuffer().append("setRecordLocation: invalid locator ").append(str).toString());
+        }
+        if (0 != nSetLocator) {
+            this.stream = null;
+            this.recordingByNative = true;
+        } else {
+            if (!str.startsWith("file:") && !str.startsWith("http:") && !str.startsWith("https:")) {
                 throw new MediaException("Unsupported protocol");
             }
-            
-        
-            if (locator.startsWith("http:")) {
-        	    try {
-        	        httpCon = (HttpConnection)Connector.open(locator);
-        	    } catch (IllegalArgumentException e) {
-        	        throw new MediaException(e.getMessage());
-        	    } catch (ConnectionNotFoundException e) {
-        	        throw new IOException(e.getMessage());
-        	    }
-        	    httpCon.setRequestMethod(HttpConnection.POST);
-        	    httpCon.setRequestProperty("Content-Type", "audio/wav");
-
-        	    stream = httpCon.openOutputStream();
-                    extStream = false;
-            } else if (locator.startsWith("https:")) {
-        	    try {
-        	        httpsCon = (HttpsConnection)Connector.open(locator);
-        	    } catch (IllegalArgumentException e) {
-        	        throw new MediaException(e.getMessage());
-        	    } catch (ConnectionNotFoundException e) {
-        	        throw new IOException(e.getMessage());
-        	    }
-        	    httpsCon.setRequestMethod(HttpConnection.POST);
-        	    httpsCon.setRequestProperty("Content-Type", "audio/wav");
-
-        	    stream = httpsCon.openOutputStream();
-                    extStream = false;
-            }
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            recordingByNative = false;
-        } else {
-            stream = null;
-            recordingByNative = true;
-        }
-        this.locator = locator;
-    }
-    
-    /**
-     * Start recording
-     */
-    public synchronized void startRecord() throws IllegalStateException {
-        if ((locator == null) && (stream == null)) {
-	        throw new
-                IllegalStateException("Should call setRecordLocation or setRecordStream before calling startRecord");
-	    }
-
-        if (recordRequested == true || player == null) {
-            return;
-        }
-
-        recordRequested = true;
-
-        if (player.getState() == Player.STARTED) {
-            if (1 == nStart(player.hNative)) {
-                recording = true;
-                player.sendEvent(PlayerListener.RECORD_STARTED, new Long(player.getMediaTime()));
-            } else {
-                player.sendEvent(PlayerListener.RECORD_ERROR, new String("Can't start recording"));
-            }
-        } else {
-            suspended = true;
-        }
-	}
-
-    /**
-     * Stop or pause recording
-     */
-	private synchronized void stopRecord(boolean pause) {
-	    if (player == null)
-            return;
-
-    	if (recordRequested == true) {
-    	    recordRequested = false;
-    	    if (recording == true) {
-                if (suspended == false) {
-                    if (pause) 
-                        nPause(player.hNative);
-                    else 
-                        nStop(player.hNative);
+            if (str.startsWith("http:")) {
+                try {
+                    this.httpCon = (HttpConnection) Connector.open(str);
+                    this.httpCon.setRequestMethod(HttpConnection.POST);
+                    this.httpCon.setRequestProperty("Content-Type", "audio/wav");
+                    this.stream = this.httpCon.openOutputStream();
+                    this.extStream = false;
+                } catch (IllegalArgumentException e) {
+                    throw new MediaException(e.getMessage());
+                } catch (ConnectionNotFoundException e2) {
+                    throw new IOException(e2.getMessage());
                 }
-                player.sendEvent(PlayerListener.RECORD_STOPPED, new Long(player.getMediaTime()));
-    		    recording = false;
-                hasDataToCommit = true;
-    	    }
+            } else if (str.startsWith("https:")) {
+                try {
+                    this.httpsCon = (HttpsConnection) Connector.open(str);
+                    this.httpsCon.setRequestMethod(HttpConnection.POST);
+                    this.httpsCon.setRequestProperty("Content-Type", "audio/wav");
+                    this.stream = this.httpsCon.openOutputStream();
+                    this.extStream = false;
+                } catch (IllegalArgumentException e3) {
+                    throw new MediaException(e3.getMessage());
+                } catch (ConnectionNotFoundException e4) {
+                    throw new IOException(e4.getMessage());
+                }
+            }
+            if (str.startsWith("file:")) {
+                if (str.substring(indexOf + 1).length() <= 0) {
+                    throw new MediaException(new StringBuffer().append("setRecordLocation: invalid locator ").append(str).toString());
+                }
+                try {
+                    this.fileCon = (FileConnection) Connector.open(str, 3);
+                    if (this.fileCon.exists()) {
+                        this.fileCon.truncate(0L);
+                    } else {
+                        this.fileCon.create();
+                    }
+                    this.stream = this.fileCon.openOutputStream();
+                    this.extStream = false;
+                } catch (IllegalArgumentException e5) {
+                    throw new MediaException(e5.getMessage());
+                } catch (ConnectionNotFoundException e6) {
+                    throw new IOException(e6.getMessage());
+                }
+            }
+            this.recordingByNative = false;
         }
-	}
+        this.locator = str;
+    }
 
-    /**
-     * Stop recording
-     */
+    
+    public synchronized void startRecord() throws IllegalStateException {
+        if (this.locator == null && this.stream == null) {
+            throw new IllegalStateException("Should call setRecordLocation or setRecordStream before calling startRecord");
+        }
+        if (this.recordRequested || this.player == null) {
+            return;
+        }
+        this.recordRequested = true;
+        if (this.player.getState() != 400) {
+            this.suspended = true;
+        } else if (1 != nStart(this.player.hNative)) {
+            this.player.sendEvent("recordError", new String("Can't start recording"));
+        } else {
+            this.recording = true;
+            this.player.sendEvent("recordStarted", new Long(this.player.getMediaTime()));
+        }
+    }
+
+    private synchronized void stopRecord(boolean z) {
+        if (this.player != null && this.recordRequested) {
+            this.recordRequested = false;
+            if (this.recording) {
+                if (!this.suspended) {
+                    if (z) {
+                        nPause(this.player.hNative);
+                    } else {
+                        nStop(this.player.hNative);
+                    }
+                }
+                this.player.sendEvent("recordStopped", new Long(this.player.getMediaTime()));
+                this.recording = false;
+                this.hasDataToCommit = true;
+            }
+        }
+    }
+
+    
     public void stopRecord() {
-        // pause
         stopRecord(true);
     }
 
-    /**
-     * Commit the current recording
-     */
+    
     public synchronized void commit() throws IOException {
-        if (stream == null && locator == null) {
-    	    return;
-    	}
-
-        if (player == null || 0 == player.hNative) {
+        int responseCode;
+        if ((this.stream == null && this.locator == null) || this.player == null || 0 == this.player.hNative) {
             return;
         }
-
-        // stop
         stopRecord(false);
-
-        if( hasDataToCommit )
-        {
-            if (1 != nCommit(player.hNative)) {
+        if (this.hasDataToCommit) {
+            if (1 != nCommit(this.player.hNative)) {
                 cleanUp();
                 throw new IOException("I/O error occurs during commit");
             }
-
-            // Get recorded data
-            if (stream != null) {
-                int offset = 0;
-                int getSize = 1024 * 50;    // 50 Kbytes
-                if (httpCon != null || httpsCon != null) {
-                    getSize = 100;          // 100 bytes
+            if (this.stream != null) {
+                int i = 0;
+                int i2 = 51200;
+                if (this.httpCon != null || this.httpsCon != null) {
+                    i2 = 100;
                 }
-                dataBuffer = new byte[getSize];
-                int size = nGetRecordedSize(player.hNative);
-
-                if (Logging.REPORT_LEVEL <= Logging.INFORMATION) {
-                    Logging.report(Logging.INFORMATION, LogChannels.LC_MMAPI, 
-                        "Recorded data size is " + size);
-                }
-
-                while (size >= getSize) {
-                    if (1 != nGetRecordedData(player.hNative, offset, getSize, dataBuffer)) {
+                this.dataBuffer = new byte[i2];
+                int nGetRecordedSize = nGetRecordedSize(this.player.hNative);
+                while (nGetRecordedSize >= i2) {
+                    if (1 != nGetRecordedData(this.player.hNative, i, i2, this.dataBuffer)) {
                         cleanUp();
                         throw new IOException("I/O error occurs during commit");
                     }
-                    size -= getSize;
-                    offset += getSize;
-                    // Write to stream
-                    stream.write(dataBuffer);
-                    stream.flush();
+                    nGetRecordedSize -= i2;
+                    i += i2;
+                    this.stream.write(this.dataBuffer);
+                    this.stream.flush();
                 }
-
-                if (size > 0) {
-                    dataBuffer = new byte[size];
-                    if (1 != nGetRecordedData(player.hNative, offset, size, dataBuffer)) {
+                if (nGetRecordedSize > 0) {
+                    this.dataBuffer = new byte[nGetRecordedSize];
+                    if (1 != nGetRecordedData(this.player.hNative, i, nGetRecordedSize, this.dataBuffer)) {
                         cleanUp();
                         throw new IOException("I/O error occurs during commit");
                     }
-                    stream.write(dataBuffer);
-                    stream.flush();
+                    this.stream.write(this.dataBuffer);
+                    this.stream.flush();
                 }
-            } else if (locator != null && recordingByNative == false) {
-                // Need revisit
+            } else if (this.locator == null || !this.recordingByNative) {
             }
         }
-
-        // Release native resources
-        nClose(player.hNative);
-
-        if (locator != null) {
-            if (httpCon != null) {
-                int rescode = httpCon.getResponseCode();
-                if (rescode != HttpConnection.HTTP_OK) {
+        nClose(this.player.hNative);
+        if (this.locator != null) {
+            if (this.httpCon != null) {
+                int responseCode2 = this.httpCon.getResponseCode();
+                if (responseCode2 != 200) {
                     cleanUp();
-                    throw new IOException("HTTP response code: " + rescode);
+                    throw new IOException(new StringBuffer().append("HTTP response code: ").append(responseCode2).toString());
                 }
-            } else if (httpsCon != null) {
-                int rescode = httpsCon.getResponseCode();
-                if (rescode != HttpConnection.HTTP_OK) {
-                    cleanUp();
-                    throw new IOException("HTTP response code: " + rescode);
-                }
+            } else if (this.httpsCon != null && (responseCode = this.httpsCon.getResponseCode()) != 200) {
+                cleanUp();
+                throw new IOException(new StringBuffer().append("HTTP response code: ").append(responseCode).toString());
             }
         }
-
         cleanUp();
-
-        // We're done. 
-        dataBuffer = null;
-        locator = null;
-        recordingByNative = false;
-        hasDataToCommit = false;
+        this.dataBuffer = null;
+        this.locator = null;
+        this.recordingByNative = false;
+        this.hasDataToCommit = false;
     }
 
-    /**
-     * Reset the current recording
-     */
+    
     public synchronized void reset() throws IOException {
-        if (player == null)
+        if (this.player == null) {
             return;
-
-        if (recordRequested == true) {
+        }
+        if (this.recordRequested) {
             stopRecord(false);
-            if (1 != nReset(player.hNative)) {
+            if (1 != nReset(this.player.hNative)) {
                 cleanUp();
                 throw new IOException("The current recording cannot be erased");
             }
         } else {
             stopRecord(false);
         }
-        hasDataToCommit = false;
+        this.hasDataToCommit = false;
     }
 
-    /**
-     * Set record size limit
-     */
-    public synchronized int setRecordSizeLimit(int size) throws MediaException {
-        if (player == null)
+    
+    public synchronized int setRecordSizeLimit(int i) throws MediaException {
+        if (this.player == null) {
             return 0;
-
-        if (size <= 0)
+        }
+        if (i <= 0) {
             throw new IllegalArgumentException("Given size is invalid");
-
-        if (Integer.MAX_VALUE == size) {
-            nSetSizeLimit(player.hNative, -1);
+        }
+        if (Integer.MAX_VALUE == i) {
+            nSetSizeLimit(this.player.hNative, -1);
         } else {
-            size = nSetSizeLimit(player.hNative, size);
-            if (size == 0) {
+            i = nSetSizeLimit(this.player.hNative, i);
+            if (i == 0) {
                 throw new MediaException("Setting the record size limit is not supported");
             }
         }
-
-        // If the requested size is less than the already recorded size, commit
-        if (recording == true) {
-            int recordedSize = nGetRecordedSize(player.hNative);
-            if (recordedSize > size) {
-                try {
-                    commit();
-                } catch(IOException e) {
-                    // Nothing to do
-                }
+        if (this.recording && nGetRecordedSize(this.player.hNative) > i) {
+            try {
+                commit();
+            } catch (IOException e) {
             }
         }
-
-        return size;
+        return i;
     }
 
-    /**
-     * Get content type
-     */
-    public String getContentType() {
-        return nGetRecordedType(player.hNative);
-    }
     
-    ///////////////////////////////////////////////////////////////
+    public String getContentType() {
+        return nGetRecordedType(this.player.hNative);
+    }
 
-    public synchronized void recordSizeLimitReached()
-    {
-        if (Logging.REPORT_LEVEL <= Logging.INFORMATION) {
-            Logging.report(Logging.INFORMATION, LogChannels.LC_MMAPI,
-            "[direct] received RSL");
-        }
-        try
-        {
+    public synchronized void recordSizeLimitReached() {
+        try {
             commit();
-        }
-        catch( java.io.IOException e )
-        {
+        } catch (IOException e) {
         }
     }
 
-    // Is recording suspended by player?
-    private boolean suspended = false;
-
-    /**
-     * Start recording (from Player object)
-     */
+    
     public synchronized void playerStarted() {
-        // Automatically resume recording from Player
-        if (suspended) {
-            if (1 == nStart(player.hNative)) {
-                recording = true;
-                player.sendEvent(PlayerListener.RECORD_STARTED, new Long(player.getMediaTime()));
+        if (this.suspended) {
+            if (1 == nStart(this.player.hNative)) {
+                this.recording = true;
+                this.player.sendEvent("recordStarted", new Long(this.player.getMediaTime()));
             } else {
-                player.sendEvent(PlayerListener.RECORD_ERROR, new String("Can't start recording"));
+                this.player.sendEvent("recordError", new String("Can't start recording"));
             }
-            
-            suspended = false;
-            
+            this.suspended = false;
             return;
         }
-
-        if (recordRequested && !recording) {
-            if (1 == nStart(player.hNative)) {
-                recording = true;
-                player.sendEvent(PlayerListener.RECORD_STARTED, new Long(player.getMediaTime()));
-            } else {
-                player.sendEvent(PlayerListener.RECORD_ERROR, new String("Can't start recording"));
-            }
-	    }
-    }
-
-    /**
-     * Suspend recording (from Player object)
-     */
-    public synchronized void playerStopped() {
-        if (recording) {
-            stopRecord();
-            suspended = true;
+        if (!this.recordRequested || this.recording) {
+            return;
+        }
+        if (1 != nStart(this.player.hNative)) {
+            this.player.sendEvent("recordError", new String("Can't start recording"));
+        } else {
+            this.recording = true;
+            this.player.sendEvent("recordStarted", new Long(this.player.getMediaTime()));
         }
     }
 
-    /**
-     * Player closed. reset recording.
-     */
+    
+    public synchronized void playerStopped() {
+        if (this.recording) {
+            stopRecord();
+            this.suspended = true;
+        }
+    }
+
+    
     public synchronized void playerClosed() {
         try {
             reset();
-            nClose(player.hNative);
-        } catch(IOException e) {
-            // Nothing to do
+            nClose(this.player.hNative);
+        } catch (IOException e) {
         }
-        player = null;
+        this.player = null;
         cleanUp();
     }
 
-    /**
-     * Clean up connection resources if any
-     */
     private void cleanUp() {
         try {
-            if (stream != null && !extStream) {
-                stream.close();
+            if (this.stream != null && !this.extStream) {
+                this.stream.close();
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
         }
-
         try {
-            if (httpCon != null) {
-                httpCon.close();
+            if (this.httpCon != null) {
+                this.httpCon.close();
             }
-        } catch(Exception e) {
+        } catch (Exception e2) {
         }
-
         try {
-            if (httpsCon != null) {
-                httpsCon.close();
+            if (this.httpsCon != null) {
+                this.httpsCon.close();
             }
-        } catch(Exception e) {
+        } catch (Exception e3) {
         }
-            
-        
-
-
-
-
-
-
-
-
-        stream = null;
-        httpCon = null;
-        httpsCon = null;
-
-        
-
-
+        try {
+            if (this.fileCon != null) {
+                this.fileCon.close();
+            }
+        } catch (Exception e4) {
+        }
+        this.stream = null;
+        this.httpCon = null;
+        this.httpsCon = null;
+        this.fileCon = null;
     }
 
-    /**
-     * Check for the multimedia record permission.
-     *
-     * @exception SecurityException if the permission is not
-     *            allowed by this token
-     */
     private void checkPermission() {
-    	try {
-            PermissionAccessor.checkPermissions(player.getLocator(), PermissionAccessor.PERMISSION_RECORDING);
-    	} catch (InterruptedException e) {
-    	    throw new SecurityException("Interrupted while trying to ask the user permission");
-    	}
+        try {
+            PermissionAccessor.checkPermissions(this.player.getLocator(), 8);
+        } catch (InterruptedException e) {
+            throw new SecurityException("Interrupted while trying to ask the user permission");
+        }
     }
-    
-    ///////////////////////////////////////////////////////////////
-
-    /* The string in URL format specifying where the recorded media will be saved */
-    private String locator; // null;
-    /* Set the output stream where the data will be recorded. */
-    private OutputStream stream; // null
-    private DirectPlayer player; // null;
-    /* specifies whether recording is requested via <code>startRecord</code> */
-    private boolean recordRequested; // false;
-    /* This is set to true when recording starts (RECORD_STARTED event
-     * is posted). Is set to false when recording stops (RECORD_STOPPED event
-     * is posted).
-     */
-    private boolean recording; // false;
-    /* This recording handled by native API layer? */
-    private boolean recordingByNative; // false
-    /* Recording data buffer */
-    private byte[] dataBuffer;
-    
-    /* External Output Stream flag */
-    private boolean extStream = false;
-
-    private boolean hasDataToCommit=false;
-
-    
-
-
-
-    private HttpConnection httpCon;
-    private HttpsConnection httpsCon;
 }

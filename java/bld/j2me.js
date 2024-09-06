@@ -3336,7 +3336,10 @@ var J2ME;
             return J2ME.methodIdToMethodInfoMap[i32[this.fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
         };
         Thread.prototype.run = function () {
-            release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Thread.run " + $.ctx.id);
+            if($ && $.ctx){ 
+                //console.log('$.ctx.id',$.ctx.id);
+                release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Thread.run " + $.ctx.id);
+            }
             return interpret(this);
         };
         Thread.prototype.exceptionUnwind = function (e) {
@@ -3619,7 +3622,7 @@ var J2ME;
                 //console.log('interpret '+v)
             }
             catch(err){
-                console.log('interpret error:'+err);
+                console.log('interpret error:',err);
                 return v;
             } 
             if (U) {
@@ -5096,7 +5099,7 @@ var J2ME;
                         }
                         // Call Native or Compiled Method.
                         if(calleeTargetMethodInfo==null){
-                            break;
+                            continue;
                         }
                         // if(ReplaceMethod){
                         //      //call js func 
@@ -5214,6 +5217,7 @@ var J2ME;
                         
                         if(!mi.codeAttribute)
                         {
+                            //return;
                             throw new J2ME.JavaRuntimeException("mi.codeAttribute is null");
                             maxLocals = 0;
                         }
@@ -5270,7 +5274,7 @@ var J2ME;
                         detailMessage=J2ME.fromStringAddr(e.detailMessage);
                     }
                     console.warn("error occurs at : "+e.constructor.prototype.classInfo._name +" detailMessage: "+detailMessage);
-                    console.error(e);
+                    console.error(e); 
                 }else{
                     console.error(e);
                 } 
@@ -5769,6 +5773,7 @@ var J2ME;
             return $.ctx.createException("java/lang/StringIndexOutOfBoundsException", str);
         };
         RuntimeTemplate.prototype.newArrayStoreException = function (str) {
+            //console.log("java/lang/ArrayStoreException", str)
             return $.ctx.createException("java/lang/ArrayStoreException", str);
         };
         RuntimeTemplate.prototype.newIllegalMonitorStateException = function (str) {
@@ -5776,7 +5781,7 @@ var J2ME;
         };
         RuntimeTemplate.prototype.newClassCastException = function (str) {
             //return null;//屏蔽error
-            console.log("java/lang/ClassCastException "+str);
+            //console.log("java/lang/ClassCastException "+str);
             return $.ctx.createException("java/lang/ClassCastException", str);
         };
         RuntimeTemplate.prototype.newArithmeticException = function (str) {
@@ -5787,9 +5792,8 @@ var J2ME;
             return $.ctx.createException("java/lang/ClassNotFoundException", str);
         };
         RuntimeTemplate.prototype.newIllegalArgumentException = function (str) { 
-            console.warn('newIllegalArgumentException',str)
-            return null;//屏蔽error
-            //return $.ctx.createException("java/lang/IllegalArgumentException", str);
+            //console.warn('newIllegalArgumentException',str)
+            return $.ctx.createException("java/lang/IllegalArgumentException", str);
         };
         RuntimeTemplate.prototype.newIllegalStateException = function (str) {
             return $.ctx.createException("java/lang/IllegalStateException", str);
@@ -6260,6 +6264,10 @@ var J2ME;
                 return methodjs;
             }   
         }  
+        if(!methodInfo)
+        {
+            return;
+        }
         if (methodInfo.fn) {
             return methodInfo.fn;
         }
@@ -6829,8 +6837,9 @@ var J2ME;
         var arrayClassInfo = J2ME.classIdToClassInfoMap[i32[arrayAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         var valueClassInfo = J2ME.classIdToClassInfoMap[i32[valueAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         if (!isAssignableTo(valueClassInfo, arrayClassInfo.elementClass)) {
+            console.log('newArrayStoreException');
+            return;
             throw $.newArrayStoreException(); 
-            //console.log('newArrayStoreException');
         }
     }
     J2ME.checkArrayStore = checkArrayStore;
@@ -6857,7 +6866,10 @@ var J2ME;
     }
     J2ME.monitorExit = monitorExit;
     function translateException(e) {
-        console.log('translateException',e);
+        if(!e){
+            return e;
+        }
+        //console.log('translateException',e);
         if (e.name === "TypeError") {
             // JavaScript's TypeError is analogous to a NullPointerException.
             return $.newNullPointerException(e.message);
@@ -9926,11 +9938,11 @@ var ReplaceMethod = Object.create(null);
  
 
 //javax/microedition/lcdui/game/LayerManager.<init>()V
-ReplaceMethod["javax/microedition/lcdui/game/LayerManager.<init>.()V"] = function (addr) { 
+// ReplaceMethod["javax/microedition/lcdui/game/LayerManager.<init>.()V"] = function (addr) { 
     
-    console.log("LayerManager.init",addr);
+//     console.log("LayerManager.init",addr);
         
-}; 
+// }; 
 
 // ReplaceMethod["javax/microedition/lcdui/Image.getWidth.()I"] = function (addr) { 
     
@@ -9944,11 +9956,11 @@ ReplaceMethod["javax/microedition/lcdui/game/LayerManager.<init>.()V"] = functio
 //     return J2ME.returnLongValue(320);
 // };
 
-ReplaceMethod["javax/microedition/lcdui/Image.createImage.(II)Ljavax/microedition/lcdui/Image;"] = function (addr) { 
+// ReplaceMethod["javax/microedition/lcdui/Image.createImage.(II)Ljavax/microedition/lcdui/Image;"] = function (addr) { 
     
-    console.log("Image.createImage",addr);
+//     console.log("Image.createImage",addr);
         
-};
+// };
 
 // ReplaceMethod["javax/microedition/lcdui/Image.createImage(II)Ljavax/microedition/lcdui/Image;"] = function (addr) { 
     
@@ -10665,6 +10677,10 @@ var J2ME;
             if (!message) {
                 message = "";
             }
+
+            console.log('createException',className,message);
+            // return J2ME.Constants.NULL;
+ 
             message = "" + message;
             var classInfo = J2ME.CLASSES.loadClass(className);
             J2ME.classInitCheck(classInfo);
@@ -10803,7 +10819,7 @@ var J2ME;
                 return;
             }
             if (lock.level < 0) {
-                throw $.newIllegalMonitorStateException("Unbalanced monitor enter/exit.");
+                //throw $.newIllegalMonitorStateException("Unbalanced monitor enter/exit.");
             }
             this.unblock(lock, "ready", false);
         };
