@@ -335,11 +335,11 @@ function alertSuccess(successcount,failcount){
  
 var myconfig = function() {
   var myInfo = {
-    canvasSize: 4,
-    gamepadSize: 0,
+    canvasSize: 0,
+    gamepadSize: 3,
     gameresize: 0,
     gameindex: 0,
-    enginemode: 0 
+    enginemode:1
   };
   if (window.localStorage["my"] === undefined) {
     window.localStorage["my"] = JSON.stringify(myInfo);
