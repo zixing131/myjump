@@ -4937,330 +4937,277 @@ var J2ME;
                     case 174 /* FRETURN */:
                     case 176 /* ARETURN */:
                     case 177 /* RETURN */:
-                        // Store the return values immediately since the values may be overwritten by a push pending frame.
-                        var returnOne, returnTwo;
-                        switch (op) {
-                            case 173 /* LRETURN */:
-                            case 175 /* DRETURN */:
-                                returnTwo = i32[sp - 2];
-                            // Fallthrough
-                            case 172 /* IRETURN */:
-                            case 174 /* FRETURN */:
-                            case 176 /* ARETURN */:
-                                returnOne = i32[sp - 1];
-                                break;
-                        }
-                        var lastMI = mi;
-                        if (lastMI.isSynchronized) {
-                            $.ctx.monitorExit(J2ME.getMonitor(i32[fp + 3 /* MonitorOffset */]));
-                        }
-                        opPC = i32[fp + 0 /* CallerRAOffset */];
-                        sp = fp - maxLocals | 0;
-                        fp = i32[fp + 1 /* CallerFPOffset */];
-                        release || assert(fp >= (thread.tp >> 2), "Valid frame pointer after return.");
-                        mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
-                        type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
-                        release || assert(type === FrameType.Interpreter && mi || type !== FrameType.Interpreter && !mi, "Is valid frame type and method info after return.");
-                        var interrupt = false;
-                        while (type !== FrameType.Interpreter) {
-                            if (type === FrameType.ExitInterpreter) {
-                                thread.set(fp, sp, opPC);
-                                switch (op) {
-                                    case 176 /* ARETURN */:
-                                    case 172 /* IRETURN */:
-                                    case 174 /* FRETURN */:
-                                        return returnOne;
-                                    case 173 /* LRETURN */:
-                                        return J2ME.returnLong(returnTwo, returnOne);
-                                    case 175 /* DRETURN */:
-                                        return J2ME.returnDouble(returnTwo, returnOne);
-                                    case 177 /* RETURN */:
-                                        return;
+                            // Store the return values immediately since the values may be overwritten by a push pending frame.
+                            var returnOne, returnTwo;
+                            switch (op) {
+                                case 173 /* LRETURN */:
+                                case 175 /* DRETURN */:
+                                    returnTwo = i32[sp - 2];
+                                // Fallthrough
+                                case 172 /* IRETURN */:
+                                case 174 /* FRETURN */:
+                                case 176 /* ARETURN */:
+                                    returnOne = i32[sp - 1];
+                                    break;
+                            }
+                            var lastMI = mi;
+                            if (lastMI.isSynchronized) {
+                                $.ctx.monitorExit(J2ME.getMonitor(i32[fp + 3 /* MonitorOffset */]));
+                            }
+                            opPC = i32[fp + 0 /* CallerRAOffset */];
+                            sp = fp - maxLocals | 0;
+                            fp = i32[fp + 1 /* CallerFPOffset */];
+                            release || assert(fp >= (thread.tp >> 2), "Valid frame pointer after return.");
+                            mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                            type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                            release || assert(type === FrameType.Interpreter && mi || type !== FrameType.Interpreter && !mi, "Is valid frame type and method info after return.");
+                            var interrupt = false;
+                            while (type !== FrameType.Interpreter) {
+                                if (type === FrameType.ExitInterpreter) {
+                                    thread.set(fp, sp, opPC);
+                                    switch (op) {
+                                        case 176 /* ARETURN */:
+                                        case 172 /* IRETURN */:
+                                        case 174 /* FRETURN */:
+                                            return returnOne;
+                                        case 173 /* LRETURN */:
+                                            return J2ME.returnLong(returnTwo, returnOne);
+                                        case 175 /* DRETURN */:
+                                            return J2ME.returnDouble(returnTwo, returnOne);
+                                        case 177 /* RETURN */:
+                                            return;
+                                    }
+                                }
+                                else if (type === FrameType.PushPendingFrames) {
+                                    thread.set(fp, sp, opPC);
+                                    thread.pushPendingNativeFrames();
+                                    fp = thread.fp | 0;
+                                    sp = thread.sp | 0;
+                                    opPC = pc = thread.pc;
+                                    type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                                    mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                                    continue;
+                                }
+                                else if (type === FrameType.Interrupt) {
+                                    thread.set(fp, sp, opPC);
+                                    thread.popMarkerFrame(FrameType.Interrupt);
+                                    fp = thread.fp | 0;
+                                    sp = thread.sp | 0;
+                                    opPC = pc = thread.pc;
+                                    type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                                    mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                                    interrupt = true;
+                                    continue;
+                                }
+                                else {
+                                    assert(false, "Bad frame type: " + FrameType[type]);
                                 }
                             }
-                            else if (type === FrameType.PushPendingFrames) {
-                                thread.set(fp, sp, opPC);
-                                thread.pushPendingNativeFrames();
-                                fp = thread.fp | 0;
-                                sp = thread.sp | 0;
-                                opPC = pc = thread.pc;
-                                type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
-                                mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                            release || assert(type === FrameType.Interpreter, "Cannot resume in frame type: " + FrameType[type]);
+                            maxLocals = mi.codeAttribute.max_locals;
+                            lp = fp - maxLocals | 0;
+                            release || J2ME.traceWriter && J2ME.traceWriter.outdent();
+                            release || J2ME.traceWriter && J2ME.traceWriter.writeLn("<< I " + lastMI.implKey);
+                            ci = mi.classInfo;
+                            cp = ci.constantPool;
+                            code = mi.codeAttribute.code;
+                            if (interrupt) {
                                 continue;
                             }
-                            else if (type === FrameType.Interrupt) {
-                                thread.set(fp, sp, opPC);
-                                thread.popMarkerFrame(FrameType.Interrupt);
-                                fp = thread.fp | 0;
-                                sp = thread.sp | 0;
-                                opPC = pc = thread.pc;
-                                type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
-                                mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
-                                interrupt = true;
-                                continue;
+                            release || assert(isInvoke(code[opPC]), "Return must come from invoke op: " + mi.implKey + " PC: " + pc + J2ME.Bytecode.getBytecodesName(op));
+                            // Calculate the PC based on the size of the caller's invoke bytecode.
+                            pc = opPC + (code[opPC] === 185 /* INVOKEINTERFACE */ ? 5 : 3);
+                            // Push return value.
+                            switch (op) {
+                                case 173 /* LRETURN */:
+                                case 175 /* DRETURN */:
+                                    i32[sp++] = returnTwo; // Low Bits
+                                // Fallthrough
+                                case 172 /* IRETURN */:
+                                case 174 /* FRETURN */:
+                                case 176 /* ARETURN */:
+                                    i32[sp++] = returnOne;
+                                    continue;
                             }
-                            else {
-                                assert(false, "Bad frame type: " + FrameType[type]);
-                            }
-                        }
-                        release || assert(type === FrameType.Interpreter, "Cannot resume in frame type: " + FrameType[type]);
-                        maxLocals = mi.codeAttribute.max_locals;
-                        lp = fp - maxLocals | 0;
-                        release || J2ME.traceWriter && J2ME.traceWriter.outdent();
-                        release || J2ME.traceWriter && J2ME.traceWriter.writeLn("<< I " + lastMI.implKey);
-                        ci = mi.classInfo;
-                        cp = ci.constantPool;
-                        code = mi.codeAttribute.code;
-                        if (interrupt) {
-                            continue;
-                        }
-                        release || assert(isInvoke(code[opPC]), "Return must come from invoke op: " + mi.implKey + " PC: " + pc + J2ME.Bytecode.getBytecodesName(op));
-                        // Calculate the PC based on the size of the caller's invoke bytecode.
-                        pc = opPC + (code[opPC] === 185 /* INVOKEINTERFACE */ ? 5 : 3);
-                        // Push return value.
-                        switch (op) {
-                            case 173 /* LRETURN */:
-                            case 175 /* DRETURN */:
-                                i32[sp++] = returnTwo; // Low Bits
-                            // Fallthrough
-                            case 172 /* IRETURN */:
-                            case 174 /* FRETURN */:
-                            case 176 /* ARETURN */:
-                                i32[sp++] = returnOne;
-                                continue;
-                        }
-                        continue;
+                            continue;  
                     case 182 /* INVOKEVIRTUAL */:
                     case 183 /* INVOKESPECIAL */:
                     case 184 /* INVOKESTATIC */:
-                    case 185 /* INVOKEINTERFACE */:
-                        index = code[pc++] << 8 | code[pc++];
-                        if (op === 185 /* INVOKEINTERFACE */) {
-                            pc = pc + 2 | 0; // Args Number & Zero
-                        }
-                        isStatic = (op === 184 /* INVOKESTATIC */);
-                        // Resolve method and do the class init check if necessary.
-                        var calleeMethodInfo = cp.resolved[index] || cp.resolveMethod(index, isStatic);
-                        var calleeTargetMethodInfo = null;
-                        var callee = null;
-                        //console.log("isStatic",isStatic)
-                        if (isStatic) {
-                            address = 0 /* NULL */;
-                        }
-                        else {
-                            address = i32[sp - calleeMethodInfo.argumentSlots];
-                           
-                            classInfo = (address !== 0 /* NULL */) ? J2ME.classIdToClassInfoMap[i32[address >> 2]] : null; 
-                            // if(!classInfo){
-                            //     break;
-                            // }
-                        }
-                        //console.log("classInfo",classInfo,address)
-                        if (isStatic) {
-                            thread.classInitAndUnwindCheck(fp, sp, opPC, calleeMethodInfo.classInfo);
-                            if (U) {
-                                return;
+                        case 185 /* INVOKEINTERFACE */:
+                            index = code[pc++] << 8 | code[pc++];
+                            if (op === 185 /* INVOKEINTERFACE */) {
+                                pc = pc + 2 | 0; // Args Number & Zero
                             }
-                        }
-                        switch (op) {
-                            case 183 /* INVOKESPECIAL */:
-                                if (address === 0 /* NULL */) {
-                                    thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
-                                }
-                            case 184 /* INVOKESTATIC */:
-                                calleeTargetMethodInfo = calleeMethodInfo;
-                                break;
-                            case 182 /* INVOKEVIRTUAL */:
-                                try{
-                                     //这里不能改，改了报错
-                                    if(classInfo==null)
-                                    { 
-                                        break;
-                                    }
-                                calleeTargetMethodInfo = classInfo.vTable[calleeMethodInfo.vTableIndex];
-                                }catch(err)
-                                {
-                                    //calleeTargetMethodInfo = mi.classInfo.vTable[calleeMethodInfo.vTableIndex];
-                                    console.error(err);
-                                    //这里不能改，改了报错
-                                   break;
-                                }
-                            case 185 /* INVOKEINTERFACE */:
-                                try{ 
-                                    if(classInfo==null){
-                                        classInfo = calleeMethodInfo.classInfo;
-                                    }
-                                    calleeTargetMethodInfo = classInfo.iTable[calleeMethodInfo.mangledName];
-                                }catch(err){
-                                    console.log(calleeMethodInfo.mangledName+" error : "+err);
-                                }
-                                break;
-                            default:
-                                release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
-                                assert(false, "Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
-                        }
-                        // Call Native or Compiled Method.
-                        //这里不能改，改了报错
-                        if(calleeTargetMethodInfo==null){
-                            break;
-                        }
-                        // if(ReplaceMethod){
-                        //      //call js func 
-                        //     //这里实现替换java中的方法
-                        //     var methodjs=ReplaceMethod[calleeTargetMethodInfo.implKey];
-                        //     if(methodjs)
-                        //     {
-                        //         console.log(calleeTargetMethodInfo.implKey,"replaced!");
-                        //         calleeTargetMethodInfo.fn = methodjs; 
-                        //         calleeTargetMethodInfo.state=1;
-                        //         //break;
-                        //     } 
-                        // }
-
-                        var callMethod = calleeTargetMethodInfo.isNative || calleeTargetMethodInfo.state === 1 /* Compiled */;
-                        var calleeStats = calleeTargetMethodInfo.stats;
-                        calleeStats.interpreterCallCount++;
-                        if (callMethod === false) {
-                            if (config.forceRuntimeCompilation || (calleeTargetMethodInfo.state === 0 /* Cold */ &&
-                                calleeStats.interpreterCallCount + calleeStats.backwardsBranchCount > J2ME.ConfigThresholds.InvokeThreshold)) {
-                                J2ME.compileAndLinkMethod(calleeTargetMethodInfo);
-                                callMethod = calleeTargetMethodInfo.state === 1 /* Compiled */;
-                            }
-                        }
-                        if (callMethod) {
-                            var kind = 9 /* Void */;
-                            var signatureKinds = calleeTargetMethodInfo.signatureKinds;
-                            callee = calleeTargetMethodInfo.fn || J2ME.getLinkedMethod(calleeTargetMethodInfo);
-                            var returnValue;
-                            var frameTypeOffset = -1;
-                            // Fast path for the no-argument case.
-                            if (signatureKinds.length === 1) {
-                                if (!isStatic) {
-                                    --sp; // Pop Reference
-                                }
-                                thread.set(fp, sp, opPC);
-                                thread.pushMarkerFrame(FrameType.Native);
-                                frameTypeOffset = thread.fp + 2 /* FrameTypeOffset */;
-                                returnValue = callee(address);
+                            isStatic = (op === 184 /* INVOKESTATIC */);
+                            // Resolve method and do the class init check if necessary.
+                            var calleeMethodInfo = cp.resolved[index] || cp.resolveMethod(index, isStatic);
+                            var calleeTargetMethodInfo = null;
+                            var callee = null;
+                            if (isStatic) {
+                                address = 0 /* NULL */;
                             }
                             else {
-                                args.length = 0;
-                                for (var i = signatureKinds.length - 1; i > 0; i--) {
-                                    kind = signatureKinds[i];
-                                    switch (kind) {
-                                        case 6 /* Long */:
-                                        case 7 /* Double */:
-                                            args.unshift(i32[--sp]); // High Bits
-                                        // Fallthrough
-                                        case 4 /* Int */:
-                                        case 1 /* Byte */:
-                                        case 3 /* Char */:
-                                        case 5 /* Float */:
-                                        case 2 /* Short */:
-                                        case 0 /* Boolean */:
-                                        case 8 /* Reference */:
-                                            args.unshift(i32[--sp]);
-                                            break;
-                                        default:
-                                            release || assert(false, "Invalid Kind: " + J2ME.getKindName(kind));
+                                address = i32[sp - calleeMethodInfo.argumentSlots];
+                                classInfo = (address !== 0 /* NULL */) ? J2ME.classIdToClassInfoMap[i32[address >> 2]] : null;
+                            }
+                            if (isStatic) {
+                                thread.classInitAndUnwindCheck(fp, sp, opPC, calleeMethodInfo.classInfo);
+                                if (U) {
+                                    return;
+                                }
+                            }
+                            switch (op) {
+                                case 183 /* INVOKESPECIAL */:
+                                    if (address === 0 /* NULL */) {
+                                        thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
                                     }
+                                case 184 /* INVOKESTATIC */:
+                                    calleeTargetMethodInfo = calleeMethodInfo;
+                                    break;
+                                case 182 /* INVOKEVIRTUAL */:
+                                    calleeTargetMethodInfo = classInfo.vTable[calleeMethodInfo.vTableIndex];
+                                    break;
+                                case 185 /* INVOKEINTERFACE */:
+                                    calleeTargetMethodInfo = classInfo.iTable[calleeMethodInfo.mangledName];
+                                    break;
+                                default:
+                                    release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
+                                    assert(false, "Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
+                            }
+                            // Call Native or Compiled Method.
+                            var callMethod = calleeTargetMethodInfo.isNative || calleeTargetMethodInfo.state === 1 /* Compiled */;
+                            var calleeStats = calleeTargetMethodInfo.stats;
+                            calleeStats.interpreterCallCount++;
+                            if (callMethod === false) {
+                                if (config.forceRuntimeCompilation || (calleeTargetMethodInfo.state === 0 /* Cold */ &&
+                                    calleeStats.interpreterCallCount + calleeStats.backwardsBranchCount > J2ME.ConfigThresholds.InvokeThreshold)) {
+                                    J2ME.compileAndLinkMethod(calleeTargetMethodInfo);
+                                    callMethod = calleeTargetMethodInfo.state === 1 /* Compiled */;
                                 }
-                                if (!isStatic) {
-                                    --sp; // Pop Reference
+                            }
+                            if (callMethod) {
+                                var kind = 9 /* Void */;
+                                var signatureKinds = calleeTargetMethodInfo.signatureKinds;
+                                callee = calleeTargetMethodInfo.fn || J2ME.getLinkedMethod(calleeTargetMethodInfo);
+                                var returnValue;
+                                var frameTypeOffset = -1;
+                                // Fast path for the no-argument case.
+                                if (signatureKinds.length === 1) {
+                                    if (!isStatic) {
+                                        --sp; // Pop Reference
+                                    }
+                                    thread.set(fp, sp, opPC);
+                                    thread.pushMarkerFrame(FrameType.Native);
+                                    frameTypeOffset = thread.fp + 2 /* FrameTypeOffset */;
+                                    returnValue = callee(address);
                                 }
-                                thread.set(fp, sp, opPC);
-                                thread.pushMarkerFrame(FrameType.Native);
-                                frameTypeOffset = thread.fp + 2 /* FrameTypeOffset */;
+                                else {
+                                    args.length = 0;
+                                    for (var i = signatureKinds.length - 1; i > 0; i--) {
+                                        kind = signatureKinds[i];
+                                        switch (kind) {
+                                            case 6 /* Long */:
+                                            case 7 /* Double */:
+                                                args.unshift(i32[--sp]); // High Bits
+                                            // Fallthrough
+                                            case 4 /* Int */:
+                                            case 1 /* Byte */:
+                                            case 3 /* Char */:
+                                            case 5 /* Float */:
+                                            case 2 /* Short */:
+                                            case 0 /* Boolean */:
+                                            case 8 /* Reference */:
+                                                args.unshift(i32[--sp]);
+                                                break;
+                                            default:
+                                                release || assert(false, "Invalid Kind: " + J2ME.getKindName(kind));
+                                        }
+                                    }
+                                    if (!isStatic) {
+                                        --sp; // Pop Reference
+                                    }
+                                    thread.set(fp, sp, opPC);
+                                    thread.pushMarkerFrame(FrameType.Native);
+                                    frameTypeOffset = thread.fp + 2 /* FrameTypeOffset */;
+                                    if (!release) {
+                                    }
+                                    args.unshift(address);
+                                    returnValue = callee.apply(null, args);
+                                }
                                 if (!release) {
                                 }
-                                args.unshift(address);
-                                returnValue = callee.apply(null, args);
+                                if (U) {
+                                    J2ME.traceWriter && J2ME.traceWriter.writeLn("<< I Unwind: " + J2ME.getVMStateName(U));
+                                    release || assert(thread.unwoundNativeFrames.length, "Must have unwound frames.");
+                                    thread.nativeFrameCount--;
+                                    i32[frameTypeOffset] = FrameType.PushPendingFrames;
+                                    thread.unwoundNativeFrames.push(null);
+                                    return;
+                                }
+                                thread.popMarkerFrame(FrameType.Native);
+                                kind = signatureKinds[0];
+                                // Push return value.
+                                switch (kind) {
+                                    case 6 /* Long */:
+                                    case 7 /* Double */:
+                                        i32[sp++] = returnValue;
+                                        i32[sp++] = tempReturn0;
+                                        continue;
+                                    case 4 /* Int */:
+                                    case 1 /* Byte */:
+                                    case 3 /* Char */:
+                                    case 5 /* Float */:
+                                    case 2 /* Short */:
+                                    case 0 /* Boolean */:
+                                        i32[sp++] = returnValue;
+                                        continue;
+                                    case 8 /* Reference */:
+                                        release || assert(returnValue !== "number", "native return value is a number");
+                                        i32[sp++] = returnValue;
+                                        continue;
+                                    case 9 /* Void */:
+                                        continue;
+                                    default:
+                                        release || assert(false, "Invalid Kind: " + J2ME.getKindName(kind));
+                                }
+                                continue;
                             }
-                            if (!release) {
-                            }
-                            if (U) {
-                                J2ME.traceWriter && J2ME.traceWriter.writeLn("<< I Unwind: " + J2ME.getVMStateName(U));
-                                release || assert(thread.unwoundNativeFrames.length, "Must have unwound frames.");
-                                thread.nativeFrameCount--;
-                                i32[frameTypeOffset] = FrameType.PushPendingFrames;
-                                thread.unwoundNativeFrames.push(null);
-                                return;
-                            }
-                            thread.popMarkerFrame(FrameType.Native);
-                            kind = signatureKinds[0];
-                            // Push return value.
-                            switch (kind) {
-                                case 6 /* Long */:
-                                case 7 /* Double */:
-                                    i32[sp++] = returnValue;
-                                    i32[sp++] = tempReturn0;
-                                    continue;
-                                case 4 /* Int */:
-                                case 1 /* Byte */:
-                                case 3 /* Char */:
-                                case 5 /* Float */:
-                                case 2 /* Short */:
-                                case 0 /* Boolean */:
-                                    i32[sp++] = returnValue;
-                                    continue;
-                                case 8 /* Reference */:
-                                    release || assert(returnValue !== "number", "native return value is a number");
-                                    i32[sp++] = returnValue;
-                                    continue;
-                                case 9 /* Void */:
-                                    continue;
-                                default:
-                                    release || assert(false, "Invalid Kind: " + J2ME.getKindName(kind));
-                            }
-                            continue;
-                        }
-                        // Call Interpreted Method.
-                        release || J2ME.traceWriter && J2ME.traceWriter.writeLn(">> I " + calleeTargetMethodInfo.implKey);
-                        mi = calleeTargetMethodInfo;
-                        
-                        if(!mi.codeAttribute)
-                        {
-                            //return;
-                            throw new J2ME.JavaRuntimeException("mi.codeAttribute is null");
-                            maxLocals = 0;
-                        }
-                        else{  
+                            // Call Interpreted Method.
+                            release || J2ME.traceWriter && J2ME.traceWriter.writeLn(">> I " + calleeTargetMethodInfo.implKey);
+                            mi = calleeTargetMethodInfo;
                             maxLocals = mi.codeAttribute.max_locals;
-                        }
-                        ci = mi.classInfo;
-                        cp = ci.constantPool;
-                        var callerFPOffset = fp;
-                        // Reserve space for non-parameter locals.
-                        lp = sp - mi.argumentSlots | 0;
-                        fp = lp + maxLocals | 0;
-                        sp = fp + 4 /* CallerSaveSize */ | 0;
-                        // Caller saved values.
-                        i32[fp + 0 /* CallerRAOffset */] = opPC;
-                        i32[fp + 1 /* CallerFPOffset */] = callerFPOffset;
-                        i32[fp + 2 /* CalleeMethodInfoOffset */] = FrameType.Interpreter | mi.id;
-                        i32[fp + 3 /* MonitorOffset */] = 0 /* NULL */; // Monitor
-                        // Reset PC.
-                        opPC = pc = 0;
-                        lastPC = 0;
-                        if (calleeTargetMethodInfo.isSynchronized) {
-                            monitorAddr = calleeTargetMethodInfo.isStatic
-                                ? $.getClassObjectAddress(calleeTargetMethodInfo.classInfo)
-                                : address;
-                            i32[fp + 3 /* MonitorOffset */] = monitorAddr;
-                            $.ctx.monitorEnter(J2ME.getMonitor(monitorAddr));
-                            release || assert(U !== 1 /* Yielding */, "Monitors should never yield.");
-                            if (U === 2 /* Pausing */ || U === 3 /* Stopping */) {
-                                thread.set(fp, sp, opPC);
-                                return;
+                            ci = mi.classInfo;
+                            cp = ci.constantPool;
+                            var callerFPOffset = fp;
+                            // Reserve space for non-parameter locals.
+                            lp = sp - mi.argumentSlots | 0;
+                            fp = lp + maxLocals | 0;
+                            sp = fp + 4 /* CallerSaveSize */ | 0;
+                            // Caller saved values.
+                            i32[fp + 0 /* CallerRAOffset */] = opPC;
+                            i32[fp + 1 /* CallerFPOffset */] = callerFPOffset;
+                            i32[fp + 2 /* CalleeMethodInfoOffset */] = FrameType.Interpreter | mi.id;
+                            i32[fp + 3 /* MonitorOffset */] = 0 /* NULL */; // Monitor
+                            // Reset PC.
+                            opPC = pc = 0;
+                            lastPC = 0;
+                            if (calleeTargetMethodInfo.isSynchronized) {
+                                monitorAddr = calleeTargetMethodInfo.isStatic
+                                    ? $.getClassObjectAddress(calleeTargetMethodInfo.classInfo)
+                                    : address;
+                                i32[fp + 3 /* MonitorOffset */] = monitorAddr;
+                                $.ctx.monitorEnter(J2ME.getMonitor(monitorAddr));
+                                release || assert(U !== 1 /* Yielding */, "Monitors should never yield.");
+                                if (U === 2 /* Pausing */ || U === 3 /* Stopping */) {
+                                    thread.set(fp, sp, opPC);
+                                    return;
+                                }
                             }
-                        }
-                        if(mi.codeAttribute)
-                        { 
                             code = mi.codeAttribute.code;
-                        }
-                        release || J2ME.traceWriter && J2ME.traceWriter.indent();
-                        continue;
-                    default:
+                            release || J2ME.traceWriter && J2ME.traceWriter.indent();
+                            continue; 
+                            
+                     default:
                         release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Not Implemented: " + J2ME.Bytecode.getBytecodesName(op) + ", PC: " + opPC + ", CODE: " + code.length);
                         release || assert(false, "Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
                         continue;
@@ -5313,10 +5260,12 @@ var J2ME;
                 if(mi.codeAttribute){ 
                     code = mi.codeAttribute.code; 
                 }
+                
+                continue;
                 }catch(err){
                     console.error(err)
+                    continue;
                 }
-                continue;
             }
         }
     }
