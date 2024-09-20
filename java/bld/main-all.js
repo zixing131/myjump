@@ -4,7 +4,7 @@
 var debugString=0;
 
 //是否启用兼容模式（兼容模式使用旧的classes.jar）
-var enginemode=0;
+var enginemode='classesold.jar';
 
 //是否是主页
 var isIndex = window.location.href.indexOf('main.html')==-1;
@@ -14212,7 +14212,12 @@ var getMobileInfo = new Promise(function(resolve, reject) {
 
 if(config.enginemode)
   {
-    enginemode=config.enginemode;
+    try{ 
+      enginemode=config.enginemode.split('-')[1];
+    }
+    catch(err){
+
+    }
   }
  
 if(!isIndex)
@@ -14221,9 +14226,9 @@ if(!isIndex)
   var loadingMIDletPromises = [getMobileInfo];
   var loadingPromises = [initFS];
   var classedjarname='java/classes.jar';
-  if(enginemode==1){
+  if(enginemode){
     //启用兼容模式
-    classedjarname='java/classesold.jar';
+    classedjarname='java/'+enginemode;
   }
   loadingPromises.push(load(classedjarname, "arraybuffer").then(function(data) {
     JARStore.addBuiltIn("java/classes.jar", data);

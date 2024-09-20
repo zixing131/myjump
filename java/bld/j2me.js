@@ -5072,6 +5072,7 @@ var J2ME;
                                 break;
                             case 182 /* INVOKEVIRTUAL */:
                                 try{
+                                     //这里不能改，改了报错
                                     if(classInfo==null)
                                     { 
                                         break;
@@ -5081,8 +5082,9 @@ var J2ME;
                                 {
                                     //calleeTargetMethodInfo = mi.classInfo.vTable[calleeMethodInfo.vTableIndex];
                                     console.error(err);
+                                    //这里不能改，改了报错
+                                   break;
                                 }
-                                break;
                             case 185 /* INVOKEINTERFACE */:
                                 try{ 
                                     if(classInfo==null){
@@ -5098,8 +5100,9 @@ var J2ME;
                                 assert(false, "Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
                         }
                         // Call Native or Compiled Method.
+                        //这里不能改，改了报错
                         if(calleeTargetMethodInfo==null){
-                            continue;
+                            break;
                         }
                         // if(ReplaceMethod){
                         //      //call js func 
@@ -5264,6 +5267,7 @@ var J2ME;
                 }
             }
             catch (e) {
+                try{
                 release || J2ME.traceWriter && J2ME.traceWriter.redLn("XXX I Caught: " + e + ", details: " + toName(e));
                 release || J2ME.traceWriter && J2ME.traceWriter.writeLn(e.stack);
 
@@ -5283,13 +5287,14 @@ var J2ME;
                 // If an exception is thrown from a native there will be a native marker frame at the top of the stack
                 // which will be cut off when the the fp is set on the thread below. To keep the nativeFrameCount in
                 // sync the native marker must be popped.
+               
                 if (thread.fp > fp && thread.frame.type === FrameType.Native) {
                     release || assert(i32[thread.fp + 1 /* CallerFPOffset */] === fp, "Only one extra frame is on the stack. " + (thread.fp - fp));
                     thread.popMarkerFrame(FrameType.Native);
                 }
                 thread.set(fp, sp, opPC);
                 e = J2ME.translateException(e);
-                if (!e.classInfo) {
+                if (e && !e.classInfo) {
                     // A non-java exception was thrown. Rethrow so it is not handled by exceptionUnwind.
                     throw e;
                 }
@@ -5307,6 +5312,9 @@ var J2ME;
                 cp = ci.constantPool;
                 if(mi.codeAttribute){ 
                     code = mi.codeAttribute.code; 
+                }
+                }catch(err){
+                    console.error(err)
                 }
                 continue;
             }
