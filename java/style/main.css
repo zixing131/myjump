@@ -214,7 +214,7 @@ button {
   -ms-user-select:none; 
   user-select:none;
 } 
-.gamepad-1 #padcontent{
+.gamepad-1 #padcontent{ 
   z-index: 103;
   width: 240px; 
   float: left;

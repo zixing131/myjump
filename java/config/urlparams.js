@@ -47,5 +47,5 @@
 
   for (var name in params) {
     config[name] = params[name];
-  }
+  } 
 })();

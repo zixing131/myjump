@@ -14190,13 +14190,14 @@ var profile = 0;
 var jvm = new JVM;
 if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
   document.documentElement.classList.add("gamepad");
-} 
-//console.log(config.gamepadSize)
+}  
+console.log("config.gamepadSize "+config.gamepadSize);
 if(config.gamepad)
 {
   if(config.gamepadSize)
   {
-    document.getElementById("gamepad").classList = config.gamepadSize; 
+    document.getElementById("gamepad").className = config.gamepadSize; 
+    
   }
 }
 
