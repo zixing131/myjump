@@ -1,3 +1,4 @@
+
 //var midiplayer;
 
 //debugString ByteStream.readString(readStringFast)
@@ -1400,7 +1401,7 @@ if (typeof module === "object") {
   var OBJECT_STORE_WITH_UNCOMPRESSED_LEN = "files_v2";
   var KEY_PATH = "jarName";
   var database;
-  var jars = new Map;
+  var jars = [];
   var jad;
   var upgrade = {"0to1":function(database, transaction, next) {
     database.createObjectStore(OBJECT_STORE_OLD, {keyPath:KEY_PATH});
@@ -1489,7 +1490,7 @@ if (typeof module === "object") {
       config.midletClassName = a;
       console.log("load main class :",config.midletClassName);
     }
-    jars.set(jarName, {directory:zip.directory, isBuiltIn:isBuiltIn});
+    jars.push([jarName, {directory:zip.directory, isBuiltIn:isBuiltIn}]);
   }
 
   function deleteJar(jarName)
@@ -1521,7 +1522,7 @@ if (typeof module === "object") {
           reject(request.error.name);
         };
         transaction.oncomplete = function() {
-          jars.set(jarName, {directory:zip.directory, isBuiltIn:false});
+          jars.push([jarName, {directory:zip.directory, isBuiltIn:false}]);
           jad = jadData;
           resolve();
         };
@@ -1540,7 +1541,7 @@ if (typeof module === "object") {
         };
         transaction.oncomplete = function() {
           if (request.result) {
-            jars.set(jarName, {directory:request.result.jar, isBuiltIn:false});
+            jars.push([jarName, {directory:request.result.jar, isBuiltIn:false}]);
             if (request.result.jad) {
               jad = request.result.jad;
             }
@@ -1552,8 +1553,17 @@ if (typeof module === "object") {
       });
     });
   }
+
+  function getJarFromName(name){
+    for(var i=0;i<jars.length;i++){
+      if(jars[i][0]==name){
+        return jars[i][1];
+      }
+    }
+  }
+
   function loadFileFromJAR(jarName, fileName) {
-    var jar = jars.get(jarName);
+    var jar = getJarFromName(jarName);
     if (!jar) {
       return null;
     }
@@ -1576,10 +1586,9 @@ if (typeof module === "object") {
     }
     return bytes;
   }
-  function loadFile(fileName) {
-    var datas = jars.keys(); 
-    for (var i = 0; i < jars.size; i++) {  
-      var jarName=datas.next().value;
+  function loadFile(fileName) { 
+    for (var i = 0; i < jars.length; i++) {  
+      var jarName=jars[i][0];
       var data = loadFileFromJAR(jarName, fileName);
       if (data) {
         return data;
@@ -1592,7 +1601,7 @@ if (typeof module === "object") {
   function clear() {
     return openDatabase.then(function() {
       return new Promise(function(resolve, reject) {
-        jars.clear();
+        jars=[];
         var transaction = database.transaction(OBJECT_STORE_WITH_UNCOMPRESSED_LEN, "readwrite");
         var objectStore = transaction.objectStore(OBJECT_STORE_WITH_UNCOMPRESSED_LEN);
         var request = objectStore.clear();
@@ -6630,7 +6639,7 @@ if (typeof module !== "undefined" && module.exports) {
     var value;
     switch(key) {
       case "com.sun.midp.publickeystore.WebPublicKeyStore":
-        if (config.midletClassName == "RunTestsMIDlet" || config.midletClassName.startsWith("benchmark")) {
+        if (config.midletClassName == "RunTestsMIDlet" || config.midletClassName.indexOf("benchmark")==0) {
           value = "_test.ks";
         } else {
           value = "_main.ks";
@@ -14231,8 +14240,15 @@ if(!isIndex)
     classedjarname='java/'+enginemode;
   }
   loadingPromises.push(load(classedjarname, "arraybuffer").then(function(data) {
-    JARStore.addBuiltIn("java/classes.jar", data);
-    CLASSES.initializeBuiltinClasses();
+    console.log("buildin enter");
+    try{
+      JARStore.addBuiltIn("java/classes.jar", data);
+      CLASSES.initializeBuiltinClasses();
+    }
+    catch(err){
+      console.error(err);
+    }
+    console.log("buildin out");
   }));
 } 
 //console.log(config.localjar)
@@ -14412,7 +14428,7 @@ function start() {
       {
         return;
       }
-      if(JARStore.getjars().size>1 && !isIndex)
+      if(JARStore.getjars().length > 1 && !isIndex)
       {
         console.log('开始执行jars'); 
         run();

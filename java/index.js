@@ -351,11 +351,11 @@ var myconfig = function() {
   }
   return {
     //按key从对象中取值
-    getValueByKey(key) {
-      return myInfo[key]
+    getValueByKey:function (key) {
+      return myInfo[key];
     },
     //将键值对保存到对象中
-    setValueByKey() {
+    setValueByKey:function () {
       for (var i = 0; i < arguments.length; i += 2) {
         myInfo[arguments[i]] = arguments[i + 1];
       }
