@@ -14435,7 +14435,7 @@ function start() {
         run();
       } 
       clearInterval(interval);
-    }, 100); 
+    }, 0); 
   }
   function run() {
     J2ME.Context.setWriters(new J2ME.IndentingWriter);
