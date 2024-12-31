@@ -19,6 +19,20 @@ var gamesca=1;
 var lcdWidth=240;
 var lcdHeight=320;
 
+// if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
+//   document.documentElement.classList.add("keypad");
+// }  
+console.log("config.gamepadSize "+config.gamepadSize);
+if(config.gamepad)
+{
+  if(config.gamepadSize)
+  {
+    document.getElementById("keypad").className = config.gamepadSize; 
+    
+  }
+}
+
+
 //1是pAudio, pAudio已经被移除
 //2是webaudio-tinysynth
 //3是Audio标签
@@ -991,6 +1005,7 @@ Native["com/sun/j2me/content/AppProxy.midletIsAdded.(ILjava/lang/String;)V"] = f
 };
 Native["com/nokia/mid/impl/jms/core/Launcher.handleContent.(Ljava/lang/String;)V"] = function(addr, contentAddr) {
   var fileName = J2ME.fromStringAddr(contentAddr);
+  return;
   var ext = fileName.split(".").pop().toLowerCase();
   if (["jpg", "jpeg", "gif", "apng", "png", "bmp", "ico"].indexOf(ext) == -1) {
     console.error("File not supported: " + fileName);
@@ -6398,8 +6413,7 @@ if (typeof module !== "undefined" && module.exports) {
     }
   }
   function updateCanvas() {
-    var sidebar = document.getElementById("sidebar");
-    var header = document.getElementById("drawer").querySelector("header");
+     
     var isFullscreen = FG.isFullscreen();
     //sidebar.style.display = header.style.display = isFullscreen ? "none" : "block";
     var headerHeight = isFullscreen ? 0 : header.offsetHeight;
@@ -6493,7 +6507,7 @@ if (typeof module !== "undefined" && module.exports) {
 
             var cany= parseInt(deviceCanvas.height*sca);
             var canx = parseInt(deviceCanvas.width *sca);
-            var mainid = document.getElementById("main");
+            var mainid = document.getElementById("display");
             var display_container = document.getElementById("display-container");
             var display = document.getElementById("display");
             // deviceCanvas.height = cany;
@@ -7000,7 +7014,7 @@ if (typeof module !== "undefined" && module.exports) {
       return;
     }
     performDownload(pendingMIDletUpdate, function(data) {
-      Promise.all([JARStore.installJAR("midlet.jar", data.jarData, data.jadData), CompiledMethodCache.clear()]).then(function() {
+      Promise.all([JARStore.installJAR("midlet.jar", data.jarData, data.jadData)]).then(function() {
         pendingMIDletUpdate = null;
         DumbPipe.close(DumbPipe.open("alert", "Update completed!"));
         DumbPipe.close(DumbPipe.open("reload", {}));
@@ -9419,8 +9433,8 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
     }
   };
   Native["javax/microedition/lcdui/Display.setTitle.(Ljava/lang/String;)V"] = function(addr, titleAddr) {
-    document.getElementById("display_title").textContent = J2ME.fromStringAddr(titleAddr);
-	mytitle = J2ME.fromStringAddr(titleAddr);
+    document.getElementById("header").textContent = J2ME.fromStringAddr(titleAddr);
+	  mytitle = J2ME.fromStringAddr(titleAddr);
   };
   Native["com/nokia/mid/ui/CanvasItem.setSize.(II)V"] = function(addr, width, height) {
     NativeMap.get(addr).setSize(width, height);
@@ -9619,16 +9633,16 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
   };
   Native["javax/microedition/lcdui/AlertLFImpl.createNativeResource0.(Ljava/lang/String;Ljava/lang/String;I)I"] = function(addr, titleAddr, tickerAddr, type) {
     var nativeId = nextMidpDisplayableId++;
-    var alertTemplateNode = document.getElementById("lcdui-alert");
-    var el = alertTemplateNode.cloneNode(true);
-    el.id = "displayable-" + nativeId;
-    el.querySelector("h1.title").textContent = J2ME.fromStringAddr(titleAddr);
-    alertTemplateNode.parentNode.appendChild(el);
+    // var alertTemplateNode = document.getElementById("lcdui-alert");
+    // var el = alertTemplateNode.cloneNode(true);
+    // el.id = "displayable-" + nativeId;
+    // el.querySelector("h1.title").textContent = J2ME.fromStringAddr(titleAddr);
+    // alertTemplateNode.parentNode.appendChild(el);
     return nativeId;
   };
   Native["javax/microedition/lcdui/AlertLFImpl.setNativeContents0.(ILjavax/microedition/lcdui/ImageData;[ILjava/lang/String;)Z"] = function(addr, nativeId, imgIdAddr, indicatorBoundsAddr, textAddr) {
-    var el = document.getElementById("displayable-" + nativeId);
-    el.querySelector("p.text").textContent = J2ME.fromStringAddr(textAddr);
+    // var el = document.getElementById("displayable-" + nativeId);
+    // el.querySelector("p.text").textContent = J2ME.fromStringAddr(textAddr);
     return 0;
   };
   Native["javax/microedition/lcdui/AlertLFImpl.showNativeResource0.(I)V"] = function(addr, nativeId) {
@@ -9700,8 +9714,7 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
 
   
   Native["javax/microedition/lcdui/ChoiceGroupLFImpl.createNativeResource0.(ILjava/lang/String;III[Ljavax/microedition/lcdui/ChoiceGroup$CGElement;II)I"] = function(addr, name,A2,A3,A4,A6,cGElementArr,selectedIndex,A7) {
-    //return nextMidpDisplayableId++;
-    
+  
     console.log(name,J2ME.fromStringAddr(name),selectedIndex)
 
     var commands = J2ME.getArrayFromAddr(cGElementArr);
@@ -9734,7 +9747,7 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
       menu.appendChild(li);
       isSidebarEmpty = false;
     });
-    var header = document.getElementById("drawer").querySelector("header");
+    var header = document.getElementById("header");
     header.style.display = "block";
     document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
     var headerBtn = document.getElementById("header-ok-button");
@@ -9760,7 +9773,7 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
     var name = J2ME.fromStringAddr(str);
     console.log(name)
   };
-  
+
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getMinimumWidth0.(I)I", 10);
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getMinimumHeight0.(I)I", 10);
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getPreferredWidth0.(II)I", 10);
@@ -9772,6 +9785,8 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
   var STOP = 6;
   Native["javax/microedition/lcdui/NativeMenu.updateCommands.([Ljavax/microedition/lcdui/Command;I[Ljavax/microedition/lcdui/Command;I)V"] = function(addr, itemCommandsAddr, numItemCommands, commandsAddr, numCommands) {
     
+  return;
+  
     try{
     if (numItemCommands !== 0) {
       console.error("NativeMenu.updateCommands: item commands not yet supported");
@@ -11381,6 +11396,7 @@ function receiveSms(text, addr) {
 }
 function promptForMessageText() {
   startBackgroundAlarm();
+  return;
   var smsTemplateNode = document.getElementById("sms-listener-prompt");
   var el = smsTemplateNode.cloneNode(true);
   el.style.display = "block";
@@ -12185,7 +12201,7 @@ ImagePlayer.prototype.setLocation = function(x, y, w, h) {
   this.image.style.top = y + "px";
   this.image.style.width = w + "px";
   this.image.style.height = h + "px";
-  document.getElementById("main").appendChild(this.image);
+  document.getElementById("display").appendChild(this.image);
 };
 ImagePlayer.prototype.setVisible = function(visible) {
   this.image.style.visibility = visible ? "visible" : "hidden";
@@ -12257,7 +12273,7 @@ VideoPlayer.prototype.setLocation = function(x, y, w, h) {
   this.video.style.top = y + "px";
   this.video.style.width = w + "px";
   this.video.style.height = h + "px";
-  document.getElementById("main").appendChild(this.video);
+  document.getElementById("display").appendChild(this.video);
 };
 VideoPlayer.prototype.setVisible = function(visible) {
   this.video.style.visibility = visible ? "visible" : "hidden";
@@ -13658,38 +13674,6 @@ var Content = function() {
   addUnimplementedNative("com/sun/j2me/content/InvocationStore.resetFlags0.(I)V");
   return {addInvocation:addInvocation};
 }();
-/*
-document.getElementById("up").onmousedown = function() {
-  MIDP.sendKeyPress(119);
-};
-document.getElementById("up").onmouseup = function() {
-  MIDP.sendKeyRelease(119);
-};
-document.getElementById("down").onmousedown = function() {
-  MIDP.sendKeyPress(115);
-};
-document.getElementById("down").onmouseup = function() {
-  MIDP.sendKeyRelease(115);
-};
-document.getElementById("left").onmousedown = function() {
-  MIDP.sendKeyPress(97);
-};
-document.getElementById("left").onmouseup = function() {
-  MIDP.sendKeyRelease(97);
-};
-document.getElementById("right").onmousedown = function() {
-  MIDP.sendKeyPress(100);
-};
-document.getElementById("right").onmouseup = function() {
-  MIDP.sendKeyRelease(100);
-};
-document.getElementById("fire").onmousedown = function() {
-  MIDP.sendKeyPress(32);
-};
-document.getElementById("fire").onmouseup = function() {
-  MIDP.sendKeyRelease(32);
-};
-*/
 
 var Location = {};
 Location.PROVIDER_NAME = "browser";
@@ -14188,19 +14172,6 @@ Native["com/sun/javame/sensor/NativeChannel.doMeasureData.(II)[B"] = function(ad
 var release = 1;
 var profile = 0;
 var jvm = new JVM;
-if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
-  document.documentElement.classList.add("gamepad");
-}  
-console.log("config.gamepadSize "+config.gamepadSize);
-if(config.gamepad)
-{
-  if(config.gamepadSize)
-  {
-    document.getElementById("gamepad").className = config.gamepadSize; 
-    
-  }
-}
-
 
 var jars = [];
 if (typeof Benchmark !== "undefined") {
@@ -14329,15 +14300,15 @@ function performDownload(url, callback) {
         DumbPipe.close(sender);
         hideDownloadScreen();
         progressBar.value = 0;
-        var failureDialog = document.getElementById("download-failure-dialog");
-        failureDialog.style.display = "";
-        var btnRetry = failureDialog.querySelector("button.recommend");
-        btnRetry.addEventListener("click", function onclick(e) {
-          e.preventDefault();
-          btnRetry.removeEventListener("click", onclick);
-          failureDialog.style.display = "none";
-          performDownload(url, callback);
-        });
+        // var failureDialog = document.getElementById("download-failure-dialog");
+        // failureDialog.style.display = "";
+        // var btnRetry = failureDialog.querySelector("button.recommend");
+        // btnRetry.addEventListener("click", function onclick(e) {
+        //   e.preventDefault();
+        //   btnRetry.removeEventListener("click", onclick);
+        //   failureDialog.style.display = "none";
+        //   performDownload(url, callback);
+        // });
         break;
     }
   });
@@ -14465,19 +14436,15 @@ if(config.canvasSize)
 } 
 
 window.onload = function() {
-  CompiledMethodCache.clear().then(function() {
-    console.log("cleared compiled method cache");
- 
-    if(isIndex)
-      {
-        return;
-      } 
+
+  if(isIndex)
+    {
+      return;
+    } 
 
   Promise.all(loadingPromises).then(start, function(reason) {
     console.error('Loading failed: ');
     console.error(reason);
-  });
- 
   }); 
 
 }; 

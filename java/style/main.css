@@ -1,638 +1,145 @@
-html {
-  margin: 0;
-  padding: 0;
-  font-family: sans-serif;
-  font-size: 10px;
-  height: 100%;
-  overflow: hidden;
-}
-
 body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* 在上下方向上均匀分配空间 */
+  align-items: center; /* 水平居中对齐 */
+  height: 100vh; /* 使页面高度占满视口 */
+  margin: 0; /* 去掉默认的边距 */
 }
 
-#display-container {
-  position: relative;
-  float: right;
-  width: 240px;
-  height: 100%;
-  background: white;
+#display-container {   
+  align-items: center; /* 水平居中对齐 */
 }
 
 #display {
-  position: relative;
-  top: 0px;
-  right: 0px;
-  border-bottom: 1px solid #ababab;
-  width: 100%;
-  height: 100%;;
-  z-index: 1;
-  margin:0 auto;
-  background: white; 
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 水平居中对齐 */
+  flex-grow: 1; /* 让display占据剩余空间 */
 }
 
-/* Set the display size. */
+#canvas {
+  border: 1px solid #66666666; /* 可选：为canvas添加边框 */
+  display: block; /* 确保canvas以块级元素显示 */
+  margin: 0px; /* 上下留一些空间 */
+   
+} 
 
-.size-240x320 #display-container {
-  width: 240px;
+#keypad {
+  text-align: center; 
+  font-size: 0;  
+  margin-top: 10px;
+}
+.gamepad-0
+{
+  display: none;
+}
+.gamepad-1
+{
+  display: block;
+  min-width: 240px;
+  min-height: 240px;
+}
+.gamepad-2
+{
+  display: block;
+  
+  min-width: 320px;
+  min-height: 320px;
+}
+.gamepad-3
+{
+  display: block;
+  min-width: 480px;
+  min-height: 480px;
+}
+.gamepad-4
+{
+  display: block;
+  min-width: 640px;
+  min-height: 640px;
+  
 }
 
-.size-240x320 #pageContainer {
-  width: calc(100% - 240px) !important;
+#keypad.column,
+#keypad.column2,
+#keypad.row,
+#keypad.row-reverse,
+#keypad.joypad,
+#keypad.numpad,
+#keypad.numpad2 {
+  display: flex;
+  flex-direction: column;
 }
 
-.size-240x320 #display {
-  height: 320px ;
+#keypad.row>div,
+#keypad.row-reverse>div {
+  flex: 1;
 }
 
-.size-240x320 #settings {
-  height: calc(100% - 320px) !important;
+#keypad.row {
+  flex-direction: row;
 }
 
-
-.size-320x240 #display-container {
-  width: 320px ;
+#keypad.row-reverse {
+  flex-direction: row-reverse;
 }
 
-.size-320x240 #pageContainer {
-  width: calc(100% - 320px) !important;
-}
-
-.size-320x240 #display {
-  height: 240px ;
-}
-
-.size-320x240 #settings {
-  height: calc(100% - 240px) !important;
-}
-
-
-.size-360x640 #display-container {
-  width: 360px ;
-}
-
-.size-360x640 #pageContainer {
-  width: calc(100% - 360px) !important;
-}
-
-.size-360x640 #display {
-  height: 640px ;
-}
-
-.size-360x640 #settings {
-  height: calc(100% - 640px) !important;
-}
-
-.size-640x360 #display-container {
-  width: 640px ;
-}
-
-.size-640x360 #pageContainer {
-  width: calc(100% - 640px) !important;
-}
-
-.size-640x360 #display {
-  height: 360px ;
-}
-
-.size-640x360 #settings {
-  height: calc(100% - 360px) !important;
-}
-
-
-.size-no0 #display-container {
-  width: 100%;
-}
-
-.size-no #pageContainer {
-  width: 100% ;
-}
-
-.size-no #display {
-  height: 100% ;
-}
-
-.size-no #settings {
-  height:100% ;
-}
-
-
-/* Float the back button to the bottom right corner */
-#back-button {
-  position: absolute;
-  right: 0;
-  bottom: 3px;
-  box-sizing: border-box;
-  width: 3rem;
-  height: 4rem;
-  padding: 0;
-  font-size: 0;
-  overflow: hidden;
-  background: url("headers/images/icons/back.png") rgba(249, 124, 23, 0.7) no-repeat scroll center center;
-  border: medium none;
-  border-radius: 20px 0 0 0;
-  z-index: 999;
-}
-
-#back-button:hover {
-  background-color: rgba(249, 124, 23, 1);
-}
-
-button {
+#keypad.joypad>#numpad {
   display: none;
 }
 
-#settings {
-  background: #f4f4f4;
-  box-sizing: border-box;
-  right: 1px;
-  width: 100%;
-  height: calc(100% - 320px);
-  border-left: 1px solid #ababab;
-  overflow-y: auto;
-}
-
-#main{
-  margin:0 auto;
-}
-#settings section {
-  margin: 0;
-  border-bottom: 1px solid #ababab;
-  overflow: hidden;
-  padding: 0.5rem 0;
-}
-
-#settings section > div,
-#settings section > button,
-#settings section > select,
-#settings section > label,
-#settings section > input {
-  display: block;
-  width: 80%;
-  margin: 0.5rem auto;
-  padding-top: 0.2rem;
-  padding-bottom: 0.2rem;
-  font-size: 12px;
-  text-align: center;
-}
-
-.log-item-log {
-  color: #555;
-}
-
-.log-item-warn {
-  color: #c70;
-}
-
-.log-item-error {
-  color: red;
-  font-weight: bold;
-}
-
-.log-item-trace:before { content: 'T'; padding-right: 1rem; font-weight: bold; }
-.log-item-log:before { content: 'L'; padding-right: 1rem; font-weight: bold; }
-.log-item-info:before { content: 'I'; padding-right: 1rem; font-weight: bold; }
-.log-item-warn:before { content: 'W'; padding-right: 1rem; font-weight: bold; }
-.log-item-error:before { content: 'E'; padding-right: 1rem; font-weight: bold; }
-
-.gamepad-1 { 
-  display: block;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin:0 auto;
-  width: 240px;   
-  z-index: 103;
-  -moz-user-select: none; 
-  -o-user-select:none; 
-  -khtml-user-select:none; 
-  -webkit-user-select:none; 
-  -ms-user-select:none; 
-  user-select:none;
-} 
-.gamepad-1 #padcontent{ 
-  z-index: 103;
-  width: 240px; 
-  float: left;
-}
-.gamepad-1 #padcontent div{
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 36px;
-  width: 36px;
-}
-
-.gamepad-1 button {   
-  display: block;
-  opacity: 0.5;
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 36px;
-  width: 36px;
-} 
-
-
-.gamepad-2 { 
-  display: block;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin:0 auto;
-  width: 320px;   
-  z-index: 103;
-  -moz-user-select: none; 
-  -o-user-select:none; 
-  -khtml-user-select:none; 
-  -webkit-user-select:none; 
-  -ms-user-select:none; 
-  user-select:none;
-} 
-.gamepad-2 #padcontent{
-  z-index: 103;
-  width: 320px; 
-  float: left;
-}
-.gamepad-2 #padcontent div{
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 48px;
-  width: 48px;
-}
-
-.gamepad-2 button {   
-  display: block;
-  opacity: 0.5;
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 48px;
-  width: 48px;
-} 
-
-
-.gamepad-3 { 
-  display: block;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin:0 auto;
-  width: 460px;   
-  z-index: 103;
-  -moz-user-select: none; 
-  -o-user-select:none; 
-  -khtml-user-select:none; 
-  -webkit-user-select:none; 
-  -ms-user-select:none; 
-  user-select:none;
-} 
-.gamepad-3 #padcontent{
-  z-index: 103;
-  width: 460px; 
-  float: left;
-}
-.gamepad-3 #padcontent div{
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 60px;
-  width: 60px;
-}
-
-.gamepad-3 button {   
-  display: block;
-  opacity: 0.5;
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 60px;
-  width: 60px;
-} 
-
-
-.gamepad-4 { 
-  display: block;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin:0 auto;
-  width: 580px;   
-  z-index: 103;
-  -moz-user-select: none; 
-  -o-user-select:none; 
-  -khtml-user-select:none; 
-  -webkit-user-select:none; 
-  -ms-user-select:none; 
-  user-select:none;
-} 
-.gamepad-4 #padcontent{
-  z-index: 103;
-  width: 580px; 
-  float: left;
-}
-.gamepad-4 #padcontent div{
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 72px;
-  width: 72px;
-}
-
-.gamepad-4 button {   
-  display: block;
-  opacity: 0.5;
-  margin: 1px 1px 1px 1px;
-  float: left;
-  z-index: 103;
-  height: 72px;
-  width: 72px;
-} 
-
-
-
-
-/* Auto-Size (for devices): Hide everything except the canvas. */
-.autosize body > pre,
-.autosize body > div {
+#keypad.numpad>#joypad,
+#keypad.numpad2>#joypad {
   display: none;
 }
 
-.autosize #display-container {
-  position: absolute;
-  display: block;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
+.key {
+  font-size: 20px;
+  cursor: pointer;
+  margin: 1px 1px;
+  height: 40px;
+  line-height: 40px; 
+  width: calc(33.33% - 2px);
+  border: 1px solid #66666666;
+  background-color: rgba(239, 239, 239, 0.5); /* 设置半透明背景色 */
+  text-align: center;
+  border-radius: 3px;
 }
 
-.autosize #display {
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: white;
-}
-
-.autosize #settings {
+#keypad.column2>#numpad>.key,
+#keypad.numpad2>#numpad>.key {
+  width: 24%;
+  width: calc(25% - 3px);
+} 
+.key.numpad2 {
   display: none;
 }
 
-/* Prevent scrolling. */
-.autosize, .autosize body {
-  overflow: hidden;
+#keypad.column2>#numpad>.key.numpad,
+#keypad.numpad2>#numpad>.key.numpad {
+  display: none;
 }
 
-.sms-listener-prompt input {
-  display: block;
-  margin-top: 1rem;
-  box-sizing: border-box;
-  width: 100%;
-  font-size: 1.6rem;
-  padding: 0.5rem;
+#keypad.column2>#numpad>.key.numpad2,
+#keypad.numpad2>#numpad>.key.numpad2 {
+  display: inline-block;
 }
 
-form[role="dialog"][data-type="confirm"].lcdui-alert section {
-  text-align: center;
-  overflow: auto;
-}
-
-#image-launcher {
-  position: absolute;
-  z-index: 102;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  background: none center center / contain no-repeat #000;
-}
-
-.lcdui-alert menu,
-.download-failure-dialog menu {
-  text-align: center;
+/* 可选：添加其他样式以增强视觉效果 */
+.title {
+  font-size: 24px;
+  margin: 10px 0;
 }
 
 .screen {
-  display: none;
-  z-index: 102;
-  background: #2d2d2d;
-  overflow: hidden;
-  color: #fff;
-  text-align: center;
+  display: none; /* 默认隐藏所有屏幕 */
 }
 
-.autosize .screen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.screen > .title {
-  margin-bottom: 0;
-}
-
-.splash-progress-container {
-  position: absolute;
-  top: calc(50% - 17px);
-  left: calc(50% - 17px);
-}
-
-.download-progress-container {
-  position: absolute;
-  width: 90%;
-  left: 5%;
-  top: calc(50% - 0.2rem);
-}
-
-/**
- * STYLE OVERRIDES FOR DEBUG MODE:
- *
- * These styles override the default dialog style so that (a) the
- * dialog fits in our small 240x320 debug-mode canvas, and (b) so that
- * the dialog, which normally overlays the entire screen, only covers
- * the same area as the canvas (only for debugging).
- *
- * Note: The absurd selector is absurd so that we can override the
- * built-in styles, which refer to all of those attributes, without
- * modifying the original dialog CSS, for future maintainability.
- */
-.debug-mode form[role="dialog"][data-type="confirm"].lcdui-alert,
-.debug-mode form[role="dialog"][data-type="confirm"].sms-listener-prompt,
-.debug-mode form[role="dialog"][data-type="confirm"].nokia-fileui-prompt,
-.debug-mode form[role="dialog"][data-type="confirm"].download-failure-dialog {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  left: auto;
-  bottom: auto;
-  width: 100%;
-  height: 100%;
-  z-index: 102;
-  background: black;
-  box-sizing: border-box;
-}
-
-/* Hide the unnecessary scroll bar in the SMS verification dialog. */
-.debug-mode form[role="dialog"][data-type="confirm"].sms-listener-prompt section,
-.debug-mode form[role="dialog"][data-type="confirm"].nokia-fileui-prompt section,
-.debug-mode form[role="dialog"][data-type="confirm"].download-failure-dialog section {
-  overflow: hidden;
-}
-/* Trim down fonts to fix on our 240x320 debug-mode canvas. */
-.debug-mode form[role="dialog"][data-type="confirm"].lcdui-alert p,
-.debug-mode form[role="dialog"][data-type="confirm"].sms-listener-prompt p {
-  font-size: 12px;
-  line-height: 1.2;
-}
-
-.debug-mode .screen {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0px;
-  right: 0px;
-  left: auto;
-  bottom: auto;
-  box-sizing: border-box;
-}
-
-#pageContainer {
-  position: relative;
-  background-color: #333333;
-  top: 0;
-  left: 0;
-  width: calc(100% - 240px);
-  height: 100%;
-  float: left;
-  overflow: hidden;
-}
-
-#consoleContainer {
-  overflow: auto;
-  margin: 0;
-  background-color: #ffffff;
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-}
-
-.profile-mode #consoleContainer {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 512px;
-}
-
-#profilerContainer {
-  display: none;
-}
-
-.profile-mode #profilerContainer {
-  display: block;
-  position: absolute;
-  left: 0px;
-  bottom: 0px;
-  right: 0px;
-  height: 512px;
-  background-color: #111;
-  overflow: auto;
-}
-
-.profile-mode #profilerContainer.max {
-  height: 100%;
-}
-
-#profilerToolbar {
-  color: white;
-  padding: 2px;
-}
-
-#profilerStartStop, #profilerAdjustHeight {
-  display: inline;
-  color: red;
-  cursor: hand;
-  padding-right: 20px;
-}
-
-#profiler {
-  /* Add a bumper for scrolling since the profiler intercepts
-   * scroll events, making it impossible to scroll to more timelines. */
-  margin-right: 20px;
-}
-
-.profiler-tooltip {
-  position: absolute;
-  font-family: sans-serif;
-  color: #ddd;
-}
-.profiler-tooltip {
-  background-color: #111;
-  border: 1px solid #aaa;
-  border-radius: 5px;
-  padding: 5px;
-}
-.profiler-tooltip > div > h1 {
-  font-size: 11px;
-  margin: 1px 0 2px 0;
-}
-.profiler-tooltip > div > p {
-  font-size: 10px;
-  margin: 0 0 1px 0;
-}
-.profiler-tooltip > div > hr {
-  margin: 2px auto 4px auto;
-  border: none;
-  border-bottom: 1px solid #555;
-}
-.profiler-timeline-name {
-  color: #ddd;
-}
-
-/* Styles for text editors */
-.text-editor {
-  position: absolute;
-  border: none;
-  resize: none;
-  visibility: hidden;
-}
-
-.text-editor.show{
-  visibility: visible;
-}
-
-div.text-editor {
-  margin: 0;
-  padding: 0;
-  box-sizing:  border-box;
-  word-break: break-all;
-  word-wrap: break-word;
-  overflow: auto;
-  white-space: pre-wrap;
-  -moz-appearance: textfield-multiline;
-  display: block;
-  left: 0;
-  top: 0;
-}
-
-#hidden-textarea-editor {
-  visibility: hidden;
-}
-
-#counters {
-  padding: 2px;
+#download-screen, #splash-screen, #exit-screen {
+  display: flex; /* 让这些屏幕元素为flex布局 */
+  flex-direction: column;
+  align-items: center; /* 水平居中对齐 */
+  justify-content: center; /* 垂直居中对齐 */
+  height: 100%; /* 高度占满父元素 */
 }

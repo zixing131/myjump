@@ -14,7 +14,7 @@ if(!isbatch)
       '<div>' +
       '<img src="' + picPath + '" width="64px" height="64px" style="margin-top:4px"></img>' +
       '</div>' +
-      '<span style="font-size:12px">' + gameName + '</span>' +
+      '<span>' + gameName + '</span>' +
       '</a>';
   }
   document.getElementById('gameListDiv').innerHTML = GameListHtml;
@@ -28,8 +28,9 @@ if(!isbatch)
         function(files)  {
           var localjars = document.getElementById('localjars');
           localjars.length = 0;
-          var gamepanel = document.getElementById("gamepanel");
-          gamepanel.innerHTML = '<a class="game" style="" href="javascript:void(0)" onclick="openJar(\'Anyview4.0.jar\',\'com.ismyway.anyview.Anyview\');"> <div style="height:64px;"> <img src="img/anyview.png"></img> </div> Anyview </a> ';
+          var gamepanel = document.getElementById("gameListDiv");
+ 
+          gamepanel.innerHTML = '<a class="game" style="" href="javascript:void(0)" onclick="openJar(\'Anyview4.0.jar\',\'com.ismyway.anyview.Anyview\');"> <div> <img src="img/anyview.png" width="64px" height="64px" style="margin-top:4px"></img> </div><span> Anyview </span></a> ';
           for (var i = 0; i < files.length; i++) {
             var f = files[i];
             //console.log(f)
@@ -301,7 +302,7 @@ function loadFileFromLocalJAR(jar, fileName) {
 }
 function addToPanel(jarfile)
 {
-  var gamepanel = document.getElementById("gamepanel");
+  var gamepanel = document.getElementById("gameListDiv");
   if(gamepanel)
   {
     var data=loadFileFromLocalJAR(jarfile.jar,"META-INF/MANIFEST.MF"); 
@@ -323,7 +324,7 @@ function addToPanel(jarfile)
     var icondata = loadFileFromLocalJAR(jarfile.jar,iconname); 
     var iconurl=formatByte2Img(icondata)
 
-    var htmldata='<a class="game" style="" href="javascript:void(0)" onclick="openJar(\''+jarfile.jarName+'\',0,1);"> <div style="height:64px;"> <img width=60 height=60 src="'+iconurl+'"></img> </div> '+jarName+' </a>'
+    var htmldata='<a class="game" style="" href="javascript:void(0)" onclick="openJar(\''+jarfile.jarName+'\',0,1);"> <div> <img width="64px" height="64px" style="margin-top:4px" src="'+iconurl+'"></img> </div><span> '+jarName+'</span> </a>'
 
     gamepanel.innerHTML+=htmldata;
   }

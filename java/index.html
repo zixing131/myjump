@@ -9,42 +9,13 @@
   		<link rel="stylesheet" type="text/css" href="style/index.css">
 		<!-- Required for non-UTF encodings -->
 		<script src="libs/encoding.js"></script>
-		<!-- Load config scripts separately because compiled-method-cache.js
-     - depends on them. -->
+		
+		<script type="text/javascript" src="bld/native.js" defer></script>
 		<script type="text/javascript" src="config/default.js" defer></script>
 		<script type="text/javascript" src="config/runtests.js" defer></script>
 		<script type="text/javascript" src="config/build.js" defer></script>
 		<script type="text/javascript" src="config/urlparams.js" defer></script>
-
-
-		<!--<script type="text/javascript" src="libs/terminal.js" defer></script>-->
-
-		<!-- Load promise-6.0.0.js and IndexedDB-getAll-shim.js separately
-     - because compiled-method-cache.js depends on them. -->
-		<script type="text/javascript" src="libs/promise-6.0.0.js" defer></script>
-		<script type="text/javascript" src="polyfill/IndexedDB-getAll-shim.js" defer></script>
-
-		<!-- Load compiled-method-cache.js separately because j2me.js depends on it. -->
-		<script type="text/javascript" src="libs/compiled-method-cache.js" defer></script>
-
-		<!-- Load bld/native.js separately because adding it to main-all.js
-     - throws an "asm.js type error". -->
-		<script type="text/javascript" src="bld/native.js" defer></script>
-
-		<!-- Load j2me.js separately because classes.jar.js depends on it (it adds
-     - members to the AOTMD hash that j2me.js defines); and also so its source
-     - map gets loaded by the debugger. -->
 		<script type="text/javascript" src="bld/j2me.js" defer></script>
-
-		<!-- Run `make aot` to generate these.  Load them separately, because adding
-     - classes.jar.js to main-all.js fails silently for unknown reasons. -->
-		<!--<script type="text/javascript" src="bld/classes.jar.js" defer></script>-->
-		<!--<script type="text/javascript" src="bld/program.jar.js" defer></script>-->
-		<!--<script type="text/javascript" src="bld/tests.jar.js" defer></script>-->
-
-		<!-- Load the rest of the scripts from the combined script main-all.js
-     - to improve startup and runtime performance.  See Makefile for the list
-     - of files that get combined into this one. -->
 		<script type="text/javascript" src="bld/main-all.js" defer></script>
 
 	</head>
@@ -54,13 +25,18 @@
 		<p> <a href="/" style="font-weight: bold"><h3> 回到主页 </h3></a></p>
 
 		<h3>游戏列表：</h3>
-		<div id="gameListDiv"
-			style="display:flex;flex-wrap: wrap; margin-bottom: 10px; float:left;align-items: center;">
+		<div id="parentContainer"> 
+
+			<div id="gameListDiv"
+				style="display:flex;flex-wrap: wrap; margin-bottom: 10px; float:left;align-items: center;">
 			
+			</div>
+
 		</div>
+	
 
 		<!-- <label><input id="mycheck2" name="enablexy" type="checkbox" value="" />自适应缩放</label>  -->
-		<div style="margin-top: 100px; clear: both;">
+		<div style="text-align: center;clear: both;">
 
 			<select id="canvasSize" class="filter-box" onchange="canvasSizeHandleChange()">
 				<option value="size-240x320">显示尺寸: 240x320</option>
