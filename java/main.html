@@ -4,16 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <link rel="stylesheet" type="text/css" href="style/main.css">
-  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1"> 
-  <!-- Required for non-UTF encodings --> 
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+  <!-- Required for non-UTF encodings -->
   <script src="libs/encoding.js"></script>
-  
-   <!-- Required for mid -->
-	<script src="./libs/webaudio-tinysynth.min.js" type="text/javascript"></script> 
+
+  <!-- Required for mid -->
+  <script src="./libs/webaudio-tinysynth.min.js" type="text/javascript"></script>
 
   <!-- Required for amr -->
-	<script src="./libs/BenzAMRRecorder.min.js" type="text/javascript"></script> 
- 
+  <script src="./libs/BenzAMRRecorder.min.js" type="text/javascript"></script>
+
   <script type="text/javascript" src="bld/native.js" defer></script>
   <script type="text/javascript" src="config/default.js" defer></script>
   <script type="text/javascript" src="config/runtests.js" defer></script>
@@ -21,11 +21,11 @@
   <script type="text/javascript" src="config/urlparams.js" defer></script>
 
   <script type="text/javascript" src="bld/j2me.js" defer></script>
-  
+
   <script type="text/javascript" src="bld/main-all.js" defer></script>
-  
+
   <script type="text/javascript" src="keymap.js"></script>
-  
+
 </head>
 
 <body>
@@ -33,7 +33,7 @@
   <div id="display-container">
     <div id="display">
       <div id="header"></div>
-      <canvas id="canvas"></canvas> 
+      <canvas id="canvas"></canvas>
       <div id="download-screen" class="screen">
         <h1 class="title">Downloading midlet…</h1>
         <div class="download-progress-container">
@@ -52,41 +52,54 @@
       </div>
 
       <div id="background-screen">
-      </div>  
-   </div> 
- </div> 
-
- <div id="keypad" class="row-reverse"  onselectstart ='return false' οnselect='document.selection.empty()' >
-  <div id="joypad">
-    <button id="choice" class="key">&nbsp;</button>
-    <button id="up" class="key">↑</button>
-    <button id="back" class="key">&nbsp;</button><br>
-    <button id="left" class="key">←</button>
-    <button id="ok" class="key">&nbsp;</button>
-    <button id="right" class="key">→</button><br>
-    <button id="down" class="key">↓</button>
+      </div>
+    </div>
   </div>
-  <div id="numpad">
-    <button id="num1" class="key">1</button>
-    <button id="num2" class="key">2</button>
-    <button id="num3" class="key">3</button>
-    <button id="star" class="key numpad2">*</button>
-    <br>
-    <button id="num4" class="key">4</button>
-    <button id="num5" class="key">5</button>
-    <button id="num6" class="key">6</button>
-    <button id="num0" class="key numpad2">0</button>
-    <br>
-    <button id="num7" class="key">7</button>
-    <button id="num8" class="key">8</button>
-    <button id="num9" class="key">9</button>
-    <button id="pound" class="key numpad2">#</button>
-    <br>
-    <button id="star" class="key numpad">*</button>
-    <button id="num0" class="key numpad">0</button>
-    <button id="pound" class="key numpad">#</button>
-  </div>
-</div>
 
-</body> 
+  <form role="dialog" data-type="confirm" class="lcdui-alert" id="lcdui-alert" style="display: none">
+    <section>
+      <h1 class="title"></h1>
+      <p class="text"></p>
+      <p style="border-top: 0"><progress style="display: none"></progress></p>
+    </section>
+    <menu>
+      <button class="button0" style="display: none"></button>
+      <button class="button1" style="display: none"></button>
+    </menu>
+  </form>
+
+  <div id="keypad" class="row-reverse" onselectstart='return false' οnselect='document.selection.empty()'>
+    <div id="joypad">
+      <button id="choice" class="key">&nbsp;</button>
+      <button id="up" class="key">↑</button>
+      <button id="back" class="key">&nbsp;</button><br>
+      <button id="left" class="key">←</button>
+      <button id="ok" class="key">&nbsp;</button>
+      <button id="right" class="key">→</button><br>
+      <button id="down" class="key">↓</button>
+    </div>
+    <div id="numpad">
+      <button id="num1" class="key">1</button>
+      <button id="num2" class="key">2</button>
+      <button id="num3" class="key">3</button>
+      <button id="star" class="key numpad2">*</button>
+      <br>
+      <button id="num4" class="key">4</button>
+      <button id="num5" class="key">5</button>
+      <button id="num6" class="key">6</button>
+      <button id="num0" class="key numpad2">0</button>
+      <br>
+      <button id="num7" class="key">7</button>
+      <button id="num8" class="key">8</button>
+      <button id="num9" class="key">9</button>
+      <button id="pound" class="key numpad2">#</button>
+      <br>
+      <button id="star" class="key numpad">*</button>
+      <button id="num0" class="key numpad">0</button>
+      <button id="pound" class="key numpad">#</button>
+    </div>
+  </div>
+
+</body>
+
 </html>

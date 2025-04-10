@@ -9633,16 +9633,16 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
   };
   Native["javax/microedition/lcdui/AlertLFImpl.createNativeResource0.(Ljava/lang/String;Ljava/lang/String;I)I"] = function(addr, titleAddr, tickerAddr, type) {
     var nativeId = nextMidpDisplayableId++;
-    // var alertTemplateNode = document.getElementById("lcdui-alert");
-    // var el = alertTemplateNode.cloneNode(true);
-    // el.id = "displayable-" + nativeId;
-    // el.querySelector("h1.title").textContent = J2ME.fromStringAddr(titleAddr);
-    // alertTemplateNode.parentNode.appendChild(el);
+    var alertTemplateNode = document.getElementById("lcdui-alert");
+    var el = alertTemplateNode.cloneNode(true);
+    el.id = "displayable-" + nativeId;
+    el.querySelector("h1.title").textContent = J2ME.fromStringAddr(titleAddr);
+    alertTemplateNode.parentNode.appendChild(el);
     return nativeId;
   };
   Native["javax/microedition/lcdui/AlertLFImpl.setNativeContents0.(ILjavax/microedition/lcdui/ImageData;[ILjava/lang/String;)Z"] = function(addr, nativeId, imgIdAddr, indicatorBoundsAddr, textAddr) {
-    // var el = document.getElementById("displayable-" + nativeId);
-    // el.querySelector("p.text").textContent = J2ME.fromStringAddr(textAddr);
+    var el = document.getElementById("displayable-" + nativeId);
+    el.querySelector("p.text").textContent = J2ME.fromStringAddr(textAddr);
     return 0;
   };
   Native["javax/microedition/lcdui/AlertLFImpl.showNativeResource0.(I)V"] = function(addr, nativeId) {
@@ -9785,7 +9785,7 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
   var STOP = 6;
   Native["javax/microedition/lcdui/NativeMenu.updateCommands.([Ljavax/microedition/lcdui/Command;I[Ljavax/microedition/lcdui/Command;I)V"] = function(addr, itemCommandsAddr, numItemCommands, commandsAddr, numCommands) {
     
-  return;
+  //return;
   
     try{
     if (numItemCommands !== 0) {
