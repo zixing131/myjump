@@ -153,3 +153,52 @@
     top: 50%;
     transform: translate(-50%,-50%);
 }
+ 
+  /* 让 screen 覆盖整个屏幕并居中 */
+#download-screen {
+    display: none;
+    position: fixed; /* 固定定位，覆盖整个屏幕 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; 
+    flex-direction: column; /* 让内容垂直排列 */
+    justify-content: center; /* 垂直方向居中 */
+    align-items: center; /* 水平方向居中 */
+    background-color: rgba(0, 0, 0, 0.8); /* 半透明黑色背景 */
+    color: #fff; /* 白色文字 */
+    font-family: Arial, sans-serif; /* 字体样式 */
+  }
+  
+  /* 标题样式 */
+  .title {
+    font-size: 24px; /* 标题字体大小 */
+    margin-bottom: 20px; /* 与进度条的间距 */
+    text-align: center; /* 居中对齐 */
+  }
+  
+  /* 进度条容器样式 */
+  .download-progress-container {
+    width: 80%; /* 容器宽度占屏幕的 80% */
+    max-width: 400px; /* 最大宽度为 400px */
+  }
+  
+  /* 进度条样式 */
+  progress {
+    width: 100%; /* 进度条占满容器宽度 */
+    height: 20px; /* 进度条高度 */
+    appearance: none; /* 去掉默认样式 */
+  }
+  
+  /* 进度条背景样式 */
+  progress::-webkit-progress-bar {
+    background-color: #444; /* 背景颜色 */
+    border-radius: 10px; /* 圆角效果 */
+  }
+  
+  /* 进度条进度样式 */
+  progress::-webkit-progress-value {
+    background-color: #4caf50; /* 进度颜色 */
+    border-radius: 10px; /* 圆角效果 */
+  }
+  

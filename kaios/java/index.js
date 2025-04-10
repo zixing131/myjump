@@ -1,13 +1,141 @@
 
-
-mainmenulist = [ 
+var mainmenulist = [ 
 	["启动JAR",'openJar',],
 	["刷新列表",'refreshGameList',],
     ["安装JAR",'installJar',],
+    ["链接下载JAR",'downloadJarBylink',],
+	["扫码下载JAR",'downloadJarByQrcode',],
 	["删除JAR",'deleteJar',],
     ["关于",'about',],
     ["退出",'exit'],
 ]
+
+function load(file, responseType) {
+    var downloadscreen=document.getElementById('download-screen'); 
+    downloadscreen.style.display = 'flex'; 
+    var progressBar = document.getElementById('download-bar');
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest({mozSystem:true});
+      xhr.addEventListener("progress", function(event) {
+        if (event.lengthComputable && progressBar) {
+            var percentage = Math.round((event.loaded * 100) / event.total); 
+            progressBar.value = percentage; 
+            if(percentage>=99){
+                downloadscreen.style.display = 'none';
+            }
+        }
+      }, false);
+      xhr.open("GET", file, true);
+      xhr.responseType = responseType;
+      xhr.onload = function() {
+        resolve(xhr.response);
+      };
+      xhr.onerror = function(err) {
+        reject(err);
+      };
+      xhr.send(null);
+    });
+  }
+
+function downloadJarBylink()
+{
+	let url = prompt("请输入网址","http://");
+    if(url)
+    {
+        load(url, "arraybuffer").then(function(data) {
+            console.log("buildin enter");
+            try{
+              JARStore.installJAR(new Date().getTime()+".jar", data); 
+            }
+            catch(err){
+              console.error(err);
+            }
+            console.log("buildin out");
+          })
+    } 
+}
+
+var enter=0;
+
+function downloadJarByQrcode()
+{  
+    setTimeout(function(){ 
+
+        if(enter!=0){
+            return;
+        }
+        enter=1; 
+        var pick = new MozActivity({
+            name: "pick",
+            data: {type: ["image/*"]}
+        });  
+        pick.onsuccess = function () { 
+            try{ 
+                var img = new Image(); 
+                var url = URL.createObjectURL(this.result.blob);  
+                img.onload = function() { 
+                    try{
+                        var width = img.width; 
+                        var height = img.height; 
+                        URL.revokeObjectURL(url);  
+                        var canvas = document.createElement('canvas'); 
+                        var canvasContext = canvas.getContext('2d'); 
+                        canvas.height = height;
+                        canvas.width = width;
+                        canvasContext.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        var imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                        var qrcodeContent = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "dontInvert",
+                        }); 
+                        qrcodeContent=qrcodeContent.data;
+                        if(qrcodeContent)
+                        {
+                            alert('识别到网址：'+qrcodeContent +" 点击OK继续");
+                            if(qrcodeContent.startsWith("http://") || qrcodeContent.startsWith("https://"))
+                            {
+                                load(qrcodeContent, "arraybuffer").then(function(data) {
+                                    console.log("buildin enter");
+                                    try{
+                                    JARStore.installJAR(new Date().getTime()+".jar", data); 
+                                    }
+                                    catch(err){
+                                    console.error(err);
+                                    }
+                                    console.log("buildin out"); 
+                                    alert("安装完成");
+                                    setTimeout(function(){enter=0},1000); 
+                                }).catch(function(err){ 
+                                    alert("error:"+err);
+                                    setTimeout(function(){enter=0},1000); 
+                                })
+
+                            }
+                            else{
+                                alert("无效的网址，请检查是否以http开头！"); 
+                                setTimeout(function(){enter=0},1000); 
+                            }
+                        }
+                        else{ 
+                            alert("未识别到二维码！");
+                            setTimeout(function(){enter=0},1000); 
+                        } 
+                     }catch(err){ 
+                            alert("未识别到二维码！");
+                            setTimeout(function(){enter=0},1000); 
+                       }
+                };  
+                img.src = url;
+            }catch(err){ 
+                 setTimeout(function(){enter=0},1000); 
+            }
+        };
+        pick.onerror = function () { 
+            alert("拍摄二维码失败！");   
+            setTimeout(function(){enter=0},1000); 
+        };
+     }
+    ,1000) 
+}
 
 function myopenJar(jarname,midletClassName)
 			{
@@ -87,31 +215,53 @@ var onUploadFile = function(e){
     }    
 }
 
-function loadMenu()
-{
-    var menuitems = document.getElementById("menuitems")
-    if(menuitems)
-    {
-        var menus = [];
+function setMenuItem(nowitem){ 
+    var title = nowitem[0];
+    var actionnow = nowitem[1];
+    
+    // 创建一个新的 div 元素
+    var menuItem = document.createElement("div");
+    menuItem.className = "menuitem";
+    menuItem.setAttribute("focusable", false);
+    menuItem.textContent = title;
 
-        for(var i=0;i<mainmenulist.length;i++)
-        {
-            var nowitem = mainmenulist[i];
-            var title = nowitem[0];
-            var actionnow = nowitem[1];
-            menus.push(' <div class="menuitem" focusable onclick="'+actionnow+'()" >' + title + '</div>');
-            
-        }
-        menuitems.innerHTML = menus.join('');
+   // 添加点击事件 
+    menuItem.onclick = function(event) { 
+        event.stopPropagation(); // 阻止事件冒泡到父级
+        eval(actionnow+"()");
     }
-	
-	var applist=document.getElementById("applist");
-	var menuitems=applist.getElementsByClassName('menuitem');
-	for(var i=0;i<menuitems;i++)
-	{
-		menuitems[i].removeAttribute("focusable")
-	} 
-} 
+    // 添加到 menus 数组
+    return menuItem;
+}
+
+function loadMenu() {
+    var menuContainer = document.getElementById("menuitems");
+    if (menuContainer) {
+        var menus = [];
+        if (mainmenulist && Array.isArray(mainmenulist)) {
+            for (var i = 0; i < mainmenulist.length; i++) {
+
+                var menuItem= setMenuItem(mainmenulist[i])
+                
+                menus.push(menuItem);
+            }
+        }
+
+        // 将菜单项插入到 menuContainer 容器中
+        menuContainer.innerHTML = ""; // 清空容器内容
+        menus.forEach(function(menu) {
+            menuContainer.appendChild(menu);
+        });
+    }
+
+    var applist = document.getElementById("applist");
+    if (applist) {
+        var menuItems = applist.getElementsByClassName("menuitem");
+        for (var i = 0; i < menuItems.length; i++) {
+            menuItems[i].removeAttribute("focusable");
+        }
+    }
+}
 
 function installJar()
 {
@@ -321,13 +471,24 @@ function restoreEvent()
 }
 function closeDialog()
 {
-    var alertheader=document.getElementById("alertheader")
-    var alerttext=document.getElementById("alerttext")
-    alertheader.innerText="";
+    // 获取弹窗头部和内容的元素
+    var alertheader = document.getElementById("alertheader");
+    var alerttext = document.getElementById("alerttext");
+
+    // 清空弹窗头部和内容
+    alertheader.innerText = "";
     alerttext.innerText = "";
-    var alertDialog = document.getElementById("alertDialog")
+
+    // 获取弹窗元素
+    var alertDialog = document.getElementById("alertDialog");
+
+    // 隐藏弹窗
     alertDialog.style.display = "none";
+
+    // 恢复菜单名称
     restoreMenuName();
+
+    // 恢复事件
     restoreEvent();
 }
 

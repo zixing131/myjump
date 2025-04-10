@@ -1,10 +1,39 @@
+
 //var midiplayer;
-//var pAudio;
-//var pAudioList = {};
+
+//debugString ByteStream.readString(readStringFast)
+var debugString=0;
+
+//是否启用兼容模式（兼容模式使用旧的classes.jar）
+var enginemode='classes.jar';
+
+//是否是主页
+var isIndex = window.location.href.indexOf('main.html')==-1;
+var isLoadJarFinished = false;
 var myflushAll=undefined;
 var mytitle="";
 var mycontent="";
-//1是pAudio
+//缩放大小，为了支持缩放后的触摸
+var gamesca=1;
+//定义屏幕宽高
+var lcdWidth=240;
+var lcdHeight=320;
+
+// if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
+//   document.documentElement.classList.add("keypad");
+// }  
+console.log("config.gamepadSize "+config.gamepadSize);
+if(config.gamepad)
+{
+  if(config.gamepadSize)
+  {
+    document.getElementById("keypad").className = config.gamepadSize; 
+    
+  }
+}
+
+
+//1是pAudio, pAudio已经被移除
 //2是webaudio-tinysynth
 //3是Audio标签
 var midimode=3;
@@ -117,16 +146,20 @@ if (inBrowser && !HTMLCanvasElement.prototype.toBlob) {
     }
   })();
 }
-;if (!Map.prototype.clear) {
+;
+
+if (!Map.prototype.clear) {
   Map.prototype.clear = function() {
-    for (var keyVal of this) {
-      this.delete(keyVal[0]);
+
+    for (var i = 0; i < this.length; i++) {  
+      this.delete(this[i][0]);  
     }
   };
 }
 if (!Map.prototype.forEach) {
   Map.prototype.forEach = function(callback, thisArg) {
-    for (var keyVal of this) {
+    for (var i = 0; i < this.length; i++) {  
+      var keyVal=this[i];
       callback.call(thisArg || null, keyVal[1], keyVal[0], this);
     }
   };
@@ -366,6 +399,7 @@ Native["java/lang/System.arraycopy.(Ljava/lang/Object;ILjava/lang/Object;II)V"] 
 var stubProperties = {"com.nokia.multisim.slots":"1", "com.nokia.mid.imsi":"000000000000000", "com.nokia.mid.imei":""};
 Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] = function(addr, keyAddr) {
   var key = J2ME.fromStringAddr(keyAddr);
+  try{ 
  //console.log("System.getProperty0",key)
   var value;
   switch(key) {
@@ -477,10 +511,10 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       value = "1.7";
       break;
     case "com.nokia.mid.mnc":
-      if (mobileInfo.icc.mcc && mobileInfo.icc.mnc) {
+      if (mobileInfo && mobileInfo.icc && mobileInfo.icc.mcc && mobileInfo.icc.mnc) {
         value = util.pad(mobileInfo.icc.mcc, 3) + util.pad(mobileInfo.icc.mnc, 3);
       } else {
-        value = null;
+        value="460030912121001";
       }
       break;
     case "com.nokia.mid.networkID":
@@ -507,13 +541,15 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
       break;
     case "audio.encodings":
       value = "encoding=audio/amr";
-      break;
+      break; 
     case "video.snapshot.encodings":
       value = "encoding=jpeg&quality=80&progressive=true&type=jfif&width=400&height=400";
       break;
     case "wireless.messaging.sms.smsc":
       value = "+8610086";
       break;
+    case "IMEI":
+      return "123456789012345";
     default:
       if (MIDP.additionalProperties[key]) {
         value = MIDP.additionalProperties[key];
@@ -529,7 +565,29 @@ Native["java/lang/System.getProperty0.(Ljava/lang/String;)Ljava/lang/String;"] =
   }
   //console.log(value);
   return J2ME.newString(value);
+  }catch(err)
+  {
+    console.error(err);
+    console.log("System.getProperty0 "+key+" error return black ")
+    return J2ME.newString("");
+  }
 };
+
+//--Conv.java
+Native["com/sun/cldc/i18n/j2me/Conv.getHandler.(Ljava/lang/String;)I"] = function(addr) {
+  return 0;
+};
+
+Native["com/sun/cldc/i18n/j2me/Conv.getMaxByteLength.(I)I"] = function(addr) {
+  return 0;
+};
+
+Native["com/sun/cldc/i18n/j2me/Conv.sizeOfByteInUnicode.(I[BII)I"] = function(addr,aBuffer, aOffset, aLen) {
+  return 0;
+};
+//--Conv.java
+
+
 Native["java/lang/System.currentTimeMillis.()J"] = function(addr) {
   return J2ME.returnLongValue(Date.now());
 };
@@ -605,15 +663,15 @@ Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAd
   //console.warn("nameAddr ",nameAddr,J2ME.fromStringAddr(nameAddr));
   if(nameAddr>=0xffffff)
   {
-    console.warn("ClassNotFoundException");
-    //throw $.newClassNotFoundException("'" + e.message + "' not found.");
+    //console.warn("ClassNotFoundException");
+    throw $.newClassNotFoundException("'" + e.message + "' not found.");
     return;
   } 
   try {
     
     if (nameAddr === J2ME.Constants.NULL) {
-      //throw new J2ME.ClassNotFoundException;
-      console.warn('ClassNotFoundException');
+      throw new J2ME.ClassNotFoundException;
+      //console.warn('ClassNotFoundException');
       return;
     }
     var className = J2ME.fromStringAddr(nameAddr).replace(/\./g, "/"); 
@@ -629,8 +687,9 @@ Native["java/lang/Class.forName0.(Ljava/lang/String;)V"] = function(addr, nameAd
     }
     console.error(e);
     //throw e;
-  } 
-  //J2ME.classInitCheck(classInfo);
+  }
+  //this maybe removed
+  J2ME.classInitCheck(classInfo);
   if (U) {
     $.nativeBailout(J2ME.Kind.Void, J2ME.Bytecode.Bytecodes.INVOKESTATIC);
   }
@@ -649,7 +708,7 @@ Native["java/lang/Class.forName1.(Ljava/lang/String;)Ljava/lang/Class;"] = funct
     return address;
   }catch(err)
   {
-    console.error(err);
+    console.log(err);
     return J2ME.Constants.NULL;
   }
 };
@@ -664,7 +723,7 @@ Native["java/lang/Class.newInstance0.()Ljava/lang/Object;"] = function(addr) {
   }
   if (classInfo instanceof J2ME.ArrayClassInfo) {
     //throw $.newInstantiationException("Can't instantiate array classes");
-    console.error("Can't instantiate array classes");
+     console.error("Can't instantiate array classes");
      return
   }
   return J2ME.allocObject(classInfo);
@@ -673,8 +732,8 @@ Native["java/lang/Class.newInstance1.(Ljava/lang/Object;)V"] = function(addr, oA
   var classInfo = J2ME.getClassInfo(oAddr);
   var methodInfo = classInfo.getLocalMethodByNameString("<init>", "()V", false);
   if (!methodInfo) {
-    //throw $.newInstantiationException("Can't instantiate classes without a nullary constructor");
-    console.error("Can't instantiate classes without a nullary constructor");
+     //throw $.newInstantiationException("Can't instantiate classes without a nullary constructor");
+     console.error("Can't instantiate classes without a nullary constructor");
     return;
   }
   J2ME.getLinkedMethod(methodInfo)(oAddr);
@@ -946,6 +1005,7 @@ Native["com/sun/j2me/content/AppProxy.midletIsAdded.(ILjava/lang/String;)V"] = f
 };
 Native["com/nokia/mid/impl/jms/core/Launcher.handleContent.(Ljava/lang/String;)V"] = function(addr, contentAddr) {
   var fileName = J2ME.fromStringAddr(contentAddr);
+  return;
   var ext = fileName.split(".").pop().toLowerCase();
   if (["jpg", "jpeg", "gif", "apng", "png", "bmp", "ico"].indexOf(ext) == -1) {
     console.error("File not supported: " + fileName);
@@ -1019,19 +1079,19 @@ Native["org/mozilla/internal/Sys.startProfile.()V"] = function(addr) {
 };
 var profileSaved = false;
 Native["org/mozilla/internal/Sys.stopProfile.()V"] = function(addr) {
-  if (profile === 4) {
-    if (!profileSaved) {
-      profileSaved = true;
-      console.log("Stop profile at: " + performance.now());
-      setZeroTimeout(function() {
-        stopAndSaveTimeline();
-      });
-    }
-  }
+ 
 };
 function load(file, responseType) {
+  
+  var progressBar = document.getElementById('download-bar');
   return new Promise(function(resolve, reject) {
     var xhr = new XMLHttpRequest({mozSystem:true});
+    xhr.addEventListener("progress", function(event) {
+      if (event.lengthComputable && progressBar) {
+          var percentage = Math.round((event.loaded * 100) / event.total); 
+          progressBar.value = percentage; 
+      }
+    }, false);
     xhr.open("GET", file, true);
     xhr.responseType = responseType;
     xhr.onload = function() {
@@ -1356,7 +1416,7 @@ if (typeof module === "object") {
   var OBJECT_STORE_WITH_UNCOMPRESSED_LEN = "files_v2";
   var KEY_PATH = "jarName";
   var database;
-  var jars = new Map;
+  var jars = [];
   var jad;
   var upgrade = {"0to1":function(database, transaction, next) {
     database.createObjectStore(OBJECT_STORE_OLD, {keyPath:KEY_PATH});
@@ -1414,9 +1474,38 @@ if (typeof module === "object") {
     });
   }
 
-  function addBuiltIn(jarName, jarData) {
+  function addBuiltIn(jarName, jarData,isBuiltIn) {
+    if(isBuiltIn==undefined)
+    {
+      isBuiltIn=true;
+    }
     var zip = new ZipFile(jarData, false);
-    jars.set(jarName, {directory:zip.directory, isBuiltIn:true});
+    if(jarName!="java/classes.jar")
+    {
+      console.log(config)
+      var jar = zip.directory;
+      mffile = jar['META-INF/MANIFEST.MF'];
+      
+      mfdata=''
+      switch(mffile.compression_method) {
+        case 0:
+          mfdata= mffile.compressed_data;
+		  break;
+        case 8:
+          mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+		  break;
+      }
+      mfdata=new TextDecoder('utf-8').decode(mfdata);
+      console.log(mfdata);
+      processJAD(mfdata);
+      console.log(MIDP.manifest)
+      var a=MIDP.manifest['MIDlet-1'];
+      console.log(a)
+      a=a.substr(a.lastIndexOf(',')+1).trim()
+      config.midletClassName = a;
+      console.log("load main class :",config.midletClassName);
+    }
+    jars.push([jarName, {directory:zip.directory, isBuiltIn:isBuiltIn}]);
   }
 
   function deleteJar(jarName)
@@ -1448,7 +1537,7 @@ if (typeof module === "object") {
           reject(request.error.name);
         };
         transaction.oncomplete = function() {
-          jars.set(jarName, {directory:zip.directory, isBuiltIn:false});
+          jars.push([jarName, {directory:zip.directory, isBuiltIn:false}]);
           jad = jadData;
           resolve();
         };
@@ -1467,7 +1556,7 @@ if (typeof module === "object") {
         };
         transaction.oncomplete = function() {
           if (request.result) {
-            jars.set(jarName, {directory:request.result.jar, isBuiltIn:false});
+            jars.push([jarName, {directory:request.result.jar, isBuiltIn:false}]);
             if (request.result.jad) {
               jad = request.result.jad;
             }
@@ -1479,8 +1568,17 @@ if (typeof module === "object") {
       });
     });
   }
+
+  function getJarFromName(name){
+    for(var i=0;i<jars.length;i++){
+      if(jars[i][0]==name){
+        return jars[i][1];
+      }
+    }
+  }
+
   function loadFileFromJAR(jarName, fileName) {
-    var jar = jars.get(jarName);
+    var jar = getJarFromName(jarName);
     if (!jar) {
       return null;
     }
@@ -1503,8 +1601,9 @@ if (typeof module === "object") {
     }
     return bytes;
   }
-  function loadFile(fileName) {
-    for (var jarName of jars.keys()) {
+  function loadFile(fileName) { 
+    for (var i = 0; i < jars.length; i++) {  
+      var jarName=jars[i][0];
       var data = loadFileFromJAR(jarName, fileName);
       if (data) {
         return data;
@@ -1517,7 +1616,7 @@ if (typeof module === "object") {
   function clear() {
     return openDatabase.then(function() {
       return new Promise(function(resolve, reject) {
-        jars.clear();
+        jars=[];
         var transaction = database.transaction(OBJECT_STORE_WITH_UNCOMPRESSED_LEN, "readwrite");
         var objectStore = transaction.objectStore(OBJECT_STORE_WITH_UNCOMPRESSED_LEN);
         var request = objectStore.clear();
@@ -3397,7 +3496,10 @@ var fs = function() {
     openedFile.record.size = openedFile.size;
     store.setItem(openedFile.path, openedFile.record);
     openedFile.dirty = false;
-    for (var entry of openedFiles) {
+
+    var datas = openedFiles;
+    for (var i = 0; i < datas.length; i++) {   
+      var entry=datas[i];
       if (!entry[1].dirty && entry[1].path === openedFile.path) {
         entry[1].mtime = openedFile.mtime;
         entry[1].size = openedFile.size;
@@ -3406,7 +3508,9 @@ var fs = function() {
     }
   }
   function flushAll() {
-    for (var entry of openedFiles) {
+    var datas = openedFiles;
+    for (var i = 0; i < datas.length; i++) {   
+      var entry=datas[i];
       if (entry[1].dirty) {
         flush(entry[0]);
       }
@@ -3414,7 +3518,9 @@ var fs = function() {
     syncStore();
   }
   function flushAllRms() { 
-    for (var entry of openedFiles) {
+    var datas = openedFiles;
+    for (var i = 0; i < datas.length; i++) {   
+      var entry=datas[i];
       if (entry[1].dirty && entry[1].path.startsWith(RECORD_STORE_BASE))  {
         flush(entry[0]);
       }
@@ -3491,7 +3597,10 @@ var fs = function() {
     if (DEBUG_FS) {
       console.log("fs remove " + path);
     }
-    for (var file of openedFiles.values()) {
+
+    var datas = openedFiles.values();
+    for (var i = 0; i < openedFiles.size; i++) {   
+      var file=datas.next().value; 
       if (file.path === path) {
         if (DEBUG_FS) {
           console.log("file is open");
@@ -3507,7 +3616,9 @@ var fs = function() {
       return false;
     }
     if (record.isDir) {
-      for (var value of store.map.values()) {
+      var datas = store.map.values();
+      for (var i = 0; i < store.map.size; i++) {   
+        var value=datas.next().value; 
         if (value && value.parentDir === path) {
           if (DEBUG_FS) {
             console.log("directory is not empty");
@@ -3603,7 +3714,9 @@ var fs = function() {
     if (DEBUG_FS) {
       console.log("fs rename " + oldPath + " -> " + newPath);
     }
-    for (var file of openedFiles.values()) {
+    var datas = openedFiles.values();
+    for (var i = 0; i < openedFiles.size; i++) {   
+      var file=datas.next().value;  
       if (file.path === oldPath) {
         if (DEBUG_FS) {
           console.log("file is open");
@@ -3616,7 +3729,9 @@ var fs = function() {
       return false;
     }
     if (oldRecord.isDir) {
-      for (var value of store.map.values()) {
+      var datas = store.map.values();
+      for (var i = 0; i < datastore.maps.size; i++) {   
+        var value=datas.next().value;   
         if (value && value.parentDir === oldPath) {
           console.error("rename directory containing files not implemented: " + oldPath + " to " + newPath);
           return false;
@@ -3686,7 +3801,8 @@ var fs = function() {
   return {normalize:normalizePath, dirname:dirname, init:init, open:open, close:close, read:read, write:write, getpos:getpos, setpos:setpos, getsize:getsize, flush:flush, list:list, exists:exists, truncate:truncate, ftruncate:ftruncate, remove:remove, create:create, mkdir:mkdir, mkdirp:mkdirp, size:size, rename:rename, stat:stat, clear:clear, syncStore:syncStore, exportStore:exportStore, importStore:importStore, deleteDatabase:deleteDatabase, createUniqueFile:createUniqueFile, getBlob:getBlob};
 }();
 var initialDirs = ["/MemoryCard", "/Persistent", "/Phone", "/Phone/_my_downloads", "/Phone/_my_pictures", "/Phone/_my_videos", "/Phone/_my_recordings", "/Private"];
-var initialFiles = [{sourcePath:"certs/_main.ks", targetPath:"/_main.ks"}];
+//var initialFiles = [{sourcePath:"certs/_main.ks", targetPath:"/_main.ks"}];
+var initialFiles = [];
 var initFS = (new Promise(function(resolve, reject) {
   fs.init(resolve);
 })).then(function() {
@@ -3699,7 +3815,7 @@ var initFS = (new Promise(function(resolve, reject) {
 }).then(function() {
   var filePromises = [];
   if (typeof config !== "undefined" && config.midletClassName == "RunTestsMIDlet") {
-    initialFiles.push({sourcePath:"certs/_test.ks", targetPath:"/_test.ks"});
+    //initialFiles.push({sourcePath:"certs/_test.ks", targetPath:"/_test.ks"});
   }
   initialFiles.forEach(function(file) {
     filePromises.push(new Promise(function(resolve, reject) {
@@ -6084,7 +6200,11 @@ var saveAs = saveAs || typeof navigator !== "undefined" && navigator.msSaveOrOpe
   }, save_link = doc.createElementNS("http://www.w3.org/1999/xhtml", "a"), can_use_save_link = "download" in save_link, click = function(node) {
     var event = doc.createEvent("MouseEvents");
     event.initMouseEvent("click", true, false, view, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    try{
     node.dispatchEvent(event);
+    }catch(err){
+      console.log(err);
+    }
   }, webkit_req_fs = view.webkitRequestFileSystem, req_fs = view.requestFileSystem || webkit_req_fs || view.mozRequestFileSystem, throw_outside = function(ex) {
     (view.setImmediate || view.setTimeout)(function() {
       throw ex;
@@ -6235,6 +6355,9 @@ if (typeof module !== "undefined" && module.exports) {
   }
 }
 ;var MIDP = function() {
+  if(isIndex){
+    return {};
+  }
   var deviceCanvas = document.getElementById("canvas");
   var deviceContext = deviceCanvas.getContext("2d");
   var FG = function() {
@@ -6290,8 +6413,7 @@ if (typeof module !== "undefined" && module.exports) {
     }
   }
   function updateCanvas() {
-    var sidebar = document.getElementById("sidebar");
-    var header = document.getElementById("drawer").querySelector("header");
+     
     var isFullscreen = FG.isFullscreen();
     //sidebar.style.display = header.style.display = isFullscreen ? "none" : "block";
     var headerHeight = isFullscreen ? 0 : header.offsetHeight;
@@ -6303,7 +6425,12 @@ if (typeof module !== "undefined" && module.exports) {
       deviceCanvas.style.height = deviceCanvas.height + "px";
       deviceCanvas.style.width = deviceCanvas.width + "px";
       deviceCanvas.style.top = headerHeight + "px";
+      try{
       deviceCanvas.dispatchEvent(new Event("canvasresize"));
+      }catch(err)
+      {
+        console.log(err)
+      }
     }
     //console.log(config.canvasSize);
     if(config.canvasSize)
@@ -6313,13 +6440,20 @@ if (typeof module !== "undefined" && module.exports) {
         {
           var canx =parseInt(config.canvasSize.split("-")[1].split("x")[0]);
           var cany =parseInt(config.canvasSize.split("-")[1].split("x")[1]);
-          
+
+          lcdWidth=canx;
+          lcdHeight = cany;
+
             deviceCanvas.height = cany;
             deviceCanvas.width = canx;
             deviceCanvas.style.height = deviceCanvas.height + "px";
             deviceCanvas.style.width = deviceCanvas.width + "px";
             deviceCanvas.style.top = headerHeight + "px";
+            try{
             deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+          }catch(err){
+            console.log(err);
+          }
         } 
         else{
             var canx ="100%";
@@ -6327,7 +6461,11 @@ if (typeof module !== "undefined" && module.exports) {
             deviceCanvas.style.height = deviceCanvas.height;
             deviceCanvas.style.width = deviceCanvas.width;
             deviceCanvas.style.top = headerHeight + "px";
+            try{
             deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+          }catch(err){
+            console.log(err);
+          }
             
         }
       }catch(err)
@@ -6338,6 +6476,14 @@ if (typeof module !== "undefined" && module.exports) {
         if(config.gameresize)
         {
             var sca = 1;
+            if(config.gameresize=="resize-0x5")
+              {
+                sca=0.5;
+              }
+            if(config.gameresize=="resize-0x75")
+            {
+              sca=0.75;
+            }
             if(config.gameresize=="resize-1x5")
             {
               sca=1.5;
@@ -6353,6 +6499,7 @@ if (typeof module !== "undefined" && module.exports) {
             {
               sca=3;
             } 
+            gamesca=sca;
 
 
             var cxt = deviceCanvas.getContext("2d"); 
@@ -6360,7 +6507,7 @@ if (typeof module !== "undefined" && module.exports) {
 
             var cany= parseInt(deviceCanvas.height*sca);
             var canx = parseInt(deviceCanvas.width *sca);
-            var mainid = document.getElementById("main");
+            var mainid = document.getElementById("display");
             var display_container = document.getElementById("display-container");
             var display = document.getElementById("display");
             // deviceCanvas.height = cany;
@@ -6378,7 +6525,12 @@ if (typeof module !== "undefined" && module.exports) {
             
 
             deviceCanvas.style.top = headerHeight + "px";
-            deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+            try{
+              deviceCanvas.dispatchEvent(new Event("canvasresize")); 
+              }catch(err)
+              {
+                console.log(err)
+              }
  
         }
 
@@ -6480,6 +6632,12 @@ if (typeof module !== "undefined" && module.exports) {
   Native["com/sun/midp/main/MIDletSuiteUtils.isAmsIsolate.()Z"] = function(addr) {
     return AMS.isAMSIsolate($.ctx.runtime.isolateId) ? 1 : 0;
   };
+
+  Native["com/sun/midp/events/EventQueue.handleFatalError.(Ljava/lang/Throwable;)V"] = function(addr, th) {
+    var thdata= J2ME.getClassInfo(th);
+    console.log('com/sun/midp/events/EventQueue.handleFatalError.(Ljava/lang/Throwable;)V Enter '+ th + " ");
+    console.log("handleFatalError:"+thdata._name);
+  }; 
   var loadingMIDletPromisesResolved = false;
   Native["com/sun/midp/main/MIDletSuiteUtils.vmBeginStartUp.(I)V"] = function(addr, midletIsolateId) {
     if (loadingMIDletPromisesResolved) {
@@ -6495,7 +6653,7 @@ if (typeof module !== "undefined" && module.exports) {
     var value;
     switch(key) {
       case "com.sun.midp.publickeystore.WebPublicKeyStore":
-        if (config.midletClassName == "RunTestsMIDlet" || config.midletClassName.startsWith("benchmark")) {
+        if (config.midletClassName == "RunTestsMIDlet" || config.midletClassName.indexOf("benchmark")==0) {
           value = "_test.ks";
         } else {
           value = "_main.ks";
@@ -6531,6 +6689,10 @@ if (typeof module !== "undefined" && module.exports) {
       case "com.sun.midp.io.http.output_buffer_size":
         value = null;
         break;
+
+      case 'DisableStartupErrorAlert':
+        value = "0";
+        break; 
       default:
         console.warn("UNKNOWN PROPERTY (com/sun/midp/main/Configuration): " + key);
         value = null;
@@ -6539,7 +6701,7 @@ if (typeof module !== "undefined" && module.exports) {
     return J2ME.newString(value);
   };
   Native["com/sun/midp/util/ResourceHandler.loadRomizedResource0.(Ljava/lang/String;)[B"] = function(addr, fileAddr) {
-    var fileName = "assets/0/" + J2ME.fromStringAddr(fileAddr).replace("_", ".").replace("_png", ".png").replace("_raw", ".raw");
+    var fileName = "assets/0/" + J2ME.fromStringAddr(fileAddr).replace("_", ".").replace("_png", ".png").replace("_raw", ".png");//modify to png 
     var data = JARStore.loadFile(fileName);
     if (!data) {
       console.warn("ResourceHandler::loadRomizedResource0: file " + fileName + " not found");
@@ -6591,9 +6753,11 @@ if (typeof module !== "undefined" && module.exports) {
     };
   }
   function sendPenEvent(pt, whichType) {
+    
     FG.sendNativeEventToForeground({type:PEN_EVENT, intParam1:whichType, intParam2:pt.x, intParam3:pt.y}, true);
   }
   function sendGestureEvent(pt, distancePt, whichType, aFloatParam1, aIntParam7, aIntParam8, aIntParam9) {
+    
     FG.sendNativeEventToForeground({type:GESTURE_EVENT, intParam1:whichType, intParam2:distancePt && distancePt.x || 0, intParam3:distancePt && distancePt.y || 0, intParam5:pt.x, intParam6:pt.y, floatParam1:Math.fround(aFloatParam1 || 0), intParam7:aIntParam7 || 0, intParam8:aIntParam8 || 0, intParam9:aIntParam9 || 0, intParam10:0, intParam11:0, intParam12:0, intParam13:0, intParam14:0, intParam15:0, intParam16:0}, true);
   }
   var supportsTouch = "ontouchstart" in document.documentElement;
@@ -6603,8 +6767,15 @@ if (typeof module !== "undefined" && module.exports) {
     sendRotationEvent();
   });
   function getEventPoint(event) {
-    var item = event.touches && event.touches[0] || event.changedTouches && event.changedTouches[0] || event;
-    return {x:item.pageX - (canvasRect.left | 0), y:item.pageY - (canvasRect.top | 0)};
+  
+    var item = event.touches && event.touches[0] || event.changedTouches && event.changedTouches[0] || event; 
+    var ret = {x:item.pageX - (canvasRect.left | 0), y:item.pageY - (canvasRect.top | 0)}; 
+    if(gamesca!=1){ 
+      //兼容缩放后的触摸操作 
+      ret.x=parseInt(ret.x/gamesca);
+      ret.y=parseInt(ret.y/gamesca);    
+     } 
+    return ret;
   }
   var LONG_PRESS_TIMEOUT = 1E3;
   var MIN_DRAG_DISTANCE_SQUARED = 5 * 5;
@@ -6843,7 +7014,7 @@ if (typeof module !== "undefined" && module.exports) {
       return;
     }
     performDownload(pendingMIDletUpdate, function(data) {
-      Promise.all([JARStore.installJAR("midlet.jar", data.jarData, data.jadData), CompiledMethodCache.clear()]).then(function() {
+      Promise.all([JARStore.installJAR("midlet.jar", data.jarData, data.jadData)]).then(function() {
         pendingMIDletUpdate = null;
         DumbPipe.close(DumbPipe.open("alert", "Update completed!"));
         DumbPipe.close(DumbPipe.open("reload", {}));
@@ -6878,7 +7049,7 @@ if (typeof module !== "undefined" && module.exports) {
     obj.stringParam5 = J2ME.newString(e.stringParam5);
     obj.stringParam6 = J2ME.newString(e.stringParam6);
   }
-  function sendNativeEvent(e, isolateId) {
+  function sendNativeEvent(e, isolateId) { 
     var elem = waitingNativeEventQueue[isolateId];
     if (!elem) {
       nativeEventQueues[isolateId].push(e);
@@ -7278,7 +7449,8 @@ if (typeof module !== "undefined" && module.exports) {
   addUnimplementedNative("com/nokia/mid/ui/VirtualKeyboard.hideOpenKeypadCommand.(Z)V");
   addUnimplementedNative("com/nokia/mid/ui/VirtualKeyboard.suppressSizeChanged.(Z)V");
   Native["com/nokia/mid/ui/VirtualKeyboard.getCustomKeyboardControl.()Lcom/nokia/mid/ui/CustomKeyboardControl;"] = function(addr) {
-    throw $.newIllegalArgumentException("VirtualKeyboard::getCustomKeyboardControl() not implemented");
+    console.warn("VirtualKeyboard::getCustomKeyboardControl() not implemented");
+    //throw $.newIllegalArgumentException("VirtualKeyboard::getCustomKeyboardControl() not implemented");
   };
   var keyboardVisibilityListener = J2ME.Constants.NULL;
   Native["com/nokia/mid/ui/VirtualKeyboard.setVisibilityListener.(Lcom/nokia/mid/ui/KeyboardVisibilityListener;)V"] = function(addr, listenerAddr) {
@@ -8098,7 +8270,7 @@ Native["com/sun/midp/crypto/ARC4.nativetx.([B[I[I[BII[BI)V"] = function(addr, SA
 var FONT_HEIGHT_MULTIPLIER = 1.3;
 var currentlyFocusedTextEditor;
 (function(Native) {
-  if (!inBrowser) {
+  if (!inBrowser || isIndex) {
     return;
   }
   var offscreenCanvas = document.createElement("canvas");
@@ -8125,7 +8297,7 @@ var currentlyFocusedTextEditor;
     return J2ME.Constants.NULL;
   };
   Native["com/sun/midp/lcdui/DisplayDevice.isDisplayPrimary0.(I)Z"] = function(addr, id) {
-    console.warn("DisplayDevice.isDisplayPrimary0.(I)Z not implemented (" + id + ")");
+    //console.warn("DisplayDevice.isDisplayPrimary0.(I)Z not implemented (" + id + ")");
     return 1;
   };
   Native["com/sun/midp/lcdui/DisplayDevice.isbuildInDisplay0.(I)Z"] = function(addr, id) {
@@ -8159,12 +8331,7 @@ var currentlyFocusedTextEditor;
     hideSplashScreen();
     if (!emoji.loaded) {
       asyncImpl("V", Promise.all(loadingFGPromises));
-    }
-    if (profile === 2 || profile === 3) {
-      setTimeout(function() {
-        stopAndSaveTimeline();
-      }, 0);
-    }
+    } 
   };
   Native["com/sun/midp/lcdui/DisplayDeviceAccess.vibrate0.(IZ)Z"] = function(addr, displayId, on) {
     return 1;
@@ -8292,6 +8459,28 @@ var currentlyFocusedTextEditor;
       };
     }));
   };
+  //同步
+  // Native["javax/microedition/lcdui/ImageDataFactory.createImmutableImageDecodeImage.(Ljavax/microedition/lcdui/ImageData;[BII)V"] = function(addr, imageDataAddr, bytesAddr, offset, length) {
+  //   var bytes = J2ME.getArrayFromAddr(bytesAddr);
+  //   var ctx = $.ctx;
+    
+  //   var blob = new Blob([bytes.subarray(offset, offset + length)], {type:"image/png"});
+  //   var img = new Image;
+  //   img.src = URL.createObjectURL(blob);
+  //   img.onload = function() {
+  //     var context = initImageData(imageDataAddr, img.naturalWidth, img.naturalHeight, 0);
+  //     context.drawImage(img, 0, 0);
+  //     URL.revokeObjectURL(img.src);
+  //     return ;
+  //   };
+  //   img.onerror = function(e) {
+  //     URL.revokeObjectURL(img.src);
+  //     ctx.setAsCurrentContext();
+  //     return $.newIllegalArgumentException("error decoding image");
+  //   };
+    
+  // };
+
   Native["javax/microedition/lcdui/ImageDataFactory.createImmutableImageDataRegion.(Ljavax/microedition/lcdui/ImageData;Ljavax/microedition/lcdui/ImageData;IIIIIZ)V"] = function(addr, dataDestAddr, dataSourceAddr, x, y, width, height, transform, isMutable) {
     var context = initImageData(dataDestAddr, width, height, isMutable);
     renderRegion(context, NativeMap.get(dataSourceAddr).context.canvas, x, y, width, height, transform, 0, 0, TOP | LEFT);
@@ -8661,6 +8850,8 @@ var currentlyFocusedTextEditor;
     var abgrData = new Int32Array(context.getImageData(x, y, width, height).data.buffer);
     converterFunc(abgrData, pixels, width, height, offset, scanlength);
   };
+
+
   Native["com/nokia/mid/ui/DirectGraphicsImp.drawPixels.([SZIIIIIIII)V"] = function(addr, pixelsAddr, transparency, offset, scanlength, x, y, width, height, manipulation, format) {
     console.log("DirectGraphicsImp",x, y, width, height)
     var self = getHandle(addr);
@@ -8703,7 +8894,24 @@ function trans10to16(num10) { //十进制转十六进制
     return result;
 }
 
+Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/Image;IIII)V"] = function(addr, imageAddr, x, y, anchor,unknow) { 
+  if (imageAddr === J2ME.Constants.NULL) {
+    throw $.newNullPointerException("image is null");
+  }
+  
+  var self = getHandle(addr);
+  var image = getHandle(imageAddr);
+  var imageData = getHandle(image.imageData);
+  //console.log(imageData,x, y)
+  var c = NativeMap.get(self.graphics).getGraphicsContext(); 
+  renderRegion(c, NativeMap.get(image.imageData).context.canvas, 0, 0, imageData.width, imageData.height, TRANS_NONE, x, y, anchor);
+};
+ 
   Native["com/nokia/mid/ui/DirectGraphicsImp.fillPolygon.([II[IIII)V"] = function(addr, xPointsAddr,  xOffset,  yPointsAddr,  yOffset,  nPoints,  argbColor) {
+    if(nPoints<=0)
+    {
+      return;
+    }
     var self = getHandle(addr);
     var  xPoints = J2ME.getArrayFromAddr(xPointsAddr);
     if (!xPoints) {
@@ -8713,31 +8921,25 @@ function trans10to16(num10) { //十进制转十六进制
     if (!yPoints) {
       throw $.newNullPointerException("yPoints array is null");
     }  
-    //console.log(xPoints.length,yPoints.length)
-    tempContext.canvas.width = xPoints.length;
-    tempContext.canvas.height = yPoints.length;
-
-    var jg = new jsGraphics(tempContext.canvas);
-    jg.clear();
     
-    //console.log(jg)
-
+    // tempContext.canvas.width = xPoints.length;
+    // tempContext.canvas.height = yPoints.length;
+ 
     var alpha = argbColor >>> 24;
     var red = argbColor >>> 16 & 255;
     var green = argbColor >>> 8 & 255;
     var blue = argbColor & 255;
     var color = transRgba([alpha,red,green,blue]);
+ 
+    var c = NativeMap.get(self.graphics).getGraphicsContext(); 
 
-    jg.setColor(color);
-    jg.fillPolygon(xPoints,yPoints);
-     
-    var c = NativeMap.get(self.graphics).getGraphicsContext();
+    //c.drawImage(tempContext.canvas, xOffset, yOffset); 
+    c.beginPath();
+    c.moveTo(  xPoints[xOffset],  yPoints[yOffset]);
 
-    //console.log(jg)
 
-    //c.drawImage(tempContext.canvas, xOffset+xPoints.length/2, yOffset+yPoints.length/2); 
-    
-    c.drawImage(tempContext.canvas, xOffset, yOffset); 
+    c.fill();
+
     
   };
  
@@ -8764,6 +8966,8 @@ function trans10to16(num10) { //十进制转十六进制
     //console.log(imageData,x, y)
     renderRegion(NativeMap.get(addr).getGraphicsContext(), NativeMap.get(image.imageData).context.canvas, 0, 0, imageData.width, imageData.height, TRANS_NONE, x, y, anchor);
   };
+
+
   function GraphicsInfo(contextInfo) {
     this.contextInfo = contextInfo;
     this.transX = 0;
@@ -9229,8 +9433,8 @@ function trans10to16(num10) { //十进制转十六进制
     }
   };
   Native["javax/microedition/lcdui/Display.setTitle.(Ljava/lang/String;)V"] = function(addr, titleAddr) {
-    document.getElementById("display_title").textContent = J2ME.fromStringAddr(titleAddr);
-	mytitle = J2ME.fromStringAddr(titleAddr);
+    document.getElementById("header").textContent = J2ME.fromStringAddr(titleAddr);
+	  mytitle = J2ME.fromStringAddr(titleAddr);
   };
   Native["com/nokia/mid/ui/CanvasItem.setSize.(II)V"] = function(addr, width, height) {
     NativeMap.get(addr).setSize(width, height);
@@ -9429,16 +9633,16 @@ function trans10to16(num10) { //十进制转十六进制
   };
   Native["javax/microedition/lcdui/AlertLFImpl.createNativeResource0.(Ljava/lang/String;Ljava/lang/String;I)I"] = function(addr, titleAddr, tickerAddr, type) {
     var nativeId = nextMidpDisplayableId++;
-    var alertTemplateNode = document.getElementById("lcdui-alert");
-    var el = alertTemplateNode.cloneNode(true);
-    el.id = "displayable-" + nativeId;
-    el.querySelector("h1.title").textContent = J2ME.fromStringAddr(titleAddr);
-    alertTemplateNode.parentNode.appendChild(el);
+    // var alertTemplateNode = document.getElementById("lcdui-alert");
+    // var el = alertTemplateNode.cloneNode(true);
+    // el.id = "displayable-" + nativeId;
+    // el.querySelector("h1.title").textContent = J2ME.fromStringAddr(titleAddr);
+    // alertTemplateNode.parentNode.appendChild(el);
     return nativeId;
   };
   Native["javax/microedition/lcdui/AlertLFImpl.setNativeContents0.(ILjavax/microedition/lcdui/ImageData;[ILjava/lang/String;)Z"] = function(addr, nativeId, imgIdAddr, indicatorBoundsAddr, textAddr) {
-    var el = document.getElementById("displayable-" + nativeId);
-    el.querySelector("p.text").textContent = J2ME.fromStringAddr(textAddr);
+    // var el = document.getElementById("displayable-" + nativeId);
+    // el.querySelector("p.text").textContent = J2ME.fromStringAddr(textAddr);
     return 0;
   };
   Native["javax/microedition/lcdui/AlertLFImpl.showNativeResource0.(I)V"] = function(addr, nativeId) {
@@ -9510,8 +9714,7 @@ function trans10to16(num10) { //十进制转十六进制
 
   
   Native["javax/microedition/lcdui/ChoiceGroupLFImpl.createNativeResource0.(ILjava/lang/String;III[Ljavax/microedition/lcdui/ChoiceGroup$CGElement;II)I"] = function(addr, name,A2,A3,A4,A6,cGElementArr,selectedIndex,A7) {
-    //return nextMidpDisplayableId++;
-    
+  
     console.log(name,J2ME.fromStringAddr(name),selectedIndex)
 
     var commands = J2ME.getArrayFromAddr(cGElementArr);
@@ -9544,7 +9747,7 @@ function trans10to16(num10) { //十进制转十六进制
       menu.appendChild(li);
       isSidebarEmpty = false;
     });
-    var header = document.getElementById("drawer").querySelector("header");
+    var header = document.getElementById("header");
     header.style.display = "block";
     document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
     var headerBtn = document.getElementById("header-ok-button");
@@ -9570,7 +9773,7 @@ function trans10to16(num10) { //十进制转十六进制
     var name = J2ME.fromStringAddr(str);
     console.log(name)
   };
-  
+
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getMinimumWidth0.(I)I", 10);
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getMinimumHeight0.(I)I", 10);
   addUnimplementedNative("javax/microedition/lcdui/ItemLFImpl.getPreferredWidth0.(II)I", 10);
@@ -9582,6 +9785,9 @@ function trans10to16(num10) { //十进制转十六进制
   var STOP = 6;
   Native["javax/microedition/lcdui/NativeMenu.updateCommands.([Ljavax/microedition/lcdui/Command;I[Ljavax/microedition/lcdui/Command;I)V"] = function(addr, itemCommandsAddr, numItemCommands, commandsAddr, numCommands) {
     
+  return;
+  
+    try{
     if (numItemCommands !== 0) {
       console.error("NativeMenu.updateCommands: item commands not yet supported");
     }
@@ -9680,6 +9886,9 @@ function trans10to16(num10) { //十进制转十六进制
     //     backBtn.style.display = "none";
     //   }
    }
+  }catch(err){
+    console.log("updateCommands Error : "+err)
+  }
 
   };
 })(Native);
@@ -11187,6 +11396,7 @@ function receiveSms(text, addr) {
 }
 function promptForMessageText() {
   startBackgroundAlarm();
+  return;
   var smsTemplateNode = document.getElementById("sms-listener-prompt");
   var el = smsTemplateNode.cloneNode(true);
   el.style.display = "block";
@@ -11597,33 +11807,38 @@ Native["com/nokia/mid/ui/DeviceControl.startVibra.(IJ)V"] = function(addr, freq,
 Native["com/nokia/mid/ui/DeviceControl.stopVibra.()V"] = function(addr) {
   navigator.vibrate(0);
 };
-var fgMidletNumber;
-var fgMidletClass;
-var display = document.getElementById("display");
-var splashScreen = document.getElementById("splash-screen");
-display.removeChild(splashScreen);
-splashScreen.style.display = "block";
-function showSplashScreen() {
-  display.appendChild(splashScreen);
-}
-function hideSplashScreen() {
-  if (splashScreen.parentNode) {
-    splashScreen.parentNode.removeChild(splashScreen);
+
+if(!isIndex)
+{
+
+  var fgMidletNumber;
+  var fgMidletClass;
+  var display = document.getElementById("display");
+  var splashScreen = document.getElementById("splash-screen");
+  display.removeChild(splashScreen);
+  splashScreen.style.display = "block";
+  function showSplashScreen() {
+    display.appendChild(splashScreen);
   }
-}
-var downloadDialog = document.getElementById("download-screen");
-display.removeChild(downloadDialog);
-downloadDialog.style.display = "block";
-function showDownloadScreen() {
-  display.appendChild(downloadDialog);
-}
-function hideDownloadScreen() {
-  if (downloadDialog.parentNode) {
-    downloadDialog.parentNode.removeChild(downloadDialog);
+  function hideSplashScreen() {
+    if (splashScreen.parentNode) {
+      splashScreen.parentNode.removeChild(splashScreen);
+    }
   }
+  var downloadDialog = document.getElementById("download-screen");
+  display.removeChild(downloadDialog);
+  downloadDialog.style.display = "block";
+  function showDownloadScreen() {
+    display.appendChild(downloadDialog);
+  }
+  function hideDownloadScreen() {
+    if (downloadDialog.parentNode) {
+      downloadDialog.parentNode.removeChild(downloadDialog);
+    }
+  }
+  
 }
 
- 
 function CloseWebPage() {   
   if (navigator.userAgent.indexOf("MSIE") > 0) {   
       if (navigator.userAgent.indexOf("MSIE 6.0") > 0) {   
@@ -11702,7 +11917,9 @@ Media.ListCache = {create:function(data) {
 Media.extToFormat = new Map([["mp3", "MPEG_layer_3"], ["jpg", "JPEG"], ["jpeg", "JPEG"], ["png", "PNG"], ["wav", "wav"], ["ogg", "ogg"], ["mp4", "MPEG4"], ["webm", "WebM"], ["amr", "amr"]]);
 Media.contentTypeToFormat = new Map([["audio/ogg", "ogg"],["audio/midi", "mid"], ["audio/mid", "mid"],["audio/amr", "amr"], ["audio/x-wav", "wav"], ["audio/mpeg", "MPEG_layer_3"], ["image/jpeg", "JPEG"], ["image/png", "PNG"], ["video/mp4", "MPEG4"], ["video/webm", "WebM"]]);
 Media.formatToContentType = new Map;
-for (var elem of Media.contentTypeToFormat) {
+var datas = Media.contentTypeToFormat;
+for (var i = 0; i < datas.length; i++) {   
+  var elem=datas[i];    
   Media.formatToContentType.set(elem[1], elem[0]);
 }
 Media.supportedAudioFormats = ["MPEG_layer_3", "wav", "amr", "ogg", "mid"];
@@ -11832,7 +12049,6 @@ AudioPlayer.prototype.start = function() {
   if(this.mimeType =="audio/midi" || this.mimeType =="audio/mid" )
   {
     console.log("播放音乐");
-    //pAudio.play();
     //midiplayer.start();
     return;
   }
@@ -11854,7 +12070,6 @@ AudioPlayer.prototype.pause = function() {
   if(this.mimeType =="audio/midi" || this.mimeType =="audio/mid" )
   {
     console.log("暂停音乐");
-    //pAudio.pause();
     //midiplayer.pause();
     return;
   }
@@ -11868,7 +12083,6 @@ AudioPlayer.prototype.resume = function() {
   if(this.mimeType =="audio/midi" || this.mimeType =="audio/mid" )
   {
     console.log("恢复音乐");
-    //pAudio.resume();
     //midiplayer.pause();
     return;
   }
@@ -11987,7 +12201,7 @@ ImagePlayer.prototype.setLocation = function(x, y, w, h) {
   this.image.style.top = y + "px";
   this.image.style.width = w + "px";
   this.image.style.height = h + "px";
-  document.getElementById("main").appendChild(this.image);
+  document.getElementById("display").appendChild(this.image);
 };
 ImagePlayer.prototype.setVisible = function(visible) {
   this.image.style.visibility = visible ? "visible" : "hidden";
@@ -12059,7 +12273,7 @@ VideoPlayer.prototype.setLocation = function(x, y, w, h) {
   this.video.style.top = y + "px";
   this.video.style.width = w + "px";
   this.video.style.height = h + "px";
-  document.getElementById("main").appendChild(this.video);
+  document.getElementById("display").appendChild(this.video);
 };
 VideoPlayer.prototype.setVisible = function(visible) {
   this.video.style.visibility = visible ? "visible" : "hidden";
@@ -12172,8 +12386,7 @@ function PlayerContainer(url, pId) {
   this.audioCtx = new AudioContext()
   if(midimode==1)
   {  
-    this.pAudio = new PicoAudio({debug: true}); // debug
-    this.pAudio.init(); 
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     this.tinysynth= new WebAudioTinySynth();
@@ -12268,7 +12481,10 @@ PlayerContainer.prototype.close = function() {
       this.amr.stop();   
       return;
     }
-    this.source.stop();
+    if(this.source && this.source.stop)
+    { 
+      this.source.stop();
+    }
     return;
   }
   if (this.player) {
@@ -12277,10 +12493,7 @@ PlayerContainer.prototype.close = function() {
 
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      this.pAudio.pause();
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12293,8 +12506,7 @@ PlayerContainer.prototype.close = function() {
     { 
       this.audio.stop();
     }
-  } 
-
+  }
 };
 PlayerContainer.prototype.getMediaTime = function() { 
  
@@ -12408,41 +12620,44 @@ function convertDataURIToBinary(base64data) {   //编码转换
   }
   return array;
 }
-var context = new AudioContext();
-function concatenateAudioBuffers(buffer1, buffer2) {
-  if(!buffer1)
-  {
-    return buffer2;
-  }
-  if (!buffer1 || !buffer2) {
-      console.log("no buffers!");
-      return null;
-  }
 
-  if (buffer1.numberOfChannels != buffer2.numberOfChannels) {
-      console.log("number of channels is not the same!");
-      return null;
-  }
+if(!isIndex)
+{
+  var context = new AudioContext();
+  function concatenateAudioBuffers(buffer1, buffer2) {
+    if(!buffer1)
+    {
+      return buffer2;
+    }
+    if (!buffer1 || !buffer2) {
+        console.log("no buffers!");
+        return null;
+    }
 
-  if (buffer1.sampleRate != buffer2.sampleRate) {
-      console.log("sample rates don't match!");
-      return null;
-  }
+    if (buffer1.numberOfChannels != buffer2.numberOfChannels) {
+        console.log("number of channels is not the same!");
+        return null;
+    }
 
-  var tmp = context.createBuffer(buffer1.numberOfChannels, buffer1.length + buffer2.length, buffer1.sampleRate);
+    if (buffer1.sampleRate != buffer2.sampleRate) {
+        console.log("sample rates don't match!");
+        return null;
+    }
 
-  for (var i=0; i<tmp.numberOfChannels; i++) {
-      var data = tmp.getChannelData(i);
-      data.set(buffer1.getChannelData(i));
-      data.set(buffer2.getChannelData(i),buffer1.length);
-  }
-  return tmp;
-};
+    var tmp = context.createBuffer(buffer1.numberOfChannels, buffer1.length + buffer2.length, buffer1.sampleRate);
 
+    for (var i=0; i<tmp.numberOfChannels; i++) {
+        var data = tmp.getChannelData(i);
+        data.set(buffer1.getChannelData(i));
+        data.set(buffer2.getChannelData(i),buffer1.length);
+    }
+    return tmp;
+  };
+}
 // 播放音频
 PlayerContainer.prototype.playSound = function(buffer) {
   this.wavBuffer = concatenateAudioBuffers(this.wavBuffer,buffer);
-  console.log("this.wavBuffer ",this.wavBuffer ) 
+  //console.log("this.wavBuffer ",this.wavBuffer ) 
   this.loadSize+= parseInt(buffer.length);
   // var source = context.createBufferSource();
 
@@ -12467,21 +12682,21 @@ function base64ToUint8Array(base64String) {
 
 PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
   try{
-  console.log("writeBuffer");
+  //console.log("writeBuffer");
   if (this.contentSize === 0) {
     this.data = new Int8Array(this.getBufferSize());
   }
   this.data.set(buffer, this.contentSize);
   this.contentSize += buffer.length;
   var uint8 = new Uint8Array(buffer).buffer;
-  console.log("buffer.length",buffer.length,bufferSize)
+  //console.log("buffer.length",buffer.length,bufferSize)
 
   if(this.getMediaFormat()!='mid')
   {  
     if(this.getMediaFormat()=='amr')
     {
       this.amr = new BenzAMRRecorder();
-      this.amr.initWithArrayBuffer(uint8).then(()=>{ 
+      this.amr.initWithArrayBuffer(uint8).then(function(){ 
         resolve(bufferSize);
       }); 
       return;
@@ -12490,8 +12705,8 @@ PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
     this.tinysynth = null; 
     var that=this;  
      this.audioCtx.decodeAudioData(uint8, function(buffer) {
-              console.log('1231231231231')
-              console.log(buffer.length)
+              //console.log('1231231231231')
+              //console.log(buffer.length)
               that.playSound(buffer);
               // if(that.wholeContentSize<=that.contentSize)
               // { 
@@ -12515,11 +12730,7 @@ PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
   }
   if(midimode==1)
   {  
-    var smfData = new Uint8Array(buffer); 
-    this.pAudio.initStatus();
-    var parseData = this.pAudio.parseSMF(smfData); 
-    this.pAudio.setData(parseData); 
-    resolve(bufferSize);
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12564,10 +12775,7 @@ PlayerContainer.prototype.start = function() {
   this.player.start();
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      this.pAudio.play();
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12596,16 +12804,16 @@ PlayerContainer.prototype.pause = function() {
         this.amr.playOrPauseOrResume();
         return;
       }
-      this.source.pause();
+      if(this.source && this.source.stop)
+      { 
+        this.source.stop();
+      } 
       return;
     }
     //this.player.pause();
     if(midimode==1)
     {  
-      if(this.pAudio)
-      {
-        this.pAudio.pause();
-      }
+      console.log('pAudio is removed!');
     }
     else if(midimode==2){
       if(this.tinysynth)
@@ -12640,10 +12848,7 @@ PlayerContainer.prototype.resume = function() {
   this.player.resume();
   if(midimode==1)
   {  
-    if(this.pAudio)
-    {
-      this.pAudio.resume();
-    }
+    console.log('pAudio is removed!');
   }
   else if(midimode==2){
     if(this.tinysynth)
@@ -12664,20 +12869,44 @@ PlayerContainer.prototype.resume = function() {
 } 
 };
 PlayerContainer.prototype.getVolume = function() {
-  console.log("播放音乐");
-  if(this.pAudio)
-  {
-    return this.pAudio.getMasterVolume();
+  //console.log("播放音乐");
+  if(midimode==1)
+  {  
+    console.log('pAudio is removed!');
   }
-  return this.player.getVolume();
+  else if(midimode==2){
+    if(this.tinysynth)
+    { 
+      return this.tinysynth.getAudioContext().volume * 100;
+    }
+  } 
+  else if(midimode==3){
+    if(this.audio)
+    { 
+      return this.audio.volume * 100;
+    }
+  } 
+
 };
 PlayerContainer.prototype.setVolume = function(level) {
-   //console.log("播放音乐");
-  if(this.pAudio)
-  {
-     this.pAudio.setMasterVolume(level);
+  console.log('设置音量： '+level) 
+  if(midimode==1)
+  {  
+    console.log('pAudio is removed!');
   }
-  this.player.setVolume(level);
+  else if(midimode==2){
+    if(this.tinysynth)
+    { 
+      this.tinysynth.setMasterVol(level/100);
+    }
+  } 
+  else if(midimode==3){
+    if(this.audio)
+    { 
+      this.audio.volume = level/100;
+    }
+  } 
+
 };
 PlayerContainer.prototype.getMute = function() {
   //console.log("播放音乐");
@@ -12961,11 +13190,11 @@ Native["com/sun/mmedia/MediaDownload.nSetWholeContentSize.(IJ)V"] = function(add
   console.log("com/sun/mmedia/MediaDownload.nSetWholeContentSize",player.wholeContentSize);
 };
 Native["com/sun/mmedia/DirectPlayer.nIsToneControlSupported.(I)Z"] = function(addr, handle) {
-  console.info("To support ToneControl, implement com.sun.mmedia.DirectTone.");
+  //console.info("To support ToneControl, implement com.sun.mmedia.DirectTone.");
   return 0;
 };
 Native["com/sun/mmedia/DirectPlayer.nIsMIDIControlSupported.(I)Z"] = function(addr, handle) {
-  console.info("To support MIDIControl, implement com.sun.mmedia.DirectMIDI.");
+  //console.info("To support MIDIControl, implement com.sun.mmedia.DirectMIDI.");
   return 1;
 };
 Native["com/sun/mmedia/DirectMIDI.nBuffering.([BI)I"] = function(addr, bufferAddr,len) {
@@ -12980,22 +13209,19 @@ Native["com/sun/mmedia/DirectMIDI.nBuffering.([BI)I"] = function(addr, bufferAdd
   // pAudio.setData(parseData);
   return 1;
 };
-
-
+ 
 function getPlayer(handle)
 {
   return  Media.PlayerCache[handle];
   var ret;
-  forEach(element => {
+  forEach(function(element) {
     if(element.pId==handle)
     {
       ret = element;
     }
   });
   return ret;
-} 
-
-
+}  
 Native["com/sun/mmedia/DirectMIDI.ndoGetDuration.(I)J"] = function(addr, handle1) { 
   var player1 = getPlayer(handle1); 
   var time1 = player1.getDuration();
@@ -13017,42 +13243,43 @@ Native["com/sun/mmedia/DirectMIDI.ndoSetMediaTime.(IJ)J"] = function(addr, handl
 
 Native["com/sun/mmedia/DirectMIDI.nStart.(I)V"] = function(addr,handle) {
   var player = getPlayer(handle);
-  //console.log("nStart",addr);
   player.start();
-  //pAudio.play();
 };
 
 Native["com/sun/mmedia/DirectMIDI.nStop.(I)V"] = function(addr,handle) {
   var player = getPlayer(handle);
   player.pause();
-  //pAudio.pause();
 };
 
 Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,count) {
   var player = getPlayer(handle);
   //console.log('com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V '+count);
-   
   if(player.getMediaFormat()=='amr')
   { 
-    return player.amr.getCurrentPosition()*100*10000; 
-    return;
+     player.amr.getCurrentPosition()*100*10000; 
+     return
   } 
+  if(player.getMediaFormat()=='wav')
+  {
+    player.playcount=count;
+    return;
+  }
   
   if(midimode==2)
   {
-    player.tinysynth.setLoop(count);
+    if(player.tinysynth)
+    { 
+      player.tinysynth.setLoop(count);
+    }
   }
   else if(midimode==3)
   {
     player.audio.loop=count;
   }
-  if(count==-1)
-  {
-    if(player.pAudio)
-    {  
-      player.pAudio.setLoop(true);
-    }  
-  } 
+  // if(count==-1)
+  // {
+  //   console.log('pAudio is removed!');
+  // } 
 };
 
 Native["javax/microedition/io/file/FileSystemEventHandlerBase.registerListener.()V"] = function(addr) {
@@ -13447,38 +13674,6 @@ var Content = function() {
   addUnimplementedNative("com/sun/j2me/content/InvocationStore.resetFlags0.(I)V");
   return {addInvocation:addInvocation};
 }();
-/*
-document.getElementById("up").onmousedown = function() {
-  MIDP.sendKeyPress(119);
-};
-document.getElementById("up").onmouseup = function() {
-  MIDP.sendKeyRelease(119);
-};
-document.getElementById("down").onmousedown = function() {
-  MIDP.sendKeyPress(115);
-};
-document.getElementById("down").onmouseup = function() {
-  MIDP.sendKeyRelease(115);
-};
-document.getElementById("left").onmousedown = function() {
-  MIDP.sendKeyPress(97);
-};
-document.getElementById("left").onmouseup = function() {
-  MIDP.sendKeyRelease(97);
-};
-document.getElementById("right").onmousedown = function() {
-  MIDP.sendKeyPress(100);
-};
-document.getElementById("right").onmouseup = function() {
-  MIDP.sendKeyRelease(100);
-};
-document.getElementById("fire").onmousedown = function() {
-  MIDP.sendKeyPress(32);
-};
-document.getElementById("fire").onmouseup = function() {
-  MIDP.sendKeyRelease(32);
-};
-*/
 
 var Location = {};
 Location.PROVIDER_NAME = "browser";
@@ -13934,52 +14129,49 @@ Native["com/sun/javame/sensor/NativeChannel.doMeasureData.(II)[B"] = function(ad
     var blob = new Blob([l.join("\n")], {type:"text/plain"});
     saveAs(blob, "console-" + Date.now() + ".txt");
   }};
-  var CONSOLES = {web:new WebConsole, page:new PageConsole("#consoleContainer"), native:new NativeConsole, raw:new RawConsoleForTests("#raw-console"), terminal:typeof Terminal === "undefined" ? new WebConsole : new TerminalConsole("#consoleContainer")};
-  if (ENABLED_CONSOLE_TYPES.length === 1 && ENABLED_CONSOLE_TYPES[0] === "web") {
-    return;
-  }
-  document.querySelector("#console-clear").addEventListener("click", function() {
-    window.dispatchEvent(new CustomEvent("console-clear"));
-  });
-  document.querySelector("#console-save").addEventListener("click", function() {
-    window.dispatchEvent(new CustomEvent("console-save"));
-  });
-  var logLevelSelect = document.querySelector("#loglevel");
-  var consoleFilterTextInput = document.querySelector("#console-filter-input");
-  function updateFilters() {
-    minLogLevel = logLevelSelect.value;
-    CONSOLES.page.currentFilterText = consoleFilterTextInput.value.toLowerCase();
-    window.dispatchEvent(new CustomEvent("console-filters-changed"));
-  }
-  logLevelSelect.value = minLogLevel;
-  logLevelSelect.addEventListener("change", updateFilters);
-  consoleFilterTextInput.value = "";
-  consoleFilterTextInput.addEventListener("input", updateFilters);
-  var logAtLevel = function(levelName) {
-    var item = new LogItem(levelName, Array.prototype.slice.call(arguments, 1));
-    ENABLED_CONSOLE_TYPES.forEach(function(consoleType) {
-      CONSOLES[consoleType].push(item);
-    });
-  };
-  window.console = Object.create(windowConsole, {trace:{value:logAtLevel.bind(null, "trace")}, log:{value:logAtLevel.bind(null, "log")}, info:{value:logAtLevel.bind(null, "info")}, warn:{value:logAtLevel.bind(null, "warn")}, error:{value:logAtLevel.bind(null, "error")}});
+  // var CONSOLES = {web:new WebConsole, page:new PageConsole("#consoleContainer"), native:new NativeConsole, raw:new RawConsoleForTests("#raw-console"), terminal:typeof Terminal === "undefined" ? new WebConsole : new TerminalConsole("#consoleContainer")};
+  // if (ENABLED_CONSOLE_TYPES.length === 1 && ENABLED_CONSOLE_TYPES[0] === "web") {
+  //   return;
+  // }
+  // document.querySelector("#console-clear").addEventListener("click", function() {
+  //   try{
+  //   window.dispatchEvent(new CustomEvent("console-clear"));
+  // }catch(err){
+  //   console.log(err);
+  // }
+  // });
+  // document.querySelector("#console-save").addEventListener("click", function() {
+  //   try{
+  //   window.dispatchEvent(new CustomEvent("console-save"));
+  // }catch(err){
+  //   console.log(err);
+  // }
+  // });
+  // var logLevelSelect = document.querySelector("#loglevel");
+  // var consoleFilterTextInput = document.querySelector("#console-filter-input");
+  // function updateFilters() {
+  //   minLogLevel = logLevelSelect.value;
+  //   CONSOLES.page.currentFilterText = consoleFilterTextInput.value.toLowerCase();
+  //   try{
+  //   window.dispatchEvent(new CustomEvent("console-filters-changed")); }catch(err){
+  //     console.log(err);
+  //   }
+  // }
+  // logLevelSelect.value = minLogLevel;
+  // logLevelSelect.addEventListener("change", updateFilters);
+  // consoleFilterTextInput.value = "";
+  // consoleFilterTextInput.addEventListener("input", updateFilters);
+  // var logAtLevel = function(levelName) {
+  //   var item = new LogItem(levelName, Array.prototype.slice.call(arguments, 1));
+  //   ENABLED_CONSOLE_TYPES.forEach(function(consoleType) {
+  //     CONSOLES[consoleType].push(item);
+  //   });
+  // };
+  //window.console = Object.create(windowConsole, {trace:{value:logAtLevel.bind(null, "trace")}, log:{value:logAtLevel.bind(null, "log")}, info:{value:logAtLevel.bind(null, "info")}, warn:{value:logAtLevel.bind(null, "warn")}, error:{value:logAtLevel.bind(null, "error")}});
 })();
-var release;
-var profile;
+var release = 1;
+var profile = 0;
 var jvm = new JVM;
-if ("gamepad" in config && !/no|0/.test(config.gamepad)) {
-  document.documentElement.classList.add("gamepad");
-}
-
-
-//console.log(config.gamepadSize)
-if(config.gamepad)
-{
-  if(config.gamepadSize)
-  {
-    document.getElementById("gamepad").classList = config.gamepadSize; 
-  }
-}
-
 
 var jars = [];
 if (typeof Benchmark !== "undefined") {
@@ -13998,46 +14190,86 @@ var getMobileInfo = new Promise(function(resolve, reject) {
     resolve();
   });
 });
-var loadingMIDletPromises = [getMobileInfo];
-var loadingPromises = [initFS];
-loadingPromises.push(load("java/classes.jar", "arraybuffer").then(function(data) {
-  JARStore.addBuiltIn("java/classes.jar", data);
-  CLASSES.initializeBuiltinClasses();
-}));
-//console.log(config.localjar)
-if(config.localjar)
-{ 
-   JARStore.loadJAR(config.localjar).then(
-    (res)=>{
-      console.log(res);
-      mffile = res.jar['META-INF/MANIFEST.MF'];
-      mfdata=''
-      switch(mffile.compression_method) {
-        case 0:
-          mfdata= mffile.compressed_data;
-		  break;
-        case 8:
-          mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
-		  break;
-      }
-      mfdata=new TextDecoder('utf-8').decode(mfdata);
-      console.log(mfdata);
-      processJAD(mfdata);
-      var a=MIDP.manifest['MIDlet-1'];
-      a=a.substr(a.lastIndexOf(',')+1).trim()
-      config.midletClassName = a;
-      console.log("load main class :",config.midletClassName);
-    });
-   jars=config.localjar; 
-}
-else{
-    jars.forEach(function(jar) {
-    loadingMIDletPromises.push(load(jar, "arraybuffer").then(function(data) {
-      JARStore.addBuiltIn(jar, data);
-    }));
-  });
-}
 
+if(config.enginemode)
+  {
+    try{ 
+      enginemode=config.enginemode.split('-')[1];
+    }
+    catch(err){
+
+    }
+  }
+ 
+if(!isIndex)
+{
+  showDownloadScreen();
+  var loadingMIDletPromises = [getMobileInfo];
+  var loadingPromises = [initFS];
+  var classedjarname='java/classes.jar';
+  if(enginemode){
+    //启用兼容模式
+    classedjarname='java/'+enginemode;
+  }
+  loadingPromises.push(load(classedjarname, "arraybuffer").then(function(data) {
+    console.log("buildin enter");
+    try{
+      JARStore.addBuiltIn("java/classes.jar", data);
+      CLASSES.initializeBuiltinClasses();
+    }
+    catch(err){
+      console.error(err);
+    }
+    console.log("buildin out");
+  }));
+} 
+//console.log(config.localjar)
+
+if(!isIndex)
+{
+  if(config.localjar )
+  { 
+    JARStore.loadJAR(config.localjar).then(
+      function(res){
+        console.log(res);
+        mffile = res.jar['META-INF/MANIFEST.MF'];
+        mfdata=''
+        switch(mffile.compression_method) {
+          case 0:
+            mfdata= mffile.compressed_data;
+        break;
+          case 8:
+            mfdata = inflate(mffile.compressed_data, mffile.uncompressed_len);
+        break;
+        }
+        mfdata=new TextDecoder('utf-8').decode(mfdata);
+        console.log(mfdata);
+        processJAD(mfdata);
+        var a=MIDP.manifest['MIDlet-1'];
+        a=a.substr(a.lastIndexOf(',')+1).trim()
+        config.midletClassName = a;
+        console.log("load main class :",config.midletClassName); 
+        
+        setTimeout(function(){ 
+          hideDownloadScreen();
+          isLoadJarFinished=true;
+        },0)
+      });
+    jars=config.localjar; 
+  }
+  else{
+      jars.forEach(function(jar) {
+      loadingMIDletPromises.push(load(jar, "arraybuffer").then(function(data) {
+        JARStore.addBuiltIn(jar, data,false);  
+        hideDownloadScreen(); 
+        setTimeout(function(){ 
+          hideDownloadScreen();
+          isLoadJarFinished=true;
+        },0)
+      }));
+    });
+  }
+}
 
 function processJAD(data) {
   data.replace(/\r\n|\r/g, "\n").replace(/\n /g, "").split("\n").forEach(function(entry) {
@@ -14068,15 +14300,15 @@ function performDownload(url, callback) {
         DumbPipe.close(sender);
         hideDownloadScreen();
         progressBar.value = 0;
-        var failureDialog = document.getElementById("download-failure-dialog");
-        failureDialog.style.display = "";
-        var btnRetry = failureDialog.querySelector("button.recommend");
-        btnRetry.addEventListener("click", function onclick(e) {
-          e.preventDefault();
-          btnRetry.removeEventListener("click", onclick);
-          failureDialog.style.display = "none";
-          performDownload(url, callback);
-        });
+        // var failureDialog = document.getElementById("download-failure-dialog");
+        // failureDialog.style.display = "";
+        // var btnRetry = failureDialog.querySelector("button.recommend");
+        // btnRetry.addEventListener("click", function onclick(e) {
+        //   e.preventDefault();
+        //   btnRetry.removeEventListener("click", onclick);
+        //   failureDialog.style.display = "none";
+        //   performDownload(url, callback);
+        // });
         break;
     }
   });
@@ -14127,8 +14359,14 @@ function startTimeline() {
     for (var i = 0;i < buffers.length;i++) {
       buffers[i].reset(jsGlobal.START_TIME);
     }
-    for (var runtime of J2ME.RuntimeTemplate.all) {
-      for (var ctx of runtime.allCtxs) {
+
+     var datas = J2ME.RuntimeTemplate.all;
+for (var i = 0; i < datas.length; i++) {   
+  var runtime=datas[i];     
+
+  var ctxs = runtime.allCtxs;
+  for (var i = 0; i < ctxs.length; i++) {   
+    var ctx=ctxs[i];    
         ctx.restartMethodTimeline();
       }
     }
@@ -14145,53 +14383,11 @@ function stopTimeline(cb) {
     cb(buffers);
   });
 }
-function stopAndSaveTimeline() {
-  console.log("Saving profile, please wait ...");
-  var traceFormat = Shumway.Tools.Profiler.TraceFormat[profileFormat.toUpperCase()];
-  var output = [];
-  var writer = new J2ME.IndentingWriter(false, function(s) {
-    output.push(s);
-  });
-  if (traceFormat === Shumway.Tools.Profiler.TraceFormat.CSV) {
-    writer.writeLn("Name,Count,Self (ms),Total (ms)");
-  }
-  stopTimeline(function(buffers) {
-    var snapshots = [];
-    for (var i = 0;i < buffers.length;i++) {
-      snapshots.push(buffers[i].createSnapshot());
-    }
-    for (var i = 0;i < snapshots.length;i++) {
-      writer.writeLn("Timeline Statistics: " + snapshots[i].name);
-      snapshots[i].traceStatistics(writer, 1, traceFormat);
-    }
-    writer.writeLn("Timeline Statistics: All Threads");
-    var methodSnapshots = snapshots.slice(2);
-    (new Shumway.Tools.Profiler.TimelineBufferSnapshotSet(methodSnapshots)).traceStatistics(writer, 1, traceFormat);
-    for (var i = 0;i < snapshots.length;i++) {
-      writer.writeLn("Timeline Events: " + snapshots[i].name);
-      snapshots[i].trace(writer, .1);
-    }
-  });
-  var text = output.join("\n");
-  var fileExtension, mediaType;
-  switch(traceFormat) {
-    case Shumway.Tools.Profiler.TraceFormat.CSV:
-      fileExtension = "csv";
-      mediaType = "text/csv";
-      break;
-    case Shumway.Tools.Profiler.PLAIN:
-    ;
-    default:
-      fileExtension = "txt";
-      mediaType = "text/plain";
-      break;
-  }
-  var profileFilename = "profile." + fileExtension;
-  var blob = new Blob([text], {type:mediaType});
-  saveAs(blob, profileFilename);
-  console.log("Saved profile in: adb pull /sdcard/downloads/" + profileFilename);
-}
+
 function start() {
+  if(isIndex){
+    return;
+  }
   var deferStartup = config.deferStartup | 0;
   if (deferStartup && typeof Benchmark !== "undefined") {
     setTimeout(function() {
@@ -14200,19 +14396,25 @@ function start() {
     }, deferStartup);
   } else {  
     var interval = setInterval(function() {   
-      if(JARStore.getjars().size>1)
+      if(!isLoadJarFinished)
+      {
+        return;
+      }
+      if(JARStore.getjars().length > 1 && !isIndex)
       {
         console.log('开始执行jars'); 
         run();
-        clearInterval(interval);
-      }
-    }, 100); 
+      } 
+      clearInterval(interval);
+    }, 0); 
   }
   function run() {
     J2ME.Context.setWriters(new J2ME.IndentingWriter);
     profile === 1 && profiler.start(2E3, false);
     bigBang = performance.now();
     profile === 2 && startTimeline();
+
+   
     jvm.startIsolate0(config.main, config.args);  
     jvm.startIsolate0(config.main, config.args); 
   }
@@ -14220,11 +14422,6 @@ function start() {
 if (!config.midletClassName) {
   loadingPromises = loadingPromises.concat(loadingMIDletPromises);
 }
-
-document.getElementById("start").onclick = function() {
-  start();
-};
-
 if(config.canvasSize)
 {
 	Array.prototype.forEach.call(document.body.classList, function(c) {
@@ -14236,300 +14433,19 @@ if(config.canvasSize)
 	MIDP.updatePhysicalScreenSize();
 	MIDP.updateCanvas();
 	//start();
-}
- 
-document.getElementById("canvasSize").onchange = function() {
-  Array.prototype.forEach.call(document.body.classList, function(c) {
-    if (c.indexOf("size-") == 0) {
-      document.body.classList.remove(c);
-    }
-  });
-  if (this.value) {
-    document.body.classList.add(this.value);
-  }
-  MIDP.updatePhysicalScreenSize();
-  MIDP.updateCanvas();
-  //start();
-};
-if (typeof Benchmark !== "undefined") {
-  Benchmark.initUI("benchmark");
-}
+} 
+
 window.onload = function() {
-  CompiledMethodCache.clear().then(function() {
-    console.log("cleared compiled method cache");
-  });
 
-  // MIDI.loadPlugin({
-	// 	soundfontUrl: "./soundfont/", 
-	// 	onprogress: function(state, progress) {
-	// 		//console.log(progress * 100);
-	// 	},
-	// 	onsuccess: function() { 
-	// 		/// this sets up the MIDI.Player and gets things going...
-	// 		midiplayer = MIDI.Player;
-	// 		midiplayer.timeWarp = 1; // speed the song is played back
-	// 		//midiplayer.loadFile('data:audio/midi;base64,TVRoZAAAAAYAAQAJADBNVHJrAAAASgD/Awh1bnRpdGxlZAD/AQkudS4uZi4ucgoA/1gEAwIYCAD/WQIAAAD/UQMHoSAw/1EDB6EgYP9YBAQCGAiPAP9YBAICGAgA/y8ATVRyawAAAVAA/wMBMQDASQCwB3gAkE9TLVRSAU8ADFQAHlFfCFEAJ09dWE8AAlFRFlNJBVEAC1MABFRPXlQAAVFhKVEABVNdKVMAAVRdKlQAAFZdGFYABlRUCFQACVNfK1MAAlZXCVYAJVRuBlQAJVNfLlMAAFlWBlkAJ1hUElgAHFtNFlsAAVlNEVkAA1tEGFk/A1sAE1hGBFkAD1gAAlZEElYABlRLE1Y9AlQAF1YAAFREElQAA1NCGFFLA1MAElEAA09LDE8ACk9XKk8ABlRPCVQAIExbCEwAJU9sXE8AAlFSFVEAAVNGDlMADFRWVlQAAFRRKlQAAlZUdFRHBlYADlQAA1NLK1MABF1LCV0AIltfBVsAJVNdKFMABFtRB1sAKFleCFkAKFlLGFhCAVkAD1gAA1k6GFY0AFkAD1YAB1EvElEAA1MqD1MACFQngQRUAAD/LwBNVHJrAAAATAD/AwEyAMJ4ALIHYwAKf4EQkjtFQzsAgR47OjA7AIINO0VDOwCBHzs6LzsAgg07RUM7AIEfOzovOwCCDTs6RjsAgRw7GBY7AAD/LwBNVHJrAAABuAD/AwEzAMNIALMHSgAKMgCTQ1AtSEQATE8MTAAASAAhSEgATFEEQwAkSAABTAAEQ0stT1IATFQLTwABTAAhT1AATFEDQwAiTAAATwAJRVEtSkUATU0MSgABTQAgSkgATVIKRQAcSgACTQAFRVAtUUoATUspRQAFUQACTQArPlAtQ0QAR08MRwAAQwAhQ0gAR1EFPgAjQwABRwAEPkstSlIAR1QLSgABRwAiSlAAR1EDPgAhRwAASgAJRVEtSkUATU0MSgABTQAgSkgATVILRQAbSgACTQAFPlAtSkoAR0spPgAFSgACRwArQ1AtSEQATE8MTAAASAAhSEgATFEFQwAjSAABTAAEQ0stT1IATFQLTwACTAAhT1AATFEDQwAhTAAATwAJRVEtSkUATU0MSgABTQAgSkgATVILRQAcSgABTQAFRVAuUUoATUsoRQAFUQACTQArPlAtQ0QAR08MRwAAQwAhQ0gAR1EFPgAjQwABRwAEPksuSlIAR1QKSgACRwAhSlAAR1EDPgAhRwAASgAJPlEtQ0UAR00MQwABRwAgQ0gAR1ILPgAcQwABRwAFQ1AtQwAA/y8ATVRyawAAAMYA/wMBNADEIQC0B2kAlCRgHiQAaR9jIx8AZSZdGyYAKCRhCyQADCZVEyYAGiFgFyEAFiZbFyYAFiRnFiQAGB9gHh8AaSZjIyYAZSZdHCYAJyRhCyQADCZVEyYAGh9gGB8AFRxbFxwAFx1nFR0AGCRgHiQAaR9jIx8AZSZdHCYAKCRhCiQADCZVEyYAGiFgGCEAFiZbFiYAFyRnFSQAGB9gHh8AaR9jIx8AZR9dHB8AKB1hCh0ADBxVExwAGiRYgQAkAAD/LwBNVHJrAAABZQD/AwE1AMUZALUHVQAKHgCVN0YWPFAXQEEWQz0PQAAIQEoSPAABNwADPFgXN1VpPAADNwASQAAJQwABOUsWPkIXQT8WRUsHQQAQQT4NPgAKPk4GOQAQOUI5QQADRQADPgAGOQBDPkYWQ1AXR0EWSj0PRwAIR0oSQwABPgAEQ1gWPlVpQwADPgASRwAJSgABOUsWPkIXQT8WRUsHQQAQQT4OPgAJPk4GOQAPQQAARQAAPgABQUJFQQBDN0YWPFAXQEEXQz0PQAAHQEoSPAABNwAEPFgWN1VpPAADNwASQAAJQwABOUsWPkIXQT8XRUsGQQAQQT4OPgAJPk4GOQAQOUI6QQADRQADPgAFOQBDPkYWQ1AXR0EXSj0PRwAHR0oSQwABPgAEQ1gWQwAASgAARwAAQVVsQQAcQUsXQ0IWRz8XTUsGRwAQRz4OQwAJQ04GQQAQRwAATQAAQwAAN0KBADcAAP8vAE1UcmsAAAAoAP8DATYAxnsAtgc1AAoAMJZBZDBBAIFwRWQwRQCBQENkGEMAAP8vAE1UcmsAAAAxAP8DATcAx3oAtwc8AApNAJc3ZIJQNwAAPGSDADwAgwA3ZIJQNwAAPGSDADwAAP8vAE1UcmsAAANZAP8DATgAyQAAuQd4AJkqWwAkXwMkAAAqACosYgBSPwNSAAAsABMqXwQqABMsYgBSRwRSAAAsABIqTAQqAAgoLgQoAAcoWwAsYQQsAAAoACksXwBSQgRSAAAsACkqYQBSMARSAAAqABMuTQQuABMsYQAkXwMkAAAsACosWABSQwRSAAAsABIqTwQqABMsYQBSPgRSAAAsABMqUwMqAAgoNQQoAAcoWgAsZQQsAAAoACkoTQAsZgBSLwRSAAAsAAAoABMqTwQqABIoWwAsZgBSPQRSAAAsAAAoABMuSQQuABMqWwAkXwMkAAAqACosYgBSPwRSAAAsABIqXwQqABMsYgBSRwRSAAAsABMqTAMqAAgoLgQoAAcoWwAsYQQsAAAoACksXwBSQgRSAAAsACoqYQBSMANSAAAqABMuTQQuABMsYQAkXwMkAAAsACosWABSQwRSAAAsABIqTwQqABMsYQBSPgRSAAAsABMqUwMqAAgoNQQoAAcoWgAsZQQsAAAoACkoTQAsZgBSLwRSAAAsAAAoABMqTwQqABMoWwAsZgBSPQNSAAAsAAAoABMuSQQuABMqWwAkXwQkAAAqACksYgBSPwRSAAAsABMqXwMqABMsYgBSRwRSAAAsABMqTAMqAAgoLgQoAAcoWwAsYQQsAAAoACksXwBSQgRSAAAsACoqYQBSMANSAAAqABMuTQQuABMsYQAkXwQkAAAsACksWABSQwRSAAAsABMqTwMqABMsYQBSPgRSAAAsABMqUwQqAAcoNQQoAAcoWgAsZQQsAAAoACooTQAsZgBSLwNSAAAsAAAoABMqTwQqABMoWwAsZgBSPQNSAAAsAAAoABMuSQQuABMqWwAkXwQkAAAqACksYgBSPwRSAAAsABMqXwMqABMsYgBSRwRSAAAsABMqTAQqAAcoLgQoAAcoWwAsYQQsAAAoACosXwBSQgNSAAAsACoqYQBSMARSAAAqABIuTQQuABMsYQAkXwQkAAAsACksWABSQwRSAAAsABMqTwMqABMsYQBSPgRSAAAsABMqUwQqAAcoNQQoAAcoWgAsZQQsAAAoACksNwEoNwMsAAAoABIqKQEoKQMqAAEoABIqHQAoHQQoAAAqABMqFwAoFwMoAAAqAAD/LwA=',
-  //     //midiplayer.start); 
-	// 	}
-  //   }); 
-    
+  if(isIndex)
+    {
+      return;
+    } 
+
   Promise.all(loadingPromises).then(start, function(reason) {
-    console.error('Loading failed: "' + reason + '"');
-  });
+    console.error('Loading failed: ');
+    console.error(reason);
+  }); 
 
-  document.getElementById("deleteDatabases").onclick = function() {
-    fs.deleteDatabase().then(function() {
-      console.log("Deleted fs database.");
-    }).catch(function(error) {
-      console.log("Error deleting fs database: " + error);
-    });
-    CompiledMethodCache.deleteDatabase().then(function() {
-      console.log("Deleted CompiledMethodCache database.");
-    }).catch(function(error) {
-      console.log("Error deleting CompiledMethodCache database: " + error);
-    });
-    JARStore.deleteDatabase().then(function() {
-      console.log("Deleted JARStore database.");
-    }).catch(function(error) {
-      console.log("Error deleting JARStore database: " + error);
-    });
-  };
-  document.getElementById("exportstorage").onclick = function() {
-    fs.exportStore(function(blob) {
-      saveAs(blob, "fs-" + Date.now() + ".json");
-    });
-  };
-  document.getElementById("importstorage").onclick = function() {
-    function performImport(file) {
-      fs.importStore(file, function() {
-        DumbPipe.close(DumbPipe.open("alert", "Import completed."));
-      });
-    }
-    var file = document.getElementById("importstoragefile").files[0];
-    if (file) {
-      performImport(file);
-    } else {
-      load(document.getElementById("importstorageurl").value, "blob").then(function(blob) {
-        performImport(blob);
-      });
-    }
-  };
-  document.getElementById("clearCompiledMethodCache").onclick = function() {
-    CompiledMethodCache.clear().then(function() {
-      console.log("cleared compiled method cache");
-    });
-  };
-  document.getElementById("printAllExceptions").onclick = function() {
-    VM.DEBUG_PRINT_ALL_EXCEPTIONS = !VM.DEBUG_PRINT_ALL_EXCEPTIONS;
-    toggle(this);
-  };
-  document.getElementById("clearCounters").onclick = function() {
-    clearCounters();
-  };
-  function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  }
-  setInterval(function() {
-    var el = document.getElementById("bytecodeCount");
-    el.textContent = numberWithCommas(J2ME.bytecodeCount);
-    var el = document.getElementById("interpreterCount");
-    el.textContent = numberWithCommas(J2ME.interpreterCount);
-    var el = document.getElementById("compiledCount");
-    el.textContent = numberWithCommas(J2ME.compiledMethodCount) + "/" + numberWithCommas(J2ME.cachedMethodCount) + "/" + numberWithCommas(J2ME.aotMethodCount) + "/" + numberWithCommas(J2ME.notCompiledMethodCount);
-    var el = document.getElementById("onStackReplacementCount");
-    el.textContent = numberWithCommas(J2ME.onStackReplacementCount);
-    var el = document.getElementById("unwindCount");
-    el.textContent = numberWithCommas(J2ME.unwindCount);
-    var el = document.getElementById("preemptionCount");
-    el.textContent = numberWithCommas(J2ME.preemptionCount);
-  }, 500);
-  function dumpCounters() {
-    var writer = new J2ME.IndentingWriter;
-    writer.writeLn("Frame Count: " + J2ME.frameCount);
-    writer.writeLn("Unwind Count: " + J2ME.unwindCount);
-    writer.writeLn("Bytecode Count: " + J2ME.bytecodeCount);
-    writer.writeLn("OSR Count: " + J2ME.onStackReplacementCount);
-    if (J2ME.interpreterCounter) {
-      writer.enter("interpreterCounter");
-      J2ME.interpreterCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.interpreterMethodCounter) {
-      writer.enter("interpreterMethodCounter");
-      J2ME.interpreterMethodCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.baselineMethodCounter) {
-      writer.enter("baselineMethodCounter");
-      J2ME.baselineMethodCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.baselineCounter) {
-      writer.enter("baselineCounter");
-      J2ME.baselineCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.nativeCounter) {
-      writer.enter("nativeCounter");
-      J2ME.nativeCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.runtimeCounter) {
-      writer.enter("runtimeCounter");
-      J2ME.runtimeCounter.traceSorted(writer);
-      writer.outdent();
-    }
-    if (J2ME.asyncCounter) {
-      writer.enter("asyncCounter");
-      J2ME.asyncCounter.traceSorted(writer);
-      writer.outdent();
-    }
-  }
-  function clearCounters() {
-    J2ME.frameCount = 0;
-    J2ME.unwindCount = 0;
-    J2ME.bytecodeCount = 0;
-    J2ME.interpreterCount = 0;
-    J2ME.onStackReplacementCount = 0;
-    J2ME.interpreterCounter && J2ME.interpreterCounter.clear();
-    J2ME.interpreterMethodCounter && J2ME.interpreterMethodCounter.clear();
-    J2ME.nativeCounter && J2ME.nativeCounter.clear();
-    J2ME.runtimeCounter && J2ME.runtimeCounter.clear();
-    J2ME.asyncCounter && J2ME.asyncCounter.clear();
-    J2ME.baselineMethodCounter && J2ME.baselineMethodCounter.clear();
-    J2ME.baselineCounter && J2ME.baselineCounter.clear();
-  }
-  document.getElementById("dumpCounters").onclick = function() {
-    dumpCounters();
-  };
-  document.getElementById("sampleCounters1").onclick = function() {
-    clearCounters();
-    dumpCounters();
-    setTimeout(function() {
-      dumpCounters();
-    }, 1E3);
-  };
-  document.getElementById("sampleCounters2").onclick = function() {
-    clearCounters();
-    function sample() {
-      var c = 1;
-      function tick() {
-        if (c-- > 0) {
-          dumpCounters();
-          clearCounters();
-          setTimeout(tick, 16);
-        }
-      }
-      setTimeout(tick, 100); 
-    }
-    setTimeout(sample, 2E3);
-  };
-};
-function requestTimelineBuffers(fn) {
-  if (J2ME.timeline) {
-    var activeTimeLines = [J2ME.threadTimeline, J2ME.timeline];
-    var methodTimeLines = J2ME.methodTimelines;
-    for (var i = 0;i < methodTimeLines.length;i++) {
-      activeTimeLines.push(methodTimeLines[i]);
-    }
-    fn(activeTimeLines);
-    return;
-  }
-  return fn([]);
-}
-var perfWriterCheckbox = document.querySelector("#perfWriter");
-perfWriterCheckbox.checked = !!(J2ME.writers & J2ME.WriterFlags.Perf);
-perfWriterCheckbox.addEventListener("change", function() {
-  if (perfWriterCheckbox.checked) {
-    J2ME.writers |= J2ME.WriterFlags.Perf;
-  } else {
-    J2ME.writers &= !J2ME.WriterFlags.Perf;
-  }
-});
- 
-var profiler = profile === 1 ? function() {
-  var elPageContainer = document.getElementById("pageContainer");
-  elPageContainer.classList.add("profile-mode");
-  var elProfilerContainer = document.getElementById("profilerContainer");
-  var elProfilerToolbar = document.getElementById("profilerToolbar");
-  var elProfilerMessage = document.getElementById("profilerMessage");
-  var elProfilerPanel = document.getElementById("profilePanel");
-  var elBtnStartStop = document.getElementById("profilerStartStop");
-  var elBtnAdjustHeight = document.getElementById("profilerAdjustHeight");
-  var controller;
-  var startTime;
-  var timerHandle;
-  var timeoutHandle;
-  var Profiler = function() {
-    controller = new Shumway.Tools.Profiler.Controller(elProfilerPanel);
-    elBtnStartStop.addEventListener("click", this._onStartStopClick.bind(this));
-    elBtnAdjustHeight.addEventListener("click", this._onAdjustHeightClick.bind(this));
-    var self = this;
-    window.addEventListener("keypress", function(event) {
-      if (event.altKey && event.keyCode === 114) {
-        self._onStartStopClick();
-      }
-    }, false);
-  };
-  Profiler.prototype.start = function(maxTime, resetTimelines) {
-    startTimeline();
-    controller.deactivateProfile();
-    maxTime = maxTime || 0;
-    elProfilerToolbar.classList.add("withEmphasis");
-    elBtnStartStop.textContent = "Stop";
-    startTime = Date.now();
-    timerHandle = setInterval(showTimeMessage, 1E3);
-    if (maxTime) {
-      timeoutHandle = setTimeout(this.createProfile.bind(this), maxTime);
-    }
-    showTimeMessage();
-  };
-  Profiler.prototype.createProfile = function() {
-    stopTimeline(function(buffers) {
-      controller.createProfile(buffers);
-      elProfilerToolbar.classList.remove("withEmphasis");
-      elBtnStartStop.textContent = "Start";
-      clearInterval(timerHandle);
-      clearTimeout(timeoutHandle);
-      timerHandle = 0;
-      timeoutHandle = 0;
-      showTimeMessage(false);
-    });
-  };
-  Profiler.prototype.openPanel = function() {
-    elProfilerContainer.classList.remove("collapsed");
-  };
-  Profiler.prototype.closePanel = function() {
-    elProfilerContainer.classList.add("collapsed");
-  };
-  Profiler.prototype.resize = function() {
-    controller.resize();
-  };
-  Profiler.prototype._onAdjustHeightClick = function(e) {
-    elProfilerContainer.classList.toggle("max");
-  };
-  Profiler.prototype._onMinimizeClick = function(e) {
-    if (elProfilerContainer.classList.contains("collapsed")) {
-      this.openPanel();
-    } else {
-      this.closePanel();
-    }
-  };
-  Profiler.prototype._onStartStopClick = function(e) {
-    if (timerHandle) {
-      this.createProfile();
-      this.openPanel();
-    } else {
-      this.start(0, true);
-    }
-  };
-  function showTimeMessage(show) {
-    show = typeof show === "undefined" ? true : show;
-    var time = Math.round((Date.now() - startTime) / 1E3);
-    elProfilerMessage.textContent = show ? "Running: " + time + " Seconds" : "";
-  }
-  return new Profiler;
-}() : undefined;
-
-//# sourceMappingURL=main-all.js.map
- 
+}; 
+var profiler =undefined; 

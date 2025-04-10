@@ -5,17 +5,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="style/indexkaios.css">
-
-
-    <!-- Required for non-UTF encodings --> 
-    <script src="libs/encoding.js"></script>
-    <!-- Load config scripts separately because compiled-method-cache.js
-       - depends on them. -->
+  
     <script type="text/javascript" src="config/default.js" defer></script>
     <script type="text/javascript" src="config/runtests.js" defer></script>
     <script type="text/javascript" src="config/build.js" defer></script>
     <script type="text/javascript" src="config/urlparams.js" defer></script>
 
+    <script type="text/javascript" src="js/jsQR.min.js"></script>
 
   <script type="text/javascript" src="bld/native.js" defer></script>
 
@@ -25,10 +21,18 @@
 </head>
 
 <body> 
-  
+    
+  <div id="download-screen" class="screen">
+    <h1 class="title">Downloading midlet…</h1>
+    <div class="download-progress-container">
+      <progress class="pack-activity" id="download-bar" value="0" max="100"></progress>
+    </div>
+  </div>
+
   <div id="applist">
     
   </div>
+
 
   <input id="jarFileupload" type="file" style="visibility: hidden;display:none;" accept=".jar"/>
     <div id="menu" style="display: none;">
