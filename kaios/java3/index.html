@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="style/indexkaios.css">
+  
+    <script type="text/javascript" src="config/default.js" defer></script>
+    <script type="text/javascript" src="config/runtests.js" defer></script>
+    <script type="text/javascript" src="config/build.js" defer></script>
+    <script type="text/javascript" src="config/urlparams.js" defer></script>
+
+    <script type="text/javascript" src="js/jsQR.min.js"></script>
+
+  <script type="text/javascript" src="bld/native.js" defer></script>
+
+  <script type="text/javascript" src="bld/j2me.js" defer></script>
+  <script type="text/javascript" src="bld/main-all.js" defer></script>
+
+</head>
+
+<body> 
+    
+  <div id="download-screen" class="screen">
+    <h1 class="title">Downloading midlet…</h1>
+    <div class="download-progress-container">
+      <progress class="pack-activity" id="download-bar" value="0" max="100"></progress>
+    </div>
+  </div>
+
+  <div id="applist">
+    
+  </div>
+
+
+  <input id="jarFileupload" type="file" style="visibility: hidden;display:none;" accept=".jar"/>
+    <div id="menu" style="display: none;">
+        <div  id="menucontent">
+          <div id="menuheader">
+            菜单
+          </div>
+          
+         <div id="menuitems">
+          <div class="menuitem" focusable>关于</div>
+
+          <div  class="menuitem"  focusable>退出</div>
+
+        </div>
+        </div>
+    </div>
+
+    <div id="alertDialog" style="display: none;">
+      <div  id="alertcontent">
+        <div id="alertheader">
+          提示
+        </div>
+        
+        <div id="alerttext">提示信息</div>
+  
+      </div>
+
+    </div>  
+    
+    <div id="softkeys">
+      <div id="softkeyleft" onclick="softleft()">菜单</div>
+      <div id="softkeycenter"></div>
+      <div id="softkeyright" onclick="softright()">退出</div>
+    </div> 
+
+
+ 
+  <script type="text/javascript" src="./js/focusable-core.js"></script>
+    <script type="text/javascript" src="./index.js"></script>
+</body>
+</html>

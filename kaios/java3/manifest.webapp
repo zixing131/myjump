@@ -1,0 +1,72 @@
+{
+  "name": "J2ME-kaios",
+  "description": "一个javascript开发的j2me模拟器",
+  "launch_path": "/index.html",
+  "origin": "app://pluotsorbet.mozilla.org",
+  "version": "2.0.0",
+  "icons": {
+    "128": "/img/icon-128.png",
+    "512": "/img/icon-512.png"
+  },
+  "developer": {
+    "name": "zixing",
+    "url": "https://github.com/zixing131"
+  },
+  "default_locale": "en",
+  "orientation": ["portrait", "landscape"],
+  "permissions": {
+    "geolocation": {
+       "description": "Required by location API."
+    },
+    "tcp-socket": {
+      "description": "Required to connect to internet"
+    },
+    "contacts": {
+      "description": "Required to manage contacts",
+      "access": "readonly"
+    },
+    "mobilenetwork": {
+      "description": "Required to verify your phone number"
+    },
+    "browser": {
+      "description": "Required to improve performance"
+    },
+    "audio-capture": {
+       "description": "Required to capture audio via getUserMedia"
+    },
+    "video-capture": {
+       "description": "Required to take pictures"
+    },
+    "device-storage:sdcard":{
+			"description": "Required for import or export data",
+			"access": "readwrite"
+		},
+    "desktop-notification": {
+      "description": "Required to display notifications"
+    },
+    "systemXHR": {
+       "description": "Required to download MIDlets"
+    },
+    "storage": {
+       "description": "Required to store files without limitations"
+    },
+    "alarms": {
+      "description": "Required to perform tasks while the app isn't running"
+    }
+  },
+  "messages": [
+    { "alarm": "/index.html" }
+  ],
+  "activities": {
+    "share": {
+      "href": "/index.html",
+      "disposition": "window",
+      "filters": {
+        "type": ["image/*", "video/*", "audio/*"]
+      }
+    }
+  },
+  "type": "web",
+  "cursor": false,
+  "fullscreen": true
+}

@@ -1,0 +1,204 @@
+#menu
+{
+    position:fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background: rgba(0,0,0,.3); 
+}
+
+#alertDialog
+{
+    position:fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background: rgba(0,0,0,.3); 
+}
+
+#alertcontent
+{
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 0 3px rgb(0 0 0 / 20%); 
+    border-radius: 10px 10px 0 0; 
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 30px;
+    left: 0px;
+    right: 0px;
+    min-height: 110px;
+}
+
+
+#alertheader{
+    justify-content: center;
+    font-size: 16px;
+    padding: 7px 0;
+    color: #000; 
+    flex-direction: row;
+    display: flex;
+    box-sizing: border-box;
+    outline: 0; 
+}
+
+#alerttext
+{
+    justify-content: center;
+    font-size: 16px;
+    padding: 7px 3px;
+    color: #000; 
+    flex-direction: row;
+    display: flex;
+    max-height: 220px;
+    overflow:scroll;
+    box-sizing: border-box;
+    outline: 0; 
+}
+
+#menucontent{ 
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 0 3px rgb(0 0 0 / 20%); 
+    border-radius: 10px 10px 0 0; 
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    bottom: 30px;
+    left: 0px;
+    right: 0px;
+}
+
+#menuheader{
+    justify-content: center;
+    font-size: 16px;
+    padding: 7px 0;
+    color: #000; 
+    flex-direction: row;
+    display: flex;
+    box-sizing: border-box;
+    outline: 0; 
+}
+
+#applist{
+	padding-bottom: 40px;
+	margin-bottom: 40px;
+}
+
+.menuitem{
+    text-align: left;
+    font-size: 16px;
+    color: #000;
+    padding: 7px 24px;
+}
+
+.listitem{
+    text-align: left;
+    font-size: 16px;
+    color: #000;
+    padding: 12px;
+}
+
+.listitem.focus{
+    background: rgba(205,61,61,.2);
+    color: #cd3d3d;
+}
+
+.jaricon{
+	position: absolute;
+	 width:32px;
+	 height: 32px; 
+} 
+.listtext{
+	padding: 0px 0px 0px 42px;
+	
+}
+
+.menuitem.focus{
+    background: rgba(205,61,61,.2);
+    color: #cd3d3d;
+}
+
+#softkeys {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background: #dadada;
+    font-size: 14pt;
+    z-index: 200;
+  }
+  
+  #softkeyleft{
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+  }
+  
+  #softkeyright{
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+  }
+  
+  #softkeycenter{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+}
+ 
+  /* 让 screen 覆盖整个屏幕并居中 */
+#download-screen {
+    display: none;
+    position: fixed; /* 固定定位，覆盖整个屏幕 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; 
+    flex-direction: column; /* 让内容垂直排列 */
+    justify-content: center; /* 垂直方向居中 */
+    align-items: center; /* 水平方向居中 */
+    background-color: rgba(0, 0, 0, 0.8); /* 半透明黑色背景 */
+    color: #fff; /* 白色文字 */
+    font-family: Arial, sans-serif; /* 字体样式 */
+  }
+  
+  /* 标题样式 */
+  .title {
+    font-size: 24px; /* 标题字体大小 */
+    margin-bottom: 20px; /* 与进度条的间距 */
+    text-align: center; /* 居中对齐 */
+  }
+  
+  /* 进度条容器样式 */
+  .download-progress-container {
+    width: 80%; /* 容器宽度占屏幕的 80% */
+    max-width: 400px; /* 最大宽度为 400px */
+  }
+  
+  /* 进度条样式 */
+  progress {
+    width: 100%; /* 进度条占满容器宽度 */
+    height: 20px; /* 进度条高度 */
+    appearance: none; /* 去掉默认样式 */
+  }
+  
+  /* 进度条背景样式 */
+  progress::-webkit-progress-bar {
+    background-color: #444; /* 背景颜色 */
+    border-radius: 10px; /* 圆角效果 */
+  }
+  
+  /* 进度条进度样式 */
+  progress::-webkit-progress-value {
+    background-color: #4caf50; /* 进度颜色 */
+    border-radius: 10px; /* 圆角效果 */
+  }
+  
