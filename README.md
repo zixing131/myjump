@@ -6,3 +6,5 @@ http://jump.zixing.fun/java/
 国内访问：
 http://java.zixing.fun/
 
+
+GNU GENERAL PUBLIC LICENSE
