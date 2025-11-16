@@ -36,7 +36,8 @@ if(config.gamepad)
 //1是pAudio, pAudio已经被移除
 //2是webaudio-tinysynth
 //3是Audio标签
-var midimode=2;
+//4是sf2.sf2
+var midimode=4;
 window.AudioContext = window.AudioContext || window.webkitAudioContext
 if(!window.AudioContext)
 {
@@ -12395,6 +12396,10 @@ function PlayerContainer(url, pId) {
   { 
     this.audio= new Audio();
   }
+  else if(midimode==4)
+  { 
+    this.audio= player;
+  }
   //this.amr = new BenzAMRRecorder();
   console.log("PlayerContainer",this.pId);
 }
@@ -12506,7 +12511,12 @@ PlayerContainer.prototype.close = function() {
     { 
       this.audio.stop();
     }
-  }
+  } else if(midimode==4){
+    if(this.audio)
+    { 
+      this.audio.pause();
+    }
+  } 
 };
 PlayerContainer.prototype.getMediaTime = function() { 
  
@@ -12528,7 +12538,13 @@ PlayerContainer.prototype.getMediaTime = function() {
       this.audio.currentTime*100*10000;;
     }
   }
-
+if(midimode==4)
+  {
+    if(this.audio)
+    {
+      this.audio.currentTime*100*10000;
+    }
+  }
   //console.log("this.audioCtx.currentTime",this.audioCtx.currentTime); 
   return this.audioCtx.currentTime*100*10000;;
   //return this.player.getMediaTime();
@@ -12558,7 +12574,15 @@ PlayerContainer.prototype.setMediaTime = function(longtime) {
       this.audio.currentTime = longtime/100/10000;
       return longtime;
     }
+  }  if(midimode==4)
+  {
+    if(this.audio)
+    {
+      this.audio.currentTime = longtime/100/10000;
+      return longtime;
+    }
   }
+
 
   //console.log(this.audioCtx.currentTime);
 
@@ -12747,6 +12771,14 @@ PlayerContainer.prototype.writeBuffer = function(buffer,resolve,bufferSize) {
       resolve(bufferSize);
     }
   }  
+   else if(midimode==4){
+    if(this.audio)
+    { 
+      play(uint8);
+      resolve(bufferSize);
+    }
+  }  
+  
 }
   catch(err)
   {
@@ -12789,6 +12821,13 @@ PlayerContainer.prototype.start = function() {
       this.audio.play();
     }
   } 
+  else if(midimode==4){
+    if(this.audio)
+    { 
+      this.audio.play();
+    }
+  } 
+  
   }catch(err)
   {
     console.log(err);
@@ -12821,6 +12860,12 @@ PlayerContainer.prototype.pause = function() {
         this.tinysynth.stopMIDI();
       }
     }else if(midimode==3)
+    {  
+      if(this.audio)
+      {
+        this.audio.pause();
+      }
+    }else if(midimode==4)
     {  
       if(this.audio)
       {
@@ -12861,6 +12906,11 @@ PlayerContainer.prototype.resume = function() {
     { 
       this.audio.play();
     }
+  } else if(midimode==4){
+    if(this.audio)
+    { 
+      this.audio.play();
+    }
   } 
 
 }catch(err)
@@ -12885,7 +12935,12 @@ PlayerContainer.prototype.getVolume = function() {
     { 
       return this.audio.volume * 100;
     }
-  } 
+  } else if(midimode==4){
+    if(this.audio)
+    { 
+      return this.audio.synth.voicesAmount * 100;
+    }
+  }  
 
 };
 PlayerContainer.prototype.setVolume = function(level) {
@@ -12904,6 +12959,11 @@ PlayerContainer.prototype.setVolume = function(level) {
     if(this.audio)
     { 
       this.audio.volume = level/100;
+    }
+  }   else if(midimode==4){
+    if(this.audio)
+    { 
+      this.audio.synth.voicesAmount = level/100;
     }
   } 
 
@@ -13275,6 +13335,10 @@ Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,c
   else if(midimode==3)
   {
     player.audio.loop=count;
+  }
+   else if(midimode==4)
+  {
+    player.audio.loopCount = count
   }
   // if(count==-1)
   // {
