@@ -13338,6 +13338,9 @@ Native["com/sun/mmedia/DirectMIDI.nSetLoopCount.(II)V"] = function(addr,handle,c
   }
    else if(midimode==4)
   {
+    if(count==-1){
+      count=99999;
+    }
     player.audio.loopCount = count
   }
   // if(count==-1)
