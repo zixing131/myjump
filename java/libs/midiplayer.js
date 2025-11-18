@@ -8331,7 +8331,7 @@ fetch(Ws).then(async n => {
 async function play(buff,loop) {    
   AA.resume();
   if(!loop){
-      loop=99999;
+      loop=1;
   }
   player.loopCount = loop
   player.loadNewSongList([{
