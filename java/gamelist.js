@@ -147,5 +147,10 @@ var GameList = [{
     name: "都市摩天楼",
     jarName: "city.jar",
     picPath: "img/city.png"
+  },
+  {
+    name: "间谍鼠",
+    jarName: "mouse.jar",
+    picPath: "img/mouse.png"
   }
 ]
