@@ -8374,20 +8374,16 @@ var currentlyFocusedTextEditor;
     var ctx = $.ctx;
     
     window.requestAnimationFrame(function() {
-      // CRITICAL FIX: Skip the offscreen->device copy if 3D content was just rendered directly to device
-      // The blitGL function already wrote the 3D content directly to MIDP.deviceContext
+      // CRITICAL: Skip copying if 3D content was just rendered directly to device canvas
+      // Otherwise we would overwrite the 3D content with 2D UI content from offscreen
       if (window.gles2JustRendered) {
-        console.log('[refresh0] Skipping drawImage - 3D content already rendered to device canvas');
+        console.log('[refresh0] Skipping copy - 3D content already on device canvas');
         window.gles2JustRendered = false;
         J2ME.Scheduler.enqueue(ctx);
         return;
       }
       
-      // CRITICAL FIX: Clear the device canvas area BEFORE drawing to prevent ghosting
-      // This ensures no old content shows through from previous frames
-      MIDP.deviceContext.clearRect(x1, y1, width, height);
-      
-      // Copy offscreen canvas to device canvas
+      // Copy offscreen canvas to device canvas (for 2D-only frames)
       MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height);
       
       // CRITICAL FIX: Clear the offscreen canvas after refresh to prevent ghosting

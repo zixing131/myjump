@@ -3165,11 +3165,12 @@ var J2ME;
         });
         Object.defineProperty(FrameView.prototype, "parameterOffset", {
             get: function () {
-                // if(this.methodInfo && !this.methodInfo.codeAttribute)
-                // {
-                //     return 0;
-                // }
-                return this.methodInfo ? -this.methodInfo.codeAttribute.max_locals : 0;
+                // CRITICAL FIX: Check both methodInfo and codeAttribute before accessing max_locals
+                // codeAttribute can be null for native methods
+                if (this.methodInfo && this.methodInfo.codeAttribute) {
+                    return -this.methodInfo.codeAttribute.max_locals;
+                }
+                return 0;
             },
             enumerable: true,
             configurable: true
@@ -3221,7 +3222,7 @@ var J2ME;
                 return v;
             }
             var op = -1;
-            if (this.methodInfo) {
+            if (this.methodInfo && this.methodInfo.codeAttribute) {
                 op = this.methodInfo.codeAttribute.code[this.pc];
             }
             var type = i32[this.fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
@@ -3304,7 +3305,7 @@ var J2ME;
             if (monitorAddr === void 0) { monitorAddr = 0 /* NULL */; }
             if (frameType === void 0) { frameType = FrameType.Interpreter; }
             var fp = this.fp;
-            if (methodInfo) {
+            if (methodInfo && methodInfo.codeAttribute) {
                 this.fp = this.sp + methodInfo.codeAttribute.max_locals;
             }
             else {
@@ -3330,7 +3331,7 @@ var J2ME;
             var type = i32[this.fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
             release || assert(mi === methodInfo && type === frameType, "mi === methodInfo && type === frameType");
             this.pc = i32[this.fp + 0 /* CallerRAOffset */];
-            var maxLocals = mi ? mi.codeAttribute.max_locals : 0;
+            var maxLocals = (mi && mi.codeAttribute) ? mi.codeAttribute.max_locals : 0;
             this.sp = this.fp - maxLocals;
             this.fp = i32[this.fp + 1 /* CallerFPOffset */];
             release || assert(this.fp >= (this.tp >> 2), "Valid frame pointer after pop.");
@@ -3347,11 +3348,24 @@ var J2ME;
             release || J2ME.traceWriter && J2ME.traceWriter.writeLn("exceptionUnwind: " + toName(e));
             var pc = -1;
             var classInfo;
+            var loopCount = 0;
+            var maxLoopCount = 1000; // Prevent infinite loop
             while (true) {
+                // CRITICAL FIX: Prevent infinite loop
+                if (++loopCount > maxLoopCount) {
+                    console.error('[exceptionUnwind] Max loop count reached, breaking out');
+                    throw e;
+                }
                 var frameType = i32[this.fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
                 switch (frameType) {
                     case FrameType.Interpreter:
                         var mi = J2ME.methodIdToMethodInfoMap[i32[this.fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                        
+                        // CRITICAL FIX: Check if mi is null/undefined
+                        if (!mi) {
+                            console.error('[exceptionUnwind] methodInfo is null for Interpreter frame, throwing exception');
+                            throw e;
+                        }
                        
                         release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Looking for handler in: " + mi.implKey);
                         for (var i = 0; i < mi.exception_table_length; i++) {
@@ -3695,6 +3709,11 @@ var J2ME;
     
     
         release || assert(mi, "Must have method info.");
+        // CRITICAL FIX: Check if methodInfo and codeAttribute exist
+        if (!mi || !mi.codeAttribute) {
+            console.error('[interpret] methodInfo or codeAttribute is null, cannot interpret');
+            return;
+        }
         mi.stats.interpreterCallCount++;
         if (config.forceRuntimeCompilation || (mi.state === 0 /* Cold */ &&
             mi.stats.interpreterCallCount + mi.stats.backwardsBranchCount > J2ME.ConfigThresholds.InvokeThreshold)) {
@@ -3703,7 +3722,7 @@ var J2ME;
         var maxLocals = mi.codeAttribute.max_locals;
         var ci = mi.classInfo;
         var cp = ci.constantPool;
-        var code = mi ? mi.codeAttribute.code : null;
+        var code = mi.codeAttribute.code;
         var fp = thread.fp | 0;
         var lp = fp - maxLocals | 0;
         var sp = thread.sp | 0;
@@ -4538,6 +4557,11 @@ var J2ME;
                                     }
                                     mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
                                     type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                                    // CRITICAL FIX: Check mi and codeAttribute after OSR return
+                                    if (!mi || !mi.codeAttribute) {
+                                        console.error('[interpret] methodInfo or codeAttribute is null after OSR return');
+                                        return;
+                                    }
                                     maxLocals = mi.codeAttribute.max_locals;
                                     lp = fp - maxLocals | 0;
                                     ci = mi.classInfo;
@@ -5022,6 +5046,11 @@ var J2ME;
                             }
                         }
                         release || assert(type === FrameType.Interpreter, "Cannot resume in frame type: " + FrameType[type]);
+                        // CRITICAL FIX: Check mi and codeAttribute after method return
+                        if (!mi || !mi.codeAttribute) {
+                            console.error('[interpret] methodInfo or codeAttribute is null after method return');
+                            return;
+                        }
                         maxLocals = mi.codeAttribute.max_locals;
                         lp = fp - maxLocals | 0;
                         release || J2ME.traceWriter && J2ME.traceWriter.outdent();
@@ -5256,6 +5285,11 @@ var J2ME;
                         // Call Interpreted Method.
                         release || J2ME.traceWriter && J2ME.traceWriter.writeLn(">> I " + calleeTargetMethodInfo.implKey);
                         mi = calleeTargetMethodInfo;
+                        // CRITICAL FIX: Check mi and codeAttribute before method call
+                        if (!mi || !mi.codeAttribute) {
+                            console.error('[interpret] methodInfo or codeAttribute is null when calling method');
+                            return;
+                        }
                         maxLocals = mi.codeAttribute.max_locals;
                         ci = mi.classInfo;
                         cp = ci.constantPool;
@@ -5340,11 +5374,21 @@ var J2ME;
                     sp = thread.sp | 0;
                     pc = thread.pc | 0;
                     mi = thread.frame.methodInfo;
+                    // CRITICAL FIX: Check if mi is null/undefined before accessing codeAttribute
+                    // This can happen when exceptionUnwind fails to find a handler or method is special
+                    if (!mi) {
+                        console.error('[interpret] methodInfo is null after exceptionUnwind, cannot continue');
+                        return;
+                    }
                     if (mi.codeAttribute) {
                         maxLocals = mi.codeAttribute.max_locals;
                     }
                     lp = fp - maxLocals | 0;
                     ci = mi.classInfo;
+                    if (!ci) {
+                        console.error('[interpret] classInfo is null, cannot continue');
+                        return;
+                    }
                     cp = ci.constantPool;
                     if (mi.codeAttribute) {
                         code = mi.codeAttribute.code;
@@ -6806,6 +6850,7 @@ var J2ME;
     function throwArithmeticException() {
         // 静默忽略除法错误
         console.warn("ArithmeticException (ignored): / by zero");
+        throw $.newArithmeticException();
     }
     J2ME.throwArithmeticException = throwArithmeticException;
     function checkArrayStore(arrayAddr, valueAddr) {
