@@ -414,8 +414,7 @@ public class GLES2 {
     public static native void deleteBuffers(Object handle, Object[] buffArray);
 
     public static void bindBuffer(int type, Object buff) {
-        if (buff == null) return;
-
+        // Note: buff can be null to unbind the buffer
         bindBuffer(handle, type, buff);
         checkException();
     }

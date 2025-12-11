@@ -437,12 +437,15 @@ public class VertexBuffer extends Object3D {
 						posesArrFlat = BUtils.getVertexBufferFlatLight(positions.getExplodedShortValues());
 					}
 
-					int vcc = 3;
-					for (int t=0; t<numVertices/vcc; t++) {
-						for (int c=0; c<vcc; c++) {
-							short tmp = posesArrFlat[t*vcc];
-							bufferBuffer[4*(t*cc+5)+c] = tmp;
-						}
+					// posesArrFlat has numVertices * 3 elements (3 components per vertex)
+					// Copy to vPosLight position (offset 5 in each vertex block) for each vertex
+					for (int v = 0; v < numVertices; v++) {
+						// vPosLight is at offset 5 in each vertex's 6-attribute block
+						// Each attribute has 4 components
+						int destOffset = v * 4 * cc + 4 * 5;  // = v * 24 + 20
+						bufferBuffer[destOffset + 0] = posesArrFlat[v * 3 + 0];
+						bufferBuffer[destOffset + 1] = posesArrFlat[v * 3 + 1];
+						bufferBuffer[destOffset + 2] = posesArrFlat[v * 3 + 2];
 					}
 				}
 			}

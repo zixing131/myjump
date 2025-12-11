@@ -136,6 +136,7 @@ console.log('[libgles2.js] Loading...');
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_destroy: function(lib, ptr) {},
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_setSurface: function(lib, ptr, width, height) {
+      console.log('[GLES2] setSurface called:', width, 'x', height);
       const gl = ptr.gl;
       if (width !== ptr.width || height !== ptr.height) {
         gl.canvas.width = width;
@@ -143,6 +144,7 @@ console.log('[libgles2.js] Loading...');
         gl.viewport(0, 0, width, height);
         ptr.width = width;
         ptr.height = height;
+        console.log('[GLES2] setSurface - canvas resized to:', gl.canvas.width, 'x', gl.canvas.height);
       }
     },
 
@@ -428,12 +430,25 @@ console.log('[libgles2.js] Loading...');
       // sourceHandle is typically a canvas element
       let source = sourceHandle;
       
+      console.log('[GLES2] texImage2DFromHandle - target:', target, 'size:', width, 'x', height, 'source:', source);
+      
       // If sourceHandle is an address, try to get the actual object
       if (typeof sourceHandle === 'number' && sourceHandle !== 0) {
-        if (typeof J2ME !== 'undefined' && J2ME.NativeMap && J2ME.NativeMap.has(sourceHandle)) {
-          source = J2ME.NativeMap.get(sourceHandle);
-        } else if (typeof NativeMap !== 'undefined' && NativeMap.has && NativeMap.has(sourceHandle)) {
-          source = NativeMap.get(sourceHandle);
+        // Try getNative first
+        if (typeof getNative === 'function') {
+          const native = getNative(sourceHandle);
+          if (native) {
+            source = native;
+            console.log('[GLES2] texImage2DFromHandle - got from getNative:', source);
+          }
+        }
+        // Fallback to NativeMap
+        if (!source || source === sourceHandle) {
+          if (typeof J2ME !== 'undefined' && J2ME.NativeMap && J2ME.NativeMap.has(sourceHandle)) {
+            source = J2ME.NativeMap.get(sourceHandle);
+          } else if (typeof NativeMap !== 'undefined' && NativeMap.has && NativeMap.has(sourceHandle)) {
+            source = NativeMap.get(sourceHandle);
+          }
         }
       }
       
@@ -449,15 +464,20 @@ console.log('[libgles2.js] Loading...');
         source = source.gl.canvas;
       }
       
-      console.log('[GLES2] texImage2DFromHandle - target:', target, 'size:', width, 'x', height, 'source:', source);
-      
-      if (!source) {
-        console.error('[GLES2] texImage2DFromHandle - source is null');
-        return;
+      // If source is still 0 or invalid, try screenCanvas as fallback for background blitting
+      if (!source || source === 0) {
+        if (window.screenCanvas) {
+          source = window.screenCanvas;
+          console.log('[GLES2] texImage2DFromHandle - using screenCanvas as fallback');
+        } else {
+          console.error('[GLES2] texImage2DFromHandle - source is null, no fallback available');
+          return;
+        }
       }
       
       try {
         ptr.gl.texImage2D(target, level, intFormat, format, type, source);
+        console.log('[GLES2] texImage2DFromHandle - success');
       } catch (e) {
         console.error('[GLES2] texImage2DFromHandle error:', e);
       }
@@ -479,7 +499,7 @@ console.log('[libgles2.js] Loading...');
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_clear: function(lib, ptr, mask) {
-      console.log('[GLES2] clear called:', mask);
+      console.log('[GLES2] clear called:', mask, 'canvas size:', ptr.gl.canvas.width, 'x', ptr.gl.canvas.height);
       ptr.gl.clear(mask);
     },
 
@@ -520,13 +540,29 @@ console.log('[libgles2.js] Loading...');
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_drawArrays: function(lib, ptr, mode, first, count) {
-      console.log('[GLES2] drawArrays called:', mode, first, count);
+      console.log('[GLES2] drawArrays called:', mode, first, count, 'currentProgram:', window.GLES2CurrentProgram);
+      const error = ptr.gl.getError();
+      if (error !== ptr.gl.NO_ERROR) {
+        console.warn('[GLES2] GL error before drawArrays:', error);
+      }
       ptr.gl.drawArrays(mode, first, count);
+      const error2 = ptr.gl.getError();
+      if (error2 !== ptr.gl.NO_ERROR) {
+        console.error('[GLES2] GL error after drawArrays:', error2);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_drawElements: function(lib, ptr, mode, count, type, offset) {
-      console.log('[GLES2] drawElements called:', mode, count, type, offset);
+      console.log('[GLES2] drawElements called:', mode, count, type, offset, 'currentProgram:', window.GLES2CurrentProgram);
+      const error = ptr.gl.getError();
+      if (error !== ptr.gl.NO_ERROR) {
+        console.warn('[GLES2] GL error before drawElements:', error);
+      }
       ptr.gl.drawElements(mode, count, type, offset);
+      const error2 = ptr.gl.getError();
+      if (error2 !== ptr.gl.NO_ERROR) {
+        console.error('[GLES2] GL error after drawElements:', error2);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_enable: function(lib, ptr, flag) {
