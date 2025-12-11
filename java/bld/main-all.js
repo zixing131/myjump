@@ -8279,6 +8279,10 @@ var currentlyFocusedTextEditor;
   offscreenCanvas.height = MIDP.deviceContext.canvas.height;
   var offscreenContext2D = offscreenCanvas.getContext("2d", { willReadFrequently: true });
   var screenContextInfo = new ContextInfo(offscreenContext2D);
+  // Expose for use by CanvasGraphics native methods (blitGL fallback)
+  window.screenContextInfo = screenContextInfo;
+  window.screenCanvas = offscreenCanvas;
+  window.screenContext2D = offscreenContext2D;
   MIDP.deviceContext.canvas.addEventListener("canvasresize", function() {
     offscreenCanvas.width = MIDP.deviceContext.canvas.width;
     offscreenCanvas.height = MIDP.deviceContext.canvas.height;
@@ -9704,7 +9708,8 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
       }
     }
     
-    var menu = document.getElementById("sidebar").querySelector("nav ul");
+    var sidebar = document.getElementById("sidebar");
+    var menu = sidebar ? sidebar.querySelector("nav ul") : null;
     var okCommand = null;
     var backCommand = null;
     var isSidebarEmpty = true;
@@ -9714,34 +9719,45 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
       var filedstring = i32[command._address + field.byteOffset >> 2];
       var text = J2ME.fromStringAddr(filedstring);
       console.log(text);
-      var li = document.createElement("li"); 
-      var a = document.createElement("a");
-      a.textContent = text;
-      li.appendChild(a);
-      li.onclick = function(e) {
-        e.preventDefault();
-        window.location.hash = "";
-        sendEvent(command);
-      };
-      menu.appendChild(li);
-      isSidebarEmpty = false;
+      if (menu) {
+        var li = document.createElement("li"); 
+        var a = document.createElement("a");
+        a.textContent = text;
+        li.appendChild(a);
+        li.onclick = function(e) {
+          e.preventDefault();
+          window.location.hash = "";
+          sendEvent(command);
+        };
+        menu.appendChild(li);
+        isSidebarEmpty = false;
+      }
     });
     var header = document.getElementById("header");
-    header.style.display = "block";
-    document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
+    if (header) {
+      header.style.display = "block";
+    }
+    var headerDrawerBtn = document.getElementById("header-drawer-button");
+    if (headerDrawerBtn) {
+      headerDrawerBtn.style.display = isSidebarEmpty ? "none" : "block";
+    }
     var headerBtn = document.getElementById("header-ok-button");
-    if (okCommand) {
-      headerBtn.style.display = "block";
-      headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
-    } else {
-      headerBtn.style.display = "none";
+    if (headerBtn) {
+      if (okCommand) {
+        headerBtn.style.display = "block";
+        headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
+      } else {
+        headerBtn.style.display = "none";
+      }
     }
     var backBtn = document.getElementById("back-button");
-    if (backCommand) {
-      backBtn.style.display = "block";
-      backBtn.onclick = sendEvent.bind(backBtn, backCommand);
-    } else {
-      backBtn.style.display = "none";
+    if (backBtn) {
+      if (backCommand) {
+        backBtn.style.display = "block";
+        backBtn.onclick = sendEvent.bind(backBtn, backCommand);
+      } else {
+        backBtn.style.display = "none";
+      }
     }
 
     return nextMidpDisplayableId++;
@@ -9772,7 +9788,16 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
     }
     var el = document.getElementById("displayable-" + curDisplayableId);
     if (!el) {
-      document.getElementById("sidebar").querySelector("nav ul").innerHTML = "";
+      // Canvas模式下没有displayable元素，也没有sidebar菜单，直接返回
+      var sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        var navUl = sidebar.querySelector("nav ul");
+        if (navUl) navUl.innerHTML = "";
+      }
+      // 如果没有displayable元素且没有命令，直接返回
+      if (commandsAddr === J2ME.Constants.NULL || numCommands === 0) {
+        return;
+      }
     }
     if (commandsAddr === J2ME.Constants.NULL) {
       return;
@@ -9814,7 +9839,9 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
         };
       });
     } else {
-      var menu = document.getElementById("sidebar").querySelector("nav ul");
+      // Canvas模式下没有displayable元素，处理命令
+      var sidebar = document.getElementById("sidebar");
+      var menu = sidebar ? sidebar.querySelector("nav ul") : null;
       var okCommand = null;
       var backCommand = null;
       var isSidebarEmpty = true;
@@ -9828,48 +9855,77 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
           backCommand = command;
           return;
         }
-        var li = document.createElement("li");
-        var text = J2ME.fromStringAddr(command.shortLabel);
-        var a = document.createElement("a");
-        a.textContent = text;
-        li.appendChild(a);
-        li.onclick = function(e) {
-          e.preventDefault();
-          window.location.hash = "";
-          sendEvent(command);
-        };
-        menu.appendChild(li);
-        isSidebarEmpty = false;
+        if (menu) {
+          var li = document.createElement("li");
+          var text = J2ME.fromStringAddr(command.shortLabel);
+          var a = document.createElement("a");
+          a.textContent = text;
+          li.appendChild(a);
+          li.onclick = function(e) {
+            e.preventDefault();
+            window.location.hash = "";
+            sendEvent(command);
+          };
+          menu.appendChild(li);
+          isSidebarEmpty = false;
+        }
       });
 
-      var name = prompt(mytitle, mytitle);
-      if (name != null) { 
-        mycontent=name;
-        sendEvent(okCommand)
-      }else{
-        sendEvent(backCommand) 
-      } 
-    //   document.getElementById("header-drawer-button").style.display = isSidebarEmpty ? "none" : "block";
-    //   var headerBtn = document.getElementById("header-ok-button");
-    //   if (okCommand) {
-    //     headerBtn.style.display = "block";
-    //     headerBtn.onclick = sendEvent.bind(headerBtn, okCommand);
-    //   } else {
-    //     headerBtn.style.display = "none";
-    //   }
-    //   var backBtn = document.getElementById("back-button");
-    //   if (backCommand) {
-    //     backBtn.style.display = "block";
-    //     backBtn.onclick = sendEvent.bind(backBtn, backCommand);
-    //   } else {
-    //     backBtn.style.display = "none";
-    //   }
+      // 如果有okCommand或backCommand但没有菜单，使用prompt方式
+      if (okCommand || backCommand) {
+        var name = prompt(mytitle, mytitle);
+        if (name != null) { 
+          mycontent=name;
+          if (okCommand) sendEvent(okCommand);
+        } else {
+          if (backCommand) sendEvent(backCommand);
+        }
+      }
    }
   }catch(err){
     console.log("updateCommands Error : "+err)
   }
 
   };
+  
+  // M3G inflate implementation for kemulator M3GLoader
+  Native["kemulator/m3g/impl/M3GLoader.nativeInflate.([BI[B)V"] = function(addr, compressedAddr, compressedLen, uncompressedAddr) {
+    console.log("[M3G] nativeInflate called, compressedLen:", compressedLen);
+    try {
+      var compressed = J2ME.getArrayFromAddr(compressedAddr);
+      var uncompressed = J2ME.getArrayFromAddr(uncompressedAddr);
+      var uncompressedLen = uncompressed.length;
+      
+      console.log("[M3G] uncompressedLen:", uncompressedLen);
+      
+      // Create a view of the compressed data
+      var compressedData = new Uint8Array(compressedLen);
+      for (var i = 0; i < compressedLen; i++) {
+        compressedData[i] = compressed[i] & 0xFF;
+      }
+      
+      // Use the existing inflate function
+      var result = inflate(compressedData, uncompressedLen);
+      
+      console.log("[M3G] inflate result length:", result.length);
+      
+      // Copy result back to Java array
+      for (var i = 0; i < result.length && i < uncompressedLen; i++) {
+        uncompressed[i] = result[i];
+      }
+      console.log("[M3G] inflate success");
+    } catch (err) {
+      console.error("[M3G] inflate error:", err);
+      // Fallback: just copy data
+      var compressed = J2ME.getArrayFromAddr(compressedAddr);
+      var uncompressed = J2ME.getArrayFromAddr(uncompressedAddr);
+      var copyLen = Math.min(compressedLen, uncompressed.length);
+      for (var i = 0; i < copyLen; i++) {
+        uncompressed[i] = compressed[i];
+      }
+    }
+  };
+  
 })(Native);
 var TextEditorProvider = function() {
   var eTextArea = document.getElementById("textarea-editor");

@@ -71,6 +71,14 @@ public class CanvasGraphics extends javax.microedition.lcdui.Graphics {
         return cg;
     }
 
+    /**
+     * Create a CanvasGraphics for the screen display.
+     * This creates a new CanvasGraphics that can be used for 3D rendering.
+     */
+    public static CanvasGraphics createForScreen(int width, int height) {
+        return new CanvasGraphics(width, height);
+    }
+
     public final void doInit(int width, int height) {
         this.width = width;
         this.height = height;

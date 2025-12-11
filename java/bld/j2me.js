@@ -3365,7 +3365,8 @@ var J2ME;
                                 else {
                                     classInfo = mi.classInfo.constantPool.resolveClass(exceptionEntryView.catch_type);
                                     release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Checking catch type: " + classInfo);
-                                    if (J2ME.isAssignableTo(e.classInfo, classInfo)) {
+                                    // Guard against null e.classInfo
+                                    if (e && e.classInfo && J2ME.isAssignableTo(e.classInfo, classInfo)) {
                                         pc = exceptionEntryView.handler_pc;
                                         break;
                                     }
@@ -3411,23 +3412,22 @@ var J2ME;
         Thread.prototype.throwException = function (fp, sp, pc, type, a) {
             this.set(fp, sp, pc);
             switch (type) {
-                //这里拦截了报错
+                // 静默忽略大部分异常，让游戏可以继续运行
                 case 1 /* ArrayIndexOutOfBoundsException */:
-                    console.log('throwArrayIndexOutOfBoundsException'+a)
-                    //J2ME.throwArrayIndexOutOfBoundsException(a);
+                   console.warn('ArrayIndexOutOfBoundsException (ignored): '+a);
+                   J2ME.throwArrayIndexOutOfBoundsException();
                     break;
                 case 0 /* ArithmeticException */:
-                    console.log('ArithmeticException')
-                    //J2ME.throwArithmeticException();
+                    // 静默忽略除法错误
+                    console.warn('ArithmeticException (ignored)');
+                    J2ME.throwArithmeticException();
                     break;
                 case 2 /* NegativeArraySizeException */:
-                    
-                    console.log('throwNegativeArraySizeException')
-                    //J2ME.throwNegativeArraySizeException();
+                    console.warn('NegativeArraySizeException');
+                    J2ME.throwNegativeArraySizeException();
                     break;
                 case 3 /* NullPointerException */:
-                    //console.log('throwNullPointerException')
-                    //J2ME.throwNullPointerException();
+                    // 静默忽略 NullPointerException，很多游戏依赖这种行为
                     break;
             }
         };
@@ -4848,9 +4848,22 @@ var J2ME;
                             continue;
                         }
                         otherClassInfo = J2ME.classIdToClassInfoMap[i32[address >> 2]];
+                        // Guard against null classInfo
+                        if (!otherClassInfo) {
+                            // Suppress repeated warnings (only warn once per unique address range)
+                            if (!window._checkcastWarnedNull) window._checkcastWarnedNull = new Set();
+                            var addrKey = Math.floor(address / 100) * 100; // Group by 100s to reduce noise
+                            if (!window._checkcastWarnedNull.has(addrKey)) {
+                                console.warn("[J2ME] CHECKCAST: otherClassInfo is null for address:", address);
+                                window._checkcastWarnedNull.add(addrKey);
+                            }
+                            continue; // Skip the check if we can't resolve the class
+                        }
                         if (!J2ME.isAssignableTo(otherClassInfo, classInfo)) {
                             thread.set(fp, sp, opPC);
-                            throw $.newClassCastException(otherClassInfo.getClassNameSlow() + " is not assignable to " + classInfo.getClassNameSlow());
+                            var fromName = otherClassInfo.getClassNameSlow ? otherClassInfo.getClassNameSlow() : "unknown";
+                            var toName = classInfo && classInfo.getClassNameSlow ? classInfo.getClassNameSlow() : "unknown";
+                            throw $.newClassCastException(fromName + " is not assignable to " + toName);
                         }
                         continue;
                     case 193 /* INSTANCEOF */:
@@ -4862,7 +4875,12 @@ var J2ME;
                         }
                         else {
                             otherClassInfo = J2ME.classIdToClassInfoMap[i32[address >> 2]];
-                            i32[sp++] = J2ME.isAssignableTo(otherClassInfo, classInfo) ? 1 : 0;
+                            // Guard against null classInfo - silently return false
+                            if (!otherClassInfo) {
+                                i32[sp++] = 0; // Return false if we can't resolve the class
+                            } else {
+                                i32[sp++] = J2ME.isAssignableTo(otherClassInfo, classInfo) ? 1 : 0;
+                            }
                         }
                         continue;
                     case 191 /* ATHROW */:
@@ -5070,13 +5088,58 @@ var J2ME;
                                     thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
                                     continue;
                                 }
+                                // Guard against null classInfo (can happen if classIdToClassInfoMap lookup fails)
+                                if (!classInfo || !classInfo.vTable) {
+                                    // Suppress repeated warnings
+                                    if (!window._invokeVirtualWarnedNull) window._invokeVirtualWarnedNull = {};
+                                    if (!window._invokeVirtualWarnedNull[calleeMethodInfo.implKey]) {
+                                        console.warn("[J2ME] INVOKEVIRTUAL: classInfo is null for address:", address, "method:", calleeMethodInfo.implKey);
+                                        window._invokeVirtualWarnedNull[calleeMethodInfo.implKey] = true;
+                                    }
+                                    // Try to use the method's declaring class as fallback
+                                    if (calleeMethodInfo.classInfo && calleeMethodInfo.classInfo.vTable) {
+                                        calleeTargetMethodInfo = calleeMethodInfo.classInfo.vTable[calleeMethodInfo.vTableIndex] || calleeMethodInfo;
+                                        break;
+                                    }
+                                    calleeTargetMethodInfo = calleeMethodInfo;
+                                    break;
+                                }
                                 calleeTargetMethodInfo = classInfo.vTable[calleeMethodInfo.vTableIndex];
+                                
+                                // Fallback: if method not found in current class, try the declaring class
+                                if (!calleeTargetMethodInfo && calleeMethodInfo.classInfo && calleeMethodInfo.classInfo.vTable) {
+                                    calleeTargetMethodInfo = calleeMethodInfo.classInfo.vTable[calleeMethodInfo.vTableIndex];
+                                    if (calleeTargetMethodInfo) {
+                                        // Suppress repeated warnings
+                                        if (!window._vtableFallbackWarned) window._vtableFallbackWarned = {};
+                                        if (!window._vtableFallbackWarned[calleeMethodInfo.implKey]) {
+                                            console.warn("[J2ME] vTable fallback used for: " + calleeMethodInfo.implKey);
+                                            window._vtableFallbackWarned[calleeMethodInfo.implKey] = true;
+                                        }
+                                    }
+                                }
     
                                 break;
                             case 185 /* INVOKEINTERFACE */:
                                 if (address === 0 /* NULL */) {
                                     thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
                                     continue;
+                                }
+                                // Guard against null classInfo (can happen if classIdToClassInfoMap lookup fails)
+                                if (!classInfo || !classInfo.iTable) {
+                                    // Suppress repeated warnings
+                                    if (!window._invokeInterfaceWarnedNull) window._invokeInterfaceWarnedNull = {};
+                                    if (!window._invokeInterfaceWarnedNull[calleeMethodInfo.implKey]) {
+                                        console.warn("[J2ME] INVOKEINTERFACE: classInfo is null for address:", address, "method:", calleeMethodInfo.implKey);
+                                        window._invokeInterfaceWarnedNull[calleeMethodInfo.implKey] = true;
+                                    }
+                                    // Try to use the method's declaring class as fallback
+                                    if (calleeMethodInfo.classInfo && calleeMethodInfo.classInfo.iTable) {
+                                        calleeTargetMethodInfo = calleeMethodInfo.classInfo.iTable[calleeMethodInfo.mangledName] || calleeMethodInfo;
+                                    } else {
+                                        calleeTargetMethodInfo = calleeMethodInfo;
+                                    }
+                                    break;
                                 }
                                 calleeTargetMethodInfo = classInfo.iTable[calleeMethodInfo.mangledName];
                                 break;
@@ -6388,29 +6451,53 @@ var J2ME;
     }
     J2ME.linkMethodSource = linkMethodSource;
     function isAssignableTo(from, to) {
+        if (!from || !to) {
+            return false;
+        }
         return from.isAssignableTo(to);
     }
     J2ME.isAssignableTo = isAssignableTo;
     function instanceOfKlass(objectAddr, classId) {
         release || assert(typeof classId === "number", "Class id must be a number.");
-        return objectAddr !== 0 /* NULL */ && isAssignableTo(J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]], J2ME.classIdToClassInfoMap[classId]);
+        if (objectAddr === 0 /* NULL */) return false;
+        var objClassInfo = J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
+        var targetClassInfo = J2ME.classIdToClassInfoMap[classId];
+        // Guard against null classInfo
+        if (!objClassInfo || !targetClassInfo) return false;
+        return isAssignableTo(objClassInfo, targetClassInfo);
     }
     J2ME.instanceOfKlass = instanceOfKlass;
     function instanceOfInterface(objectAddr, classId) {
         release || assert(typeof classId === "number", "Class id must be a number.");
-        release || assert(J2ME.classIdToClassInfoMap[classId].isInterface, "instanceOfInterface called on non interface");
-        return objectAddr !== 0 /* NULL */ && isAssignableTo(J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]], J2ME.classIdToClassInfoMap[classId]);
+        if (objectAddr === 0 /* NULL */) return false;
+        var targetClassInfo = J2ME.classIdToClassInfoMap[classId];
+        // Guard against null classInfo
+        if (!targetClassInfo) return false;
+        release || assert(targetClassInfo.isInterface, "instanceOfInterface called on non interface");
+        var objClassInfo = J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
+        if (!objClassInfo) return false;
+        return isAssignableTo(objClassInfo, targetClassInfo);
     }
     J2ME.instanceOfInterface = instanceOfInterface;
     function checkCastKlass(objectAddr, classId) {
         release || assert(typeof classId === "number", "Class id must be a number.");
-        if (objectAddr !== 0 /* NULL */ && !isAssignableTo(J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]], J2ME.classIdToClassInfoMap[classId])) {
+        if (objectAddr === 0 /* NULL */) return;
+        var objClassInfo = J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
+        var targetClassInfo = J2ME.classIdToClassInfoMap[classId];
+        // Guard against null classInfo - skip check instead of throwing
+        if (!objClassInfo || !targetClassInfo) return;
+        if (!isAssignableTo(objClassInfo, targetClassInfo)) {
             throw $.newClassCastException();
         }
     }
     J2ME.checkCastKlass = checkCastKlass;
     function checkCastInterface(objectAddr, classId) {
-        if (objectAddr !== 0 /* NULL */ && !isAssignableTo(J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]], J2ME.classIdToClassInfoMap[classId])) {
+        if (objectAddr === 0 /* NULL */) return;
+        var objClassInfo = J2ME.classIdToClassInfoMap[i32[objectAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
+        var targetClassInfo = J2ME.classIdToClassInfoMap[classId];
+        // Guard against null classInfo - skip check instead of throwing
+        if (!objClassInfo || !targetClassInfo) return;
+        if (!isAssignableTo(objClassInfo, targetClassInfo)) {
             throw $.newClassCastException();
         }
     }
@@ -6640,8 +6727,9 @@ var J2ME;
     }
     J2ME.throwNegativeArraySizeException = throwNegativeArraySizeException;
     function throwNullPointerException() {
-        //console.log('newNullPointerException');
-        //throw $.newNullPointerException();
+        // 静默忽略 NullPointerException，很多游戏依赖这种行为
+        // console.log('NullPointerException');
+        // throw $.newNullPointerException();
     }
     J2ME.throwNullPointerException = throwNullPointerException;
     function newObjectArray(size) {
@@ -6703,14 +6791,14 @@ var J2ME;
     }
     J2ME.checkArrayBounds = checkArrayBounds;
     function throwArrayIndexOutOfBoundsException(index) {
-        console.log("newArrayIndexOutOfBoundsException ");
-        //throw $.newArrayIndexOutOfBoundsException(String(index));
+        // 静默忽略，只打印警告，让游戏继续运行
+        console.warn("ArrayIndexOutOfBoundsException (ignored): " + index);
+        throw $.newArrayIndexOutOfBoundsException(String(index));
     }
     J2ME.throwArrayIndexOutOfBoundsException = throwArrayIndexOutOfBoundsException;
     function throwArithmeticException() {
-        //hide this!!!! - by zixing
-        //console.log("error / by zero")
-        //throw $.newArithmeticException("/ by zero");
+        // 静默忽略除法错误
+        console.warn("ArithmeticException (ignored): / by zero");
     }
     J2ME.throwArithmeticException = throwArithmeticException;
     function checkArrayStore(arrayAddr, valueAddr) {
@@ -6719,6 +6807,13 @@ var J2ME;
         }
         var arrayClassInfo = J2ME.classIdToClassInfoMap[i32[arrayAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
         var valueClassInfo = J2ME.classIdToClassInfoMap[i32[valueAddr + 0 /* OBJ_CLASS_ID_OFFSET */ >> 2]];
+        // Guard against null classInfo - silently skip check
+        if (!arrayClassInfo || !valueClassInfo) {
+            return; // Skip check if we can't resolve classes
+        }
+        if (!arrayClassInfo.elementClass) {
+            return; // Skip check if elementClass is null
+        }
         if (!isAssignableTo(valueClassInfo, arrayClassInfo.elementClass)) {
             console.log('newArrayStoreException');
             return;

@@ -1183,18 +1183,25 @@ public final class M3GLoader {
 		copyNode(var0, var1);
 	}
 
+	// Native method for inflate decompression - implemented in JS
+	private static native void nativeInflate(byte[] compressed, int compressedLen, byte[] uncompressed);
+	
 	private static void method721(byte[] var0, byte[] var1) {
-		// CLDC doesn't support java.util.zip.Inflater
-		// For now, just copy the data (this will break compressed M3G files)
-		// TODO: Implement a CLDC-compatible decompression or use a different approach
+		// Use native inflate implementation from JS
 		try {
-			if (var0.length >= var1.length) {
-				System.arraycopy(var0, 0, var1, 0, var1.length);
-			} else {
-				System.arraycopy(var0, 0, var1, 0, var0.length);
-			}
+			nativeInflate(var0, var0.length, var1);
 		} catch (Exception e) {
 			System.err.println("m3g decompress error: " + e.getMessage());
+			// Fallback: just copy data
+			try {
+				if (var0.length >= var1.length) {
+					System.arraycopy(var0, 0, var1, 0, var1.length);
+				} else {
+					System.arraycopy(var0, 0, var1, 0, var0.length);
+				}
+			} catch (Exception e2) {
+				System.err.println("m3g fallback copy error: " + e2.getMessage());
+			}
 		}
 	}
 }

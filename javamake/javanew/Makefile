@@ -1,4 +1,4 @@
-SRC_DIRS=cldc1.1.1 vm midp custom kemulator pl
+SRC_DIRS=freej2me cldc1.1.1 vm midp custom kemulator pl
 JPP_DEFS=-ENABLE_JSR_205 -ENABLE_SSL -ENABLE_PUBLICKEYSTORE -ENABLE_JSR_211 -ENABLE_MULTIPLE_ISOLATES -RECORD -USE_FILE_CONNECTION -ENABLE_JSR_234
 
 SRC_DIRS += jsr-256
@@ -6,13 +6,15 @@ JPP_DEFS += -ENABLE_JSR_256
 
 SRC_DIRS += jsr-082
 
+
 SRC_DIRS += jsr-179
+ 
 JPP_DEFS += -ENABLE_JSR_179
 
 SRCS=$(shell find $(SRC_DIRS) -name *.java)
 JPP_SRCS=$(shell find $(SRC_DIRS) -name *.jpp)
 JPP_DESTS=$(JPP_SRCS:.jpp=.java)
-EXTRA=$(shell find . -name *.png) $(shell find . -name *.bin) $(shell find l10n -name *.json)
+EXTRA=$(shell find . -name *.png) $(shell find . -name *.bin) $(shell find l10n -name *.json) $(shell find kemulator -name *.glsl)
 
 classes.jar: $(SRCS) $(JPP_DESTS) $(EXTRA)
 	rm -rf build build-src

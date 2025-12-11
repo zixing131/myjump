@@ -47,12 +47,29 @@ public class Graphics3D {
 		this.bindTarget(target, true, 0);
 	}
 
+	// Internal CanvasGraphics buffer for when a non-CanvasGraphics target is provided
+	private static CanvasGraphics internalBuffer = null;
+	private static Graphics originalGraphicsTarget = null;
+	private static int internalBufferWidth = 0;
+	private static int internalBufferHeight = 0;
+
 	public void bindTarget(Object target, boolean depthBuffer, int hints) {
 		impl.enableDepthBuffer(depthBuffer);
 
 		if (Graphics3D.target != null) {
-			throw new IllegalStateException("Target already bound");
-		} else if (target == null) {
+			// Auto-release previous target instead of throwing exception
+			// This handles cases where releaseTarget wasn't called due to exceptions
+			System.err.println("[Graphics3D] Warning: Previous target not released, auto-releasing");
+			try {
+				releaseTarget();
+			} catch (Exception e) {
+				// Ignore errors during auto-release
+				Graphics3D.target = null;
+				originalGraphicsTarget = null;
+			}
+		}
+		
+		if (target == null) {
 			throw new NullPointerException("target");
 		} else if (hints != 0 && (hints & (ANTIALIAS | DITHER | OVERWRITE | TRUE_COLOR)) == 0) {
 			throw new IllegalArgumentException("hints");
@@ -69,14 +86,52 @@ public class Graphics3D {
 		if (target instanceof Graphics) {
 			Graphics g = (Graphics) target;
 
-			int targetW = ((CanvasGraphics)g).getWidth();
-			int targetH = ((CanvasGraphics)g).getSafeHeight();
+			int targetW;
+			int targetH;
+
+			// Check if Graphics is actually a CanvasGraphics instance
+			if (g instanceof CanvasGraphics) {
+				targetW = ((CanvasGraphics)g).getWidth();
+				targetH = ((CanvasGraphics)g).getSafeHeight();
+			} else {
+				// Use clip dimensions for regular Graphics
+				targetW = g.getClipWidth();
+				targetH = g.getClipHeight();
+				
+				// Fallback to reasonable defaults if clip dimensions are 0
+				if (targetW <= 0) targetW = 240;
+				if (targetH <= 0) targetH = 320;
+				
+				// Create or resize internal buffer if needed
+				if (internalBuffer == null || internalBufferWidth != targetW || internalBufferHeight != targetH) {
+					internalBuffer = new CanvasGraphics(targetW, targetH);
+					internalBufferWidth = targetW;
+					internalBufferHeight = targetH;
+				}
+				
+				// Reset the internal buffer for new rendering
+				internalBuffer.reset();
+				
+				// Store original target for later copy in releaseTarget
+				originalGraphicsTarget = g;
+				
+				// Use internal buffer as actual target
+				g = internalBuffer;
+				target = internalBuffer;
+			}
 			if (targetW > Emulator3D.MaxViewportWidth || targetH > Emulator3D.MaxViewportHeight) {
 				throw new IllegalArgumentException();
 			}
 
-			Graphics3D.target = target;
-			impl.bindTarget(g, (hints & ANTIALIAS) != 0);
+			// Call impl.bindTarget first, only set Graphics3D.target if successful
+			try {
+				impl.bindTarget(g, (hints & ANTIALIAS) != 0);
+				Graphics3D.target = target;
+			} catch (Exception e) {
+				Graphics3D.target = null;
+				originalGraphicsTarget = null;
+				throw new IllegalArgumentException(e.getMessage());
+			}
 			setViewport(g.getClipX(), g.getClipY(), g.getClipWidth(), Math.min(g.getClipHeight(), targetH));
 
 			if (!overwrite) {
@@ -98,8 +153,14 @@ public class Graphics3D {
 				throw new IllegalArgumentException();
 			}
 
-			Graphics3D.target = target;
-			impl.bindTarget(img2d, (hints & ANTIALIAS) != 0);
+			// Call impl.bindTarget first, only set Graphics3D.target if successful
+			try {
+				impl.bindTarget(img2d, (hints & ANTIALIAS) != 0);
+				Graphics3D.target = target;
+			} catch (Exception e) {
+				Graphics3D.target = null;
+				throw new IllegalArgumentException(e.getMessage());
+			}
 			setViewport(0, 0, targetW, targetH);
 
 			if (!overwrite) {
@@ -124,6 +185,16 @@ public class Graphics3D {
 	public void releaseTarget() {
 		if (target != null) {
 			impl.releaseTarget();
+			
+			// If we used an internal buffer, copy results to original Graphics target
+			if (originalGraphicsTarget != null && internalBuffer != null) {
+				// Get the rendered content as RGB data and draw to original Graphics
+				int[] rgbData = new int[internalBufferWidth * internalBufferHeight];
+				internalBuffer.getRGB(rgbData, 0, internalBufferWidth, 0, 0, internalBufferWidth, internalBufferHeight);
+				originalGraphicsTarget.drawRGB(rgbData, 0, internalBufferWidth, 0, 0, internalBufferWidth, internalBufferHeight, false);
+				originalGraphicsTarget = null;
+			}
+			
 			target = null;
 		}
 

@@ -121,6 +121,11 @@ public final class Emulator3D {
 		int h;
 
 		if (target instanceof Graphics) {
+			// Graphics3D.bindTarget ensures we always receive CanvasGraphics here
+			// (it wraps non-CanvasGraphics in an internal buffer)
+			if (!(target instanceof CanvasGraphics)) {
+				throw new IllegalStateException("Expected CanvasGraphics at this point. This is an internal error.");
+			}
 			this.target = target;
 			w = ((CanvasGraphics) this.target).getWidth();
 			h = ((CanvasGraphics) this.target).getSafeHeight();
@@ -219,7 +224,8 @@ public final class Emulator3D {
 				// if the overwrite hint was not specified, the img was already drawn into the internal buffer
 				// just blending without doing it would break compositemode interacting with the background
 
-				((CanvasGraphics) this.target).blitGL(x, y, x, y, width, height, false, false);
+				// flipY must be true because WebGL Y-axis is bottom-up while Canvas2D Y-axis is top-down
+				((CanvasGraphics) this.target).blitGL(x, y, x, y, width, height, true, false);
 			}
 		}
 	}
