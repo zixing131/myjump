@@ -6360,7 +6360,7 @@ if (typeof module !== "undefined" && module.exports) {
     return {};
   }
   var deviceCanvas = document.getElementById("canvas");
-  var deviceContext = deviceCanvas.getContext("2d");
+  var deviceContext = deviceCanvas.getContext("2d", { willReadFrequently: true });
   var FG = function() {
     var isolateId = -1;
     var displayId = -1;
@@ -6503,7 +6503,7 @@ if (typeof module !== "undefined" && module.exports) {
             gamesca=sca;
 
 
-            var cxt = deviceCanvas.getContext("2d"); 
+            var cxt = deviceCanvas.getContext("2d", { willReadFrequently: true }); 
             //cxt.scale( sca,sca);  
 
             var cany= parseInt(deviceCanvas.height*sca);
@@ -8277,7 +8277,7 @@ var currentlyFocusedTextEditor;
   var offscreenCanvas = document.createElement("canvas");
   offscreenCanvas.width = MIDP.deviceContext.canvas.width;
   offscreenCanvas.height = MIDP.deviceContext.canvas.height;
-  var offscreenContext2D = offscreenCanvas.getContext("2d");
+  var offscreenContext2D = offscreenCanvas.getContext("2d", { willReadFrequently: true });
   var screenContextInfo = new ContextInfo(offscreenContext2D);
   MIDP.deviceContext.canvas.addEventListener("canvasresize", function() {
     offscreenCanvas.width = MIDP.deviceContext.canvas.width;
@@ -8285,7 +8285,7 @@ var currentlyFocusedTextEditor;
     screenContextInfo.currentlyAppliedGraphicsInfo = null;
     offscreenContext2D.save();
   });
-  var tempContext = document.createElement("canvas").getContext("2d");
+  var tempContext = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
   tempContext.canvas.width = 0;
   tempContext.canvas.height = 0;
   Native["com/sun/midp/lcdui/DisplayDeviceContainer.getDisplayDevicesIds0.()[I"] = function(addr) {
@@ -8432,7 +8432,7 @@ var currentlyFocusedTextEditor;
     var canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    var contextInfo = new ContextInfo(canvas.getContext("2d"));
+    var contextInfo = new ContextInfo(canvas.getContext("2d", { willReadFrequently: true }));
     setNative(imageDataAddr, contextInfo);
     var imageData = getHandle(imageDataAddr);
     imageData.width = width;
@@ -8576,7 +8576,7 @@ var currentlyFocusedTextEditor;
     }
     self.baseline = size | 0;
     self.height = size * FONT_HEIGHT_MULTIPLIER | 0;
-    var context = document.createElement("canvas").getContext("2d");
+    var context = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
     setNative(addr, context);
     context.canvas.width = 0;
     context.canvas.height = 0;
@@ -8923,25 +8923,22 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
       throw $.newNullPointerException("yPoints array is null");
     }  
     
-    // tempContext.canvas.width = xPoints.length;
-    // tempContext.canvas.height = yPoints.length;
- 
-    var alpha = argbColor >>> 24;
-    var red = argbColor >>> 16 & 255;
-    var green = argbColor >>> 8 & 255;
+    var alpha = (argbColor >>> 24) & 255;
+    var red = (argbColor >>> 16) & 255;
+    var green = (argbColor >>> 8) & 255;
     var blue = argbColor & 255;
-    var color = transRgba([alpha,red,green,blue]);
- 
+
     var c = NativeMap.get(self.graphics).getGraphicsContext(); 
-
-    //c.drawImage(tempContext.canvas, xOffset, yOffset); 
+    c.save();
+    c.fillStyle = util.rgbaToCSS(red, green, blue, alpha / 255);
     c.beginPath();
-    c.moveTo(  xPoints[xOffset],  yPoints[yOffset]);
-
-
+    c.moveTo(xPoints[xOffset], yPoints[yOffset]);
+    for (var i = 1; i < nPoints; i++) {
+      c.lineTo(xPoints[xOffset + i], yPoints[yOffset + i]);
+    }
+    c.closePath();
     c.fill();
-
-    
+    c.restore();
   };
  
 
@@ -9141,14 +9138,10 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
   };
   Native["javax/microedition/lcdui/Graphics.fillTriangle.(IIIIII)V"] = function(addr, x1, y1, x2, y2, x3, y3) {
     var c = NativeMap.get(addr).getGraphicsContext();
-    var dx1 = x2 - x1 || 1;
-    var dy1 = y2 - y1 || 1;
-    var dx2 = x3 - x1 || 1;
-    var dy2 = y3 - y1 || 1;
     c.beginPath();
     c.moveTo(x1, y1);
-    c.lineTo(x1 + dx1, y1 + dy1);
-    c.lineTo(x1 + dx2, y1 + dy2);
+    c.lineTo(x2, y2);
+    c.lineTo(x3, y3);
     c.closePath();
     c.fill();
   };
@@ -9200,10 +9193,12 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
     var c = NativeMap.get(addr).getGraphicsContext();
     var endRad = -startAngle * .0175;
     var startRad = endRad - arcAngle * .0175;
+    // (x, y) is the top-left corner of the bounding rectangle, center is (x + width/2, y + height/2)
+    var cx = x + width / 2;
+    var cy = y + height / 2;
     c.beginPath();
-    createEllipticalArc(c, x, y, width / 2, height / 2, startRad, endRad, false);
+    createEllipticalArc(c, cx, cy, width / 2, height / 2, startRad, endRad, false);
     c.stroke();
-    //console.log("drawArc",addr, x, y, width, height, startAngle, arcAngle);
   };
   Native["javax/microedition/lcdui/Graphics.fillArc.(IIIIII)V"] = function(addr, x, y, width, height, startAngle, arcAngle) {
     if (width <= 0 || height <= 0) {
@@ -9212,10 +9207,13 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
     var c = NativeMap.get(addr).getGraphicsContext();
     var endRad = -startAngle * .0175;
     var startRad = endRad - arcAngle * .0175;
+    // (x, y) is the top-left corner of the bounding rectangle, center is (x + width/2, y + height/2)
+    var cx = x + width / 2;
+    var cy = y + height / 2;
     c.beginPath();
-    c.moveTo(x, y);
-    createEllipticalArc(c, x, y, width / 2, height / 2, startRad, endRad, true);
-    c.moveTo(x, y);
+    c.moveTo(cx, cy);
+    createEllipticalArc(c, cx, cy, width / 2, height / 2, startRad, endRad, true);
+    c.moveTo(cx, cy);
     c.fill();
   };
   var TRANS_NONE = 0;
@@ -9230,24 +9228,22 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
     var w, h;
     switch(transform) {
       case TRANS_NONE:
-      ;
       case TRANS_ROT180:
-      ;
       case TRANS_MIRROR:
-      ;
       case TRANS_MIRROR_ROT180:
         w = sw;
         h = sh;
         break;
       case TRANS_ROT90:
-      ;
       case TRANS_ROT270:
-      ;
       case TRANS_MIRROR_ROT90:
-      ;
       case TRANS_MIRROR_ROT270:
         w = sh;
         h = sw;
+        break;
+      default:
+        w = sw;
+        h = sh;
         break;
     }
     if (0 !== (anchor & HCENTER)) {
@@ -9265,6 +9261,7 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
       }
     }
     var x, y;
+    dstContext.save();
     switch(transform) {
       case TRANS_NONE:
         x = absX;
@@ -9306,36 +9303,14 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
         dstContext.scale(-1, 1);
         x = absY;
         y = absX;
+        break;
+      default:
+        x = absX;
+        y = absY;
         break;
     }
     dstContext.drawImage(srcCanvas, sx, sy, sw, sh, x, y, sw, sh);
-    switch(transform) {
-      case TRANS_NONE:
-        break;
-      case TRANS_ROT90:
-        dstContext.rotate(Math.PI * 1.5);
-        break;
-      case TRANS_ROT180:
-        dstContext.rotate(Math.PI);
-        break;
-      case TRANS_ROT270:
-        dstContext.rotate(Math.PI / 2);
-        break;
-      case TRANS_MIRROR:
-        dstContext.scale(-1, 1);
-        break;
-      case TRANS_MIRROR_ROT90:
-        dstContext.scale(-1, 1);
-        dstContext.rotate(Math.PI * 1.5);
-        break;
-      case TRANS_MIRROR_ROT180:
-        dstContext.scale(1, -1);
-        break;
-      case TRANS_MIRROR_ROT270:
-        dstContext.scale(-1, 1);
-        dstContext.rotate(Math.PI / 2);
-        break;
-    }
+    dstContext.restore();
   }
   Native["javax/microedition/lcdui/Graphics.drawLine.(IIII)V"] = function(addr, x1, y1, x2, y2) {
     var c = NativeMap.get(addr).getGraphicsContext();
@@ -10958,7 +10933,7 @@ NokiaImageProcessingLocalMsgConnection.prototype.sendMessageToServer = function(
         function _imageToBlob(aCanvas, aImage, aHeight, aWidth, aQuality) {
           aCanvas.width = aWidth;
           aCanvas.height = aHeight;
-          var ctx = aCanvas.getContext("2d");
+          var ctx = aCanvas.getContext("2d", { willReadFrequently: true });
           ctx.drawImage(aImage, 0, 0, aWidth, aHeight);
           return new Promise(function(resolve, reject) {
             aCanvas.toBlob(resolve, "image/jpeg", aQuality / 100);
