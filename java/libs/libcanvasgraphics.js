@@ -1,14 +1,18 @@
 // CanvasGraphics native methods for J2ME emulator
 // Provides 2D canvas rendering capabilities for CanvasGraphics Java class
-console.log('[libcanvasgraphics.js] Loading...');
+// VERSION: 20251212d
+console.log('[libcanvasgraphics.js] Loaded v20251212d');
 
 (function() {
   'use strict';
+  
+  const DEBUG = false;
+  const log = DEBUG ? console.log.bind(console) : function() {};
 
   const CanvasGraphicsNatives = {
     // Create a new canvas context with given dimensions
     createCanvasCtx: function(lib, width, height) {
-      console.log('[CanvasGraphics] createCanvasCtx:', width, height);
+      log('[CanvasGraphics] createCanvasCtx:', width, height);
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
@@ -227,7 +231,7 @@ console.log('[libcanvasgraphics.js] Loading...');
         return;
       }
       
-      console.log('[CanvasGraphics] drawImage2 inner - ctx:', ctx, 'canvas:', ctx.canvas, 'src:', canvasRef, 'srcSize:', canvasRef.width, 'x', canvasRef.height);
+      log('[CanvasGraphics] drawImage2 inner - ctx:', ctx, 'canvas:', ctx.canvas, 'src:', canvasRef, 'srcSize:', canvasRef.width, 'x', canvasRef.height);
       
       ctx.save();
       
@@ -245,7 +249,7 @@ console.log('[libcanvasgraphics.js] Loading...');
         } else {
           ctx.drawImage(canvasRef, sx, sy, width, height, x, y, width, height);
         }
-        console.log('[CanvasGraphics] drawImage2 inner - draw complete, flipY:', flipY);
+        log('[CanvasGraphics] drawImage2 inner - draw complete, flipY:', flipY);
       } catch (e) {
         console.error('[CanvasGraphics] drawImage2 inner - drawImage error:', e);
       }
@@ -374,12 +378,11 @@ console.log('[libcanvasgraphics.js] Loading...');
   // Register to Native object when available
   function registerCanvasGraphicsNatives() {
     if (typeof Native === 'undefined') {
-      console.log('[libcanvasgraphics.js] Native object not ready, waiting...');
       setTimeout(registerCanvasGraphicsNatives, 100);
       return;
     }
 
-    console.log('[libcanvasgraphics.js] Registering CanvasGraphics native methods...');
+    // Registering CanvasGraphics native methods
 
     const cgBasePath = 'pl/zb3/freej2me/bridge/graphics/CanvasGraphics';
     const utilsBasePath = 'pl/zb3/freej2me/bridge/graphics/Utils';
@@ -418,7 +421,7 @@ console.log('[libcanvasgraphics.js] Loading...');
     // CanvasGraphics methods - createCanvasCtx returns a new context
     Native[cgBasePath + '.createCanvasCtx.(II)Ljava/lang/Object;'] = function(addr, w, h) {
       const ctx = CanvasGraphicsNatives.createCanvasCtx(null, w, h);
-      console.log('[CanvasGraphics] createCanvasCtx returned:', ctx);
+      log('[CanvasGraphics] createCanvasCtx returned:', ctx);
       
       // Store ctx globally for later retrieval if the J2ME object system doesn't properly pass it back
       if (!window.CanvasGraphicsContexts) {
@@ -432,7 +435,7 @@ console.log('[libcanvasgraphics.js] Loading...');
       if (typeof setNative === 'function' && addr) {
         // Store against the calling object's address
         setNative(addr, ctx);
-        console.log('[CanvasGraphics] createCanvasCtx - stored ctx for addr:', addr);
+        log('[CanvasGraphics] createCanvasCtx - stored ctx for addr:', addr);
       }
       
       return ctx;
@@ -523,50 +526,50 @@ console.log('[libcanvasgraphics.js] Loading...');
 
     // drawImage2 with signature (Object, Object, int sx, int sy, int x, int y, int width, int height, boolean flipY, boolean withAlpha)
     Native[cgBasePath + '.drawImage2.(Ljava/lang/Object;Ljava/lang/Object;IIIIIIZZ)V'] = function(addr, ctxAddr, canvasAddr, sx, sy, x, y, w, h, flipY, withAlpha) {
-      console.log('[CanvasGraphics] drawImage2 called - ctxAddr:', ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY, 'withAlpha:', withAlpha);
+      log('[CanvasGraphics] drawImage2 called - ctxAddr:', ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY, 'withAlpha:', withAlpha);
       
       let ctx = getCtx(ctxAddr);
       let canvas = getCtx(canvasAddr);
       
-      console.log('[CanvasGraphics] drawImage2 - initial ctx:', ctx, 'canvas:', canvas);
+      log('[CanvasGraphics] drawImage2 - initial ctx:', ctx, 'canvas:', canvas);
       
       // canvasAddr might be a canvas element reference from GLES2.getCanvasRef()
       if (!canvas && canvasAddr) {
         // Try to get from NativeMap
         if (typeof NativeMap !== 'undefined' && NativeMap.has && NativeMap.has(canvasAddr)) {
           canvas = NativeMap.get(canvasAddr);
-          console.log('[CanvasGraphics] drawImage2 - got canvas from NativeMap:', canvas);
+          log('[CanvasGraphics] drawImage2 - got canvas from NativeMap:', canvas);
         } else if (typeof J2ME !== 'undefined' && J2ME.NativeMap && J2ME.NativeMap.has(canvasAddr)) {
           canvas = J2ME.NativeMap.get(canvasAddr);
-          console.log('[CanvasGraphics] drawImage2 - got canvas from J2ME.NativeMap:', canvas);
+          log('[CanvasGraphics] drawImage2 - got canvas from J2ME.NativeMap:', canvas);
         }
       }
       
       // If canvas is a WebGL handle, get its canvas element
       if (canvas && canvas.gl && canvas.gl.canvas) {
-        console.log('[CanvasGraphics] drawImage2 - extracting gl.canvas from handle');
+        log('[CanvasGraphics] drawImage2 - extracting gl.canvas from handle');
         canvas = canvas.gl.canvas;
       }
       
       // If canvas is an HTMLCanvasElement directly, use it
       if (canvas instanceof HTMLCanvasElement) {
-        console.log('[CanvasGraphics] drawImage2 - canvas is HTMLCanvasElement directly');
+        log('[CanvasGraphics] drawImage2 - canvas is HTMLCanvasElement directly');
       }
       
       // Always try to get WebGL canvas from global GLES2Context as primary source for blitGL
       // This is the most reliable way since _create stores the context globally
       if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
-        console.log('[CanvasGraphics] drawImage2 - canvas not valid HTMLCanvasElement, trying global GLES2Context. canvas:', canvas, 'GLES2Context:', window.GLES2Context);
+        log('[CanvasGraphics] drawImage2 - canvas not valid HTMLCanvasElement, trying global GLES2Context. canvas:', canvas, 'GLES2Context:', window.GLES2Context);
         if (window.GLES2Context && window.GLES2Context.gl && window.GLES2Context.gl.canvas) {
-          console.log('[CanvasGraphics] drawImage2 - using global GLES2Context.gl.canvas');
+          log('[CanvasGraphics] drawImage2 - using global GLES2Context.gl.canvas');
           canvas = window.GLES2Context.gl.canvas;
         } else if (window.currentGLES2Handle && window.currentGLES2Handle.gl && window.currentGLES2Handle.gl.canvas) {
-          console.log('[CanvasGraphics] drawImage2 - using currentGLES2Handle.gl.canvas');
+          log('[CanvasGraphics] drawImage2 - using currentGLES2Handle.gl.canvas');
           canvas = window.currentGLES2Handle.gl.canvas;
         }
       }
       
-      console.log('[CanvasGraphics] drawImage2 - final canvas:', canvas, 'width:', canvas ? canvas.width : 'N/A', 'height:', canvas ? canvas.height : 'N/A');
+      log('[CanvasGraphics] drawImage2 - final canvas:', canvas, 'width:', canvas ? canvas.width : 'N/A', 'height:', canvas ? canvas.height : 'N/A');
       
       // Handle canvas context vs canvas element
       let sourceCanvas = canvas;
@@ -581,13 +584,13 @@ console.log('[libcanvasgraphics.js] Loading...');
         // Try to get screen context from global
         if (window.screenContext2D) {
           ctx = window.screenContext2D;
-          console.log('[CanvasGraphics] drawImage2 - using screenContext2D as fallback');
+          log('[CanvasGraphics] drawImage2 - using screenContext2D as fallback');
         } else if (window.screenContextInfo && window.screenContextInfo.ctx) {
           ctx = window.screenContextInfo.ctx;
-          console.log('[CanvasGraphics] drawImage2 - using screenContextInfo as fallback');
+          log('[CanvasGraphics] drawImage2 - using screenContextInfo as fallback');
         } else if (window.screenCanvas) {
           ctx = window.screenCanvas.getContext('2d');
-          console.log('[CanvasGraphics] drawImage2 - using screenCanvas as fallback');
+          log('[CanvasGraphics] drawImage2 - using screenCanvas as fallback');
         }
       }
       
@@ -598,7 +601,7 @@ console.log('[libcanvasgraphics.js] Loading...');
           try {
             const screenCtx = window.screenCanvas.getContext('2d');
             if (screenCtx) {
-              console.log('[CanvasGraphics] drawImage2 - using screenCanvas directly as last resort');
+              log('[CanvasGraphics] drawImage2 - using screenCanvas directly as last resort');
               ctx = screenCtx;
             }
           } catch (e) {}
@@ -673,7 +676,7 @@ console.log('[libcanvasgraphics.js] Loading...');
       return CanvasFontNatives.getFontMetrics(null, fontStr, result);
     };
 
-    console.log('[libcanvasgraphics.js] CanvasGraphics native methods registration complete');
+    // CanvasGraphics native methods registration complete
   }
 
   // Export registration function
@@ -687,6 +690,5 @@ console.log('[libcanvasgraphics.js] Loading...');
     registerCanvasGraphicsNatives();
   }
 
-  console.log('[libcanvasgraphics.js] Loaded');
 })();
 

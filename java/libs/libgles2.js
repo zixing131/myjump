@@ -1,10 +1,32 @@
 // WebGL2 bridge for J2ME 3D support
 // Based on freej2me-web implementation
-console.log('[libgles2.js] Loading...');
+// VERSION: 20251212d
+console.log('[libgles2.js] Loaded v20251212d');
+window.GLES2_LIB_VERSION = '20251212d';
 
 (function() {
   'use strict';
-  console.log('[libgles2.js] Initializing GLES2 native methods...');
+  
+  // Log throttling to prevent spam during loops
+  const logThrottle = {
+    counts: {},
+    maxPerSecond: 5,
+    lastReset: Date.now(),
+    shouldLog: function(key) {
+      const now = Date.now();
+      if (now - this.lastReset > 1000) {
+        this.counts = {};
+        this.lastReset = now;
+      }
+      this.counts[key] = (this.counts[key] || 0) + 1;
+      return this.counts[key] <= this.maxPerSecond;
+    }
+  };
+  
+  // Quiet logging - only log errors and important events
+  const DEBUG = false;
+  const log = DEBUG ? console.log.bind(console) : function() {};
+  const logOnce = (key, ...args) => { if (logThrottle.shouldLog(key)) console.log(...args); };
 
   function createShader(gl, type, source) {
     const shader = gl.createShader(type);
@@ -93,7 +115,7 @@ console.log('[libgles2.js] Loading...');
   // GLES2 native methods
   window.GLES2NativeMethods = {
     Java_pl_zb3_freej2me_bridge_gles2_GLES2__1create: function(lib, antialias) {
-      console.log('[GLES2] _create called! antialias:', antialias);
+      log('[GLES2] _create called! antialias:', antialias);
       var canvas = document.createElement('canvas');
       var gl = canvas.getContext('webgl2', {
         antialias: !!antialias,
@@ -105,7 +127,7 @@ console.log('[libgles2.js] Loading...');
         console.error('WebGL2 not supported!');
         return null;
       }
-      console.log('[GLES2] WebGL2 context created successfully');
+      log('[GLES2] WebGL2 context created successfully');
 
       let maxAnisotropy = 0;
       const ext = gl.getExtension('EXT_texture_filter_anisotropic');
@@ -136,7 +158,7 @@ console.log('[libgles2.js] Loading...');
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_destroy: function(lib, ptr) {},
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_setSurface: function(lib, ptr, width, height) {
-      console.log('[GLES2] setSurface called:', width, 'x', height);
+      log('[GLES2] setSurface called:', width, 'x', height);
       const gl = ptr.gl;
       if (width !== ptr.width || height !== ptr.height) {
         gl.canvas.width = width;
@@ -144,7 +166,7 @@ console.log('[libgles2.js] Loading...');
         gl.viewport(0, 0, width, height);
         ptr.width = width;
         ptr.height = height;
-        console.log('[GLES2] setSurface - canvas resized to:', gl.canvas.width, 'x', gl.canvas.height);
+        log('[GLES2] setSurface - canvas resized to:', gl.canvas.width, 'x', gl.canvas.height);
       }
     },
 
@@ -430,7 +452,7 @@ console.log('[libgles2.js] Loading...');
       // sourceHandle is typically a canvas element
       let source = sourceHandle;
       
-      console.log('[GLES2] texImage2DFromHandle - target:', target, 'size:', width, 'x', height, 'source:', source);
+      log('[GLES2] texImage2DFromHandle - target:', target, 'size:', width, 'x', height, 'source:', source);
       
       // If sourceHandle is an address, try to get the actual object
       if (typeof sourceHandle === 'number' && sourceHandle !== 0) {
@@ -439,7 +461,7 @@ console.log('[libgles2.js] Loading...');
           const native = getNative(sourceHandle);
           if (native) {
             source = native;
-            console.log('[GLES2] texImage2DFromHandle - got from getNative:', source);
+            log('[GLES2] texImage2DFromHandle - got from getNative:', source);
           }
         }
         // Fallback to NativeMap
@@ -468,7 +490,7 @@ console.log('[libgles2.js] Loading...');
       if (!source || source === 0) {
         if (window.screenCanvas) {
           source = window.screenCanvas;
-          console.log('[GLES2] texImage2DFromHandle - using screenCanvas as fallback');
+          log('[GLES2] texImage2DFromHandle - using screenCanvas as fallback');
         } else {
           console.error('[GLES2] texImage2DFromHandle - source is null, no fallback available');
           return;
@@ -477,7 +499,7 @@ console.log('[libgles2.js] Loading...');
       
       try {
         ptr.gl.texImage2D(target, level, intFormat, format, type, source);
-        console.log('[GLES2] texImage2DFromHandle - success');
+        log('[GLES2] texImage2DFromHandle - success');
       } catch (e) {
         console.error('[GLES2] texImage2DFromHandle error:', e);
       }
@@ -499,7 +521,7 @@ console.log('[libgles2.js] Loading...');
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_clear: function(lib, ptr, mask) {
-      console.log('[GLES2] clear called:', mask, 'canvas size:', ptr.gl.canvas.width, 'x', ptr.gl.canvas.height);
+      log('[GLES2] clear called:', mask, 'canvas size:', ptr.gl.canvas.width, 'x', ptr.gl.canvas.height);
       ptr.gl.clear(mask);
     },
 
@@ -540,29 +562,11 @@ console.log('[libgles2.js] Loading...');
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_drawArrays: function(lib, ptr, mode, first, count) {
-      console.log('[GLES2] drawArrays called:', mode, first, count, 'currentProgram:', window.GLES2CurrentProgram);
-      const error = ptr.gl.getError();
-      if (error !== ptr.gl.NO_ERROR) {
-        console.warn('[GLES2] GL error before drawArrays:', error);
-      }
       ptr.gl.drawArrays(mode, first, count);
-      const error2 = ptr.gl.getError();
-      if (error2 !== ptr.gl.NO_ERROR) {
-        console.error('[GLES2] GL error after drawArrays:', error2);
-      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_drawElements: function(lib, ptr, mode, count, type, offset) {
-      console.log('[GLES2] drawElements called:', mode, count, type, offset, 'currentProgram:', window.GLES2CurrentProgram);
-      const error = ptr.gl.getError();
-      if (error !== ptr.gl.NO_ERROR) {
-        console.warn('[GLES2] GL error before drawElements:', error);
-      }
       ptr.gl.drawElements(mode, count, type, offset);
-      const error2 = ptr.gl.getError();
-      if (error2 !== ptr.gl.NO_ERROR) {
-        console.error('[GLES2] GL error after drawElements:', error2);
-      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_enable: function(lib, ptr, flag) {
@@ -746,12 +750,12 @@ console.log('[libgles2.js] Loading...');
   // Register native methods to the global Native object when it becomes available
   function registerGLES2Natives() {
     if (typeof Native === 'undefined') {
-      console.log('[libgles2.js] Native object not ready, waiting...');
+      log('[libgles2.js] Native object not ready, waiting...');
       setTimeout(registerGLES2Natives, 100);
       return;
     }
 
-    console.log('[libgles2.js] Registering GLES2 native methods to Native object...');
+    log('[libgles2.js] Registering GLES2 native methods to Native object...');
     
     // Map from internal names to JNI-style signatures
     const methodMappings = {
@@ -792,7 +796,7 @@ console.log('[libgles2.js] Loading...');
       'bindTexture': { sig: '.(Ljava/lang/Object;ILjava/lang/Object;)V', fn: 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_bindTexture' },
       'texParameterf': { sig: '.(Ljava/lang/Object;IIF)V', fn: 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_texParameterf' },
       'texParameteri': { sig: '.(Ljava/lang/Object;III)V', fn: 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_texParameteri' },
-      'texImage2D': { sig: '.(Ljava/lang/Object;IIIIIII[B)V', fn: 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_texImage2D' },
+      // texImage2D is registered separately with byte array conversion
       'texImage2DFromHandle': { sig: '.(Ljava/lang/Object;IIIIIIILjava/lang/Object;)V', fn: 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_texImage2DFromHandle' },
       'generateMipmap': { sig: '.(Ljava/lang/Object;I)V', fn: 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_generateMipmap' },
       'clear': { sig: '.(Ljava/lang/Object;I)V', fn: 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_clear' },
@@ -883,7 +887,7 @@ console.log('[libgles2.js] Loading...');
 
     // Register _create specially - it returns an object
     Native[basePath + '._create.(Z)Ljava/lang/Object;'] = function(addr, antialias) {
-      console.log('[GLES2] Native _create called, addr:', addr);
+      log('[GLES2] Native _create called, addr:', addr);
       const handle = GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2__1create(null, antialias);
       // Store globally as fallback
       window.GLES2Context = handle;
@@ -895,7 +899,7 @@ console.log('[libgles2.js] Loading...');
       // Return allocated Java object address
       return allocAndStoreNative(handle, 'context');
     };
-    console.log('[libgles2.js] Registered: _create');
+    log('[libgles2.js] Registered: _create');
 
     // Helper to allocate J2ME object and store native
     function allocAndStoreNative(jsObject, objectType) {
@@ -922,7 +926,7 @@ console.log('[libgles2.js] Loading...');
             window.GLES2ProgramByAddr.set(objAddr, jsObject);
           }
           
-          console.log('[GLES2] allocAndStoreNative - allocated addr:', objAddr, 'type:', objectType, 'for:', jsObject);
+          log('[GLES2] allocAndStoreNative - allocated addr:', objAddr, 'type:', objectType, 'for:', jsObject);
           return objAddr;
         } catch (e) {
           console.warn('[GLES2] allocAndStoreNative failed:', e);
@@ -938,8 +942,8 @@ console.log('[libgles2.js] Loading...');
       const ptr = getObj(handleAddr) || window.GLES2Context;
       const vertexSrc = toStr(vertexSrcAddr);
       const fragmentSrc = toStr(fragmentSrcAddr);
-      console.log('[GLES2] createProgram - vertex shader length:', vertexSrc ? vertexSrc.length : 0);
-      console.log('[GLES2] createProgram - fragment shader length:', fragmentSrc ? fragmentSrc.length : 0);
+      log('[GLES2] createProgram - vertex shader length:', vertexSrc ? vertexSrc.length : 0);
+      log('[GLES2] createProgram - fragment shader length:', fragmentSrc ? fragmentSrc.length : 0);
       const program = GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_createProgram(null, ptr, vertexSrc, fragmentSrc);
       // Store program for later retrieval
       const progId = storeGLObject(program, null);
@@ -948,11 +952,11 @@ console.log('[libgles2.js] Loading...');
       window.GLES2CurrentProgram = program;
       // Store in GLES2Programs map for address-based lookup
       if (!window.GLES2Programs) window.GLES2Programs = new Map();
-      console.log('[GLES2] createProgram - stored as ID:', progId, 'program:', program);
+      log('[GLES2] createProgram - stored as ID:', progId, 'program:', program);
       // Allocate Java object and store native
       return allocAndStoreNative(program, 'program');
     };
-    console.log('[libgles2.js] Registered: createProgram (with string conversion)');
+    log('[libgles2.js] Registered: createProgram (with string conversion)');
 
     // getAttribLocation takes a String parameter
     Native[basePath + '.getAttribLocation.(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)I'] = function(addr, handleAddr, programAddr, nameAddr) {
@@ -960,13 +964,13 @@ console.log('[libgles2.js] Loading...');
       const name = toStr(nameAddr);
       // Try multiple ways to get the program
       let program = getGLObject(programAddr, 'program');
-      console.log('[GLES2] getAttribLocation - programAddr:', programAddr, 'typeof:', typeof programAddr, 'program:', program, 'name:', name);
+      log('[GLES2] getAttribLocation - programAddr:', programAddr, 'typeof:', typeof programAddr, 'program:', program, 'name:', name);
       
       // If program is null, try to get the current or last created program
       if (!program) {
         program = window.GLES2CurrentProgram || window.GLES2LastProgram;
         if (program) {
-          console.log('[GLES2] getAttribLocation - using current/last program as fallback');
+          log('[GLES2] getAttribLocation - using current/last program as fallback');
         }
       }
       
@@ -977,7 +981,7 @@ console.log('[libgles2.js] Loading...');
       
       return GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_getAttribLocation(null, ptr, program, name);
     };
-    console.log('[libgles2.js] Registered: getAttribLocation (with string conversion)');
+    log('[libgles2.js] Registered: getAttribLocation (with string conversion)');
 
     // getUniformLocation takes a String parameter - returns stored ID
     Native[basePath + '.getUniformLocation.(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;'] = function(addr, handleAddr, programAddr, nameAddr) {
@@ -985,11 +989,11 @@ console.log('[libgles2.js] Loading...');
       const name = toStr(nameAddr);
       // Try to get program, fallback to current/last program
       let program = getGLObject(programAddr);
-      console.log('[GLES2] getUniformLocation - programAddr:', programAddr, 'program:', program, 'name:', name);
+      log('[GLES2] getUniformLocation - programAddr:', programAddr, 'program:', program, 'name:', name);
       if (!program) {
         program = window.GLES2CurrentProgram || window.GLES2LastProgram;
         if (program) {
-          console.log('[GLES2] getUniformLocation - using current/last program as fallback');
+          log('[GLES2] getUniformLocation - using current/last program as fallback');
         }
       }
       if (!program) {
@@ -1006,12 +1010,12 @@ console.log('[libgles2.js] Loading...');
         // Also store per-program uniforms
         if (!program._uniforms) program._uniforms = new Map();
         program._uniforms.set(name, loc);
-        console.log('[GLES2] getUniformLocation - stored:', name, loc);
+        log('[GLES2] getUniformLocation - stored:', name, loc);
       }
       // Allocate Java object and store native for proper reference tracking
       return allocAndStoreNative(loc, 'uniform');
     };
-    console.log('[libgles2.js] Registered: getUniformLocation (with string conversion)');
+    log('[libgles2.js] Registered: getUniformLocation (with string conversion)');
 
     // Register methods that take handle as first arg and use the global context
     const handleMethods = [
@@ -1045,7 +1049,7 @@ console.log('[libgles2.js] Loading...');
       { name: 'bindTexture', sig: '.(Ljava/lang/Object;ILjava/lang/Object;)V' },
       { name: 'texParameterf', sig: '.(Ljava/lang/Object;IIF)V' },
       { name: 'texParameteri', sig: '.(Ljava/lang/Object;III)V' },
-      { name: 'texImage2D', sig: '.(Ljava/lang/Object;IIIIIII[B)V' },
+      // texImage2D is registered separately above with byte array conversion
       { name: 'texImage2DFromHandle', sig: '.(Ljava/lang/Object;IIIIIIILjava/lang/Object;)V' },
       { name: 'generateMipmap', sig: '.(Ljava/lang/Object;I)V' },
       { name: 'clear', sig: '.(Ljava/lang/Object;I)V' },
@@ -1080,32 +1084,42 @@ console.log('[libgles2.js] Loading...');
       { name: 'blitToContext', sig: '.(Ljava/lang/Object;Ljava/lang/Object;IIIIIIZZ)V' },
     ];
 
+    // Register texImage2D - needs special handling for byte array parameter
+    const texImage2DSig = basePath + '.texImage2D.(Ljava/lang/Object;IIIIIIII[B)V';
+    console.log('[libgles2.js] Registering texImage2D:', texImage2DSig);
+    Native[texImage2DSig] = function(addr, handleAddr, target, level, intFormat, width, height, border, format, type, byteArrayAddr) {
+      const ptr = getObj(handleAddr) || window.GLES2Context;
+      const byteArray = toArray(byteArrayAddr, 'byte');
+      GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_texImage2D(null, ptr, target, level, intFormat, width, height, border, format, type, byteArray);
+    };
+    console.log('[libgles2.js] texImage2D registered OK');
+
     // Register bufferSubData variants - need to convert Java arrays
     Native[basePath + '.bufferSubData.(Ljava/lang/Object;III[B)V'] = function(addr, handleAddr, type, offset, byteSize, arrayAddr) {
       const ptr = getObj(handleAddr) || window.GLES2Context;
       const array = toArray(arrayAddr, 'byte');
-      console.log('[GLES2] bufferSubData byte - array:', array, 'byteSize:', byteSize);
+      log('[GLES2] bufferSubData byte - array:', array, 'byteSize:', byteSize);
       GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_bufferSubData(null, ptr, type, offset, byteSize, array);
     };
     Native[basePath + '.bufferSubData.(Ljava/lang/Object;III[S)V'] = function(addr, handleAddr, type, offset, byteSize, arrayAddr) {
       const ptr = getObj(handleAddr) || window.GLES2Context;
       const array = toArray(arrayAddr, 'short');
-      console.log('[GLES2] bufferSubData short - array:', array, 'byteSize:', byteSize);
+      log('[GLES2] bufferSubData short - array:', array, 'byteSize:', byteSize);
       GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_bufferSubData(null, ptr, type, offset, byteSize, array);
     };
     Native[basePath + '.bufferSubData.(Ljava/lang/Object;III[F)V'] = function(addr, handleAddr, type, offset, byteSize, arrayAddr) {
       const ptr = getObj(handleAddr) || window.GLES2Context;
       const array = toArray(arrayAddr, 'float');
-      console.log('[GLES2] bufferSubData float - array:', array, 'byteSize:', byteSize);
+      log('[GLES2] bufferSubData float - array:', array, 'byteSize:', byteSize);
       GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_bufferSubData(null, ptr, type, offset, byteSize, array);
     };
     Native[basePath + '.bufferSubData.(Ljava/lang/Object;III[I)V'] = function(addr, handleAddr, type, offset, byteSize, arrayAddr) {
       const ptr = getObj(handleAddr) || window.GLES2Context;
       const array = toArray(arrayAddr, 'int');
-      console.log('[GLES2] bufferSubData int - array:', array, 'byteSize:', byteSize);
+      log('[GLES2] bufferSubData int - array:', array, 'byteSize:', byteSize);
       GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_bufferSubData(null, ptr, type, offset, byteSize, array);
     };
-    console.log('[libgles2.js] Registered bufferSubData variants');
+    log('[libgles2.js] Registered bufferSubData variants');
 
     // Methods that need special handling for Object parameters (programs, uniforms, etc.)
     const objectArgMethods = new Set([
@@ -1134,11 +1148,15 @@ console.log('[libgles2.js] Loading...');
     window.GLES2ProgramByAddr = new Map(); // addr -> WebGLProgram
 
     // Register all handle methods using global GLES2Context
+    log('[libgles2.js] Registering handle methods, count:', handleMethods.length);
     for (const method of handleMethods) {
       const fnName = 'Java_pl_zb3_freej2me_bridge_gles2_GLES2_' + method.name;
       const implFn = GLES2NativeMethods[fnName];
       if (implFn) {
         const fullSig = basePath + '.' + method.name + method.sig;
+        if (method.name === 'texImage2D') {
+          log('[libgles2.js] Registering texImage2D - sig:', method.sig, 'fullSig:', fullSig);
+        }
         const needsObjectConversion = objectArgMethods.has(method.name);
         
         Native[fullSig] = function(addr, handleAddr, ...args) {
@@ -1153,7 +1171,7 @@ console.log('[libgles2.js] Loading...');
               if ((method.name === 'useProgram' || method.name === 'deleteProgram') && i === 0) {
                 let obj = getGLObject(arg, 'program');
                 if (!obj && window.GLES2LastProgram) {
-                  console.log('[GLES2] useProgram - using last program as fallback');
+                  log('[GLES2] useProgram - using last program as fallback');
                   obj = window.GLES2LastProgram;
                 }
                 // Track current program for uniform lookups
@@ -1167,11 +1185,11 @@ console.log('[libgles2.js] Loading...');
                 let obj = getGLObject(arg, 'uniform');
                 // Fallback: try to find by checking stored uniforms
                 if (!obj && arg !== null && arg !== undefined && arg !== 0) {
-                  console.log('[GLES2] ' + method.name + ' - location lookup failed for addr:', arg);
+                  log('[GLES2] ' + method.name + ' - location lookup failed for addr:', arg);
                   // Try to get from current program's uniforms
                   if (window.GLES2CurrentProgram && window.GLES2CurrentProgram._uniforms) {
                     // We can't look up by address without name, but we can try the last uniform
-                    console.log('[GLES2] ' + method.name + ' - current program has uniforms map');
+                    log('[GLES2] ' + method.name + ' - current program has uniforms map');
                   }
                 }
                 return obj;
@@ -1185,11 +1203,11 @@ console.log('[libgles2.js] Loading...');
                   if (!obj && arg !== 0 && arg !== null) {
                     // Try last buffer as fallback
                     if (window.GLES2LastBuffer) {
-                      console.log('[GLES2] bindBuffer - bufferAddr:', arg, 'not found, using last buffer');
+                      log('[GLES2] bindBuffer - bufferAddr:', arg, 'not found, using last buffer');
                       obj = window.GLES2LastBuffer;
                     } else if (window.GLES2BoundBuffers && window.GLES2BoundBuffers.has(bufferType)) {
                       // Use currently bound buffer if available
-                      console.log('[GLES2] bindBuffer - bufferAddr:', arg, 'not found, keeping current buffer');
+                      log('[GLES2] bindBuffer - bufferAddr:', arg, 'not found, keeping current buffer');
                       obj = window.GLES2BoundBuffers.get(bufferType);
                     }
                   }
@@ -1204,9 +1222,9 @@ console.log('[libgles2.js] Loading...');
               // For bindTexture, first arg is target, second is texture
               if (method.name === 'bindTexture' && i === 1) {
                 let obj = getGLObject(arg, 'texture');
-                console.log('[GLES2] bindTexture - textureAddr:', arg, 'texture:', obj);
+                log('[GLES2] bindTexture - textureAddr:', arg, 'texture:', obj);
                 if (!obj && arg !== 0 && arg !== null && window.GLES2LastTexture) {
-                  console.log('[GLES2] bindTexture - using last texture as fallback');
+                  log('[GLES2] bindTexture - using last texture as fallback');
                   obj = window.GLES2LastTexture;
                 }
                 return obj;
@@ -1264,18 +1282,18 @@ console.log('[libgles2.js] Loading...');
             if (method.name === 'createBuffer') {
               storeGLObject(result, null);
               window.GLES2LastBuffer = result;
-              console.log('[GLES2] createBuffer - created and stored:', result);
+              log('[GLES2] createBuffer - created and stored:', result);
               // Return allocated Java object address
               return allocAndStoreNative(result, 'buffer');
             } else if (method.name === 'createTexture') {
               storeGLObject(result, null);
               window.GLES2LastTexture = result;
-              console.log('[GLES2] createTexture - created and stored:', result);
+              log('[GLES2] createTexture - created and stored:', result);
               return allocAndStoreNative(result, 'texture');
             } else if (method.name === 'createVertexArray') {
               storeGLObject(result, null);
               window.GLES2LastVAO = result;
-              console.log('[GLES2] createVertexArray - created and stored:', result);
+              log('[GLES2] createVertexArray - created and stored:', result);
               return allocAndStoreNative(result, 'vao');
             } else if (method.name === 'getCanvas') {
               storeGLObject(result, null);
@@ -1285,13 +1303,11 @@ console.log('[libgles2.js] Loading...');
           
           return result;
         };
-        console.log('[libgles2.js] Registered:', method.name);
-      } else {
-        console.warn('[libgles2.js] No implementation for:', fnName);
+        log('[libgles2.js] Registered:', method.name);
       }
     }
 
-    console.log('[libgles2.js] GLES2 native methods registration complete');
+    log('[libgles2.js] GLES2 native methods registration complete');
   }
 
   // Export the registration function

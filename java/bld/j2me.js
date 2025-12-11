@@ -5305,8 +5305,15 @@ var J2ME;
                         if (e.detailMessage) {
                             detailMessage = J2ME.fromStringAddr(e.detailMessage);
                         }
-                        console.warn("error occurs at : " + e.constructor.prototype.classInfo._name + " detailMessage: " + detailMessage);
-    
+                        // Throttle repeated exception logs
+                        var errKey = e.constructor.prototype.classInfo._name + ':' + detailMessage;
+                        if (!window._j2meExceptionThrottle) window._j2meExceptionThrottle = {};
+                        var now = Date.now();
+                        if (!window._j2meExceptionThrottle[errKey] || now - window._j2meExceptionThrottle[errKey] > 2000) {
+                            console.warn("error occurs at : " + e.constructor.prototype.classInfo._name + " detailMessage: " + detailMessage);
+                            window._j2meExceptionThrottle[errKey] = now;
+                        }
+
                         //console.error(e); 
                     } else {
                         console.error(e);
@@ -10671,7 +10678,14 @@ var J2ME;
                 message = "";
             }
 
-            console.log('createException',className,message);
+            // Throttle createException logs
+            var exKey = className + ':' + message;
+            if (!window._createExceptionThrottle) window._createExceptionThrottle = {};
+            var now = Date.now();
+            if (!window._createExceptionThrottle[exKey] || now - window._createExceptionThrottle[exKey] > 2000) {
+                console.log('createException',className,message);
+                window._createExceptionThrottle[exKey] = now;
+            }
             // return J2ME.Constants.NULL;
  
             message = "" + message;
@@ -13493,3 +13507,37 @@ var J2ME;
 ///<reference path='jit/baseline.ts' />
 ///<reference path='jit/compiler.ts' />
 //# sourceMappingURL=j2me.js.map
+
+// Global function to stop J2ME virtual machine
+if (typeof window !== 'undefined') {
+    window.stopJ2ME = function() {
+        console.log('[J2ME] Stopping virtual machine...');
+        if (J2ME && J2ME.Scheduler) {
+            J2ME.Scheduler.stop();
+        }
+        if (window._j2meContexts) {
+            for (var i = 0; i < window._j2meContexts.length; i++) {
+                try {
+                    window._j2meContexts[i].stop();
+                } catch(e) {}
+            }
+        }
+        // Clear all intervals and timeouts
+        var highestId = setTimeout(function(){}, 0);
+        for (var i = 0; i < highestId; i++) {
+            clearTimeout(i);
+            clearInterval(i);
+        }
+        console.log('[J2ME] Virtual machine stopped. Use window.resumeJ2ME() to resume.');
+    };
+    
+    window.resumeJ2ME = function() {
+        console.log('[J2ME] Resuming virtual machine...');
+        if (J2ME && J2ME.Scheduler) {
+            J2ME.Scheduler.start();
+        }
+        console.log('[J2ME] Virtual machine resumed.');
+    };
+    
+    console.log('[J2ME] Global functions available: window.stopJ2ME() and window.resumeJ2ME()');
+}

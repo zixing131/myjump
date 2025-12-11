@@ -53,13 +53,18 @@ public class Graphics3D {
 	private static int internalBufferWidth = 0;
 	private static int internalBufferHeight = 0;
 
+	private static int autoReleaseWarningCount = 0;
+	
 	public void bindTarget(Object target, boolean depthBuffer, int hints) {
 		impl.enableDepthBuffer(depthBuffer);
 
 		if (Graphics3D.target != null) {
 			// Auto-release previous target instead of throwing exception
 			// This handles cases where releaseTarget wasn't called due to exceptions
-			System.err.println("[Graphics3D] Warning: Previous target not released, auto-releasing");
+			if (autoReleaseWarningCount < 3) {
+				System.err.println("[Graphics3D] Warning: Previous target not released, auto-releasing (showing max 3 times)");
+				autoReleaseWarningCount++;
+			}
 			try {
 				releaseTarget();
 			} catch (Exception e) {
