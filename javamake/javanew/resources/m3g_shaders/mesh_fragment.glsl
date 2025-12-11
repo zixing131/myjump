@@ -61,15 +61,9 @@ void main() {
     v_coords[0] = v_coords0;
     v_coords[1] = v_coords1;
 
-    // DEBUG TEST: Output texture coordinates as color to verify they are valid
-    // Red = U coordinate, Green = V coordinate
-    // If you see red/green gradient, tex coords are valid
-    // If you see solid color or black, tex coords have issues
-    if (usedTextures > 0) {
-        // First test: output tex coords as color
-        gl_FragColor = vec4(v_coords[0].x, v_coords[0].y, 0.0, 1.0);
-        return;
-    }
+    // DEBUG TEST: Output solid RED to verify shader is running
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    return;
     // END DEBUG TEST
 
     // Store original vertex color brightness for fallback
