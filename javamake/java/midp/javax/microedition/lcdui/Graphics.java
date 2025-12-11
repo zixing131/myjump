@@ -530,6 +530,12 @@ public class Graphics {
     }
 
     /**
+     * Protected constructor for subclasses (extension for CanvasGraphics)
+     */
+    protected Graphics(boolean dummy) {
+    }
+
+    /**
      * Sets the width and height member variables of this
      * Graphics object to reflect the correct values e.g. for
      * clipping correctly

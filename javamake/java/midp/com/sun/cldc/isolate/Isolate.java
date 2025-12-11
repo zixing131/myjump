@@ -215,7 +215,7 @@ public final class Isolate {
      * isolate creator can grant API access to the child.
      * Note this is a static so it is private to each Isolate
      */
-    private static int  _API_access_ok;
+    private static int  _API_access_ok = 1;
 
     /**
      * Priority level of this Isolate that was set using setPriority before

@@ -11,6 +11,10 @@ SRC_DIRS += jsr-082
 SRC_DIRS += jsr-179
 JPP_DEFS += -ENABLE_JSR_179
 
+# 3D support (M3G API)
+SRC_DIRS += kemulator
+SRC_DIRS += pl
+
 SRCS=$(shell find $(SRC_DIRS) -name *.java)
 JPP_SRCS=$(shell find $(SRC_DIRS) -name *.jpp)
 JPP_DESTS=$(JPP_SRCS:.jpp=.java)
@@ -21,7 +25,7 @@ classes.jar: $(SRCS) $(JPP_DESTS) $(EXTRA)
 	mkdir build build-src
 	$(foreach dir,$(SRC_DIRS),cp -a $(dir)/. build-src/;)
 	find ./build-src -name *.java > build-srcs.txt
-	javac -cp build-src -g:none -source 8 -target 8 -bootclasspath "" -extdirs "" -d ./build @build-srcs.txt > /dev/null
+	javac -cp build-src -g:none -source 8 -target 8 -bootclasspath "" -extdirs "" -d ./build @build-srcs.txt 2>&1
 	rm -rf build-src
 	# TODO: Re-enable Soot optimizations once tests with baseline JIT enabled
 	#       for all methods pass.

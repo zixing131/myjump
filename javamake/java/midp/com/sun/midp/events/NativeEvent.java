@@ -69,6 +69,39 @@ public class NativeEvent extends Event {
     /** Sixth int parameter for the event. Event dependent. */
     public int intParam6;
 
+    /** Seventh int parameter for the event. Event dependent. */
+    public int intParam7;
+
+    /** Eighth int parameter for the event. Event dependent. */
+    public int intParam8;
+
+    /** Ninth int parameter for the event. Event dependent. */
+    public int intParam9;
+
+    /** Tenth int parameter for the event. Event dependent. */
+    public int intParam10;
+
+    /** Eleventh int parameter for the event. Event dependent. */
+    public int intParam11;
+
+    /** Twelfth int parameter for the event. Event dependent. */
+    public int intParam12;
+
+    /** Thirteenth int parameter for the event. Event dependent. */
+    public int intParam13;
+
+    /** Fourteenth int parameter for the event. Event dependent. */
+    public int intParam14;
+
+    /** Fifteenth int parameter for the event. Event dependent. */
+    public int intParam15;
+
+    /** Sixteenth int parameter for the event. Event dependent. */
+    public int intParam16;
+
+    /** First float parameter for the event. Event dependent. */
+    public float floatParam1;
+
     /** First string parameter for the event. Event dependent. */
     public String stringParam1;
 
@@ -99,6 +132,17 @@ public class NativeEvent extends Event {
         intParam4 = 0;
         intParam5 = 0;
         intParam6 = 0;
+        intParam7 = 0;
+        intParam8 = 0;
+        intParam9 = 0;
+        intParam10 = 0;
+        intParam11 = 0;
+        intParam12 = 0;
+        intParam13 = 0;
+        intParam14 = 0;
+        intParam15 = 0;
+        intParam16 = 0;
+        floatParam1 = 0.0f;
 
         stringParam1 = null;
         stringParam2 = null;

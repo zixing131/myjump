@@ -482,6 +482,27 @@ public final class Font {
      */
     private static java.util.Hashtable table = new java.util.Hashtable(4);
 
+    // Extension for CanvasGraphics support
+    public pl.zb3.freej2me.bridge.graphics.CanvasFont canvasFont;
+
+    /**
+     * Gets the point size of the font (extension method for CanvasGraphics)
+     * @return point size in pixels
+     */
+    public int getPointSize() {
+        // Convert SIZE constants to approximate pixel sizes
+        switch (size) {
+            case SIZE_SMALL:
+                return 10;
+            case SIZE_MEDIUM:
+                return 12;
+            case SIZE_LARGE:
+                return 16;
+            default:
+                return 12;
+        }
+    }
+
     /**
      * Natively initialize this Font object's peer
      *

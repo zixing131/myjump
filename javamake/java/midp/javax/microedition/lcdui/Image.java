@@ -878,6 +878,19 @@ public class Image {
     }
 
     /**
+     * Protected constructor for subclasses (extension for CanvasImage)
+     * @param imageData <code>ImageData</code> instance to be used to
+     *                  create new Image
+     */
+    protected Image(ImageData imageData, boolean dummy) {
+        this.imageData = imageData;
+        if (imageData != null) {
+            this.width     = imageData.getWidth();
+            this.height    = imageData.getHeight();
+        }
+    }
+
+    /**
      * Resize Image optionally saving its content clipped according
      * to the new geometry
      *

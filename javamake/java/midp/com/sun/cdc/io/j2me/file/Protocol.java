@@ -1067,8 +1067,8 @@ public class Protocol extends ConnectionBaseAdapter implements FileConnection {
             checkPermission(FileConnectionPermission.READ.getName(),
                 filePath);
         } else { // call from PIM
-            classSecurityToken.checkIfPermissionAllowed(
-                FileConnectionPermission.READ);
+            classSecurityToken.getSecurityToken().checkIfPermissionAllowed(
+                FileConnectionPermission.READ.getName());
         }
     }
 
@@ -1099,8 +1099,8 @@ public class Protocol extends ConnectionBaseAdapter implements FileConnection {
             checkPermission(FileConnectionPermission.WRITE.getName(),
                 filePath);
         } else { // call from PIM
-            classSecurityToken.checkIfPermissionAllowed(
-                FileConnectionPermission.WRITE);
+            classSecurityToken.getSecurityToken().checkIfPermissionAllowed(
+                FileConnectionPermission.WRITE.getName());
         }
     }
 
