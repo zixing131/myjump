@@ -226,50 +226,147 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
     // Draw image from another canvas
     // Parameters: ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha
     drawImage2: function(lib, ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha) {
+      console.log('[CanvasGraphics] drawImage2 INNER START - ctx:', !!ctx, 'canvasRef:', !!canvasRef);
+      
       if (!ctx || !canvasRef) {
-        console.warn('[CanvasGraphics] drawImage2 inner - missing ctx or canvasRef', ctx, canvasRef);
+        console.error('[CanvasGraphics] drawImage2 inner - MISSING ctx or canvasRef!');
         return;
       }
       
-      log('[CanvasGraphics] drawImage2 inner - ctx:', ctx, 'canvas:', ctx.canvas, 'src:', canvasRef, 'srcSize:', canvasRef.width, 'x', canvasRef.height);
-      
-      ctx.save();
-      
-      // CRITICAL FIX: Reset compositing operation to ensure complete overwrite
-      // This prevents any blending with existing content
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1.0;
-      
-      // CRITICAL FIX: Always clear the destination area first to prevent ghosting
-      // clearRect completely removes old content, preventing frame accumulation
-      // Use 'copy' mode to ensure complete replacement of target area
-      ctx.globalCompositeOperation = 'copy';
-      ctx.clearRect(x, y, width, height);
-      
-      // Reset to source-over for the actual drawing
-      ctx.globalCompositeOperation = 'source-over';
-      
-      // If not using alpha, fill with opaque black background first
-      // This ensures no transparency that could let old content show through
-      if (!withAlpha) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(x, y, width, height);
+      // CRITICAL FIX: The ctx.canvas is the offscreenCanvas which is NOT in the DOM
+      // We need to also write to the actual device canvas (MIDP.deviceContext.canvas) for immediate display
+      let deviceCtx = null;
+      if (window.MIDP && window.MIDP.deviceContext) {
+        deviceCtx = window.MIDP.deviceContext;
+        console.log('[CanvasGraphics] drawImage2 - Found MIDP.deviceContext, will write to device canvas directly');
       }
       
-      try {
-        if (flipY) {
-          ctx.translate(x + width / 2, y + height / 2);
-          ctx.scale(1, -1);
-          ctx.drawImage(canvasRef, sx, sy, width, height, -width / 2, -height / 2, width, height);
-        } else {
-          ctx.drawImage(canvasRef, sx, sy, width, height, x, y, width, height);
+      // IMPORTANT: We need to get the existing WebGL context, not create a new one
+      // If we call getContext('webgl') on a canvas that already has a different context type,
+      // it will return null. We need to check window.GLES2Context which stores the WebGL context.
+      let webglCtx = null;
+      
+      // Try to get WebGL context from global storage first
+      if (window.GLES2Context && window.GLES2Context.gl) {
+        // Check if this is the same canvas
+        if (window.GLES2Context.gl.canvas === canvasRef) {
+          webglCtx = window.GLES2Context.gl;
+          console.log('[CanvasGraphics] drawImage2 - Using GLES2Context.gl');
         }
-        log('[CanvasGraphics] drawImage2 inner - draw complete, flipY:', flipY);
-      } catch (e) {
-        console.error('[CanvasGraphics] drawImage2 inner - drawImage error:', e);
       }
       
-      ctx.restore();
+      // Fallback: try to get context directly (may fail if canvas has 2D context)
+      if (!webglCtx) {
+        try {
+          webglCtx = canvasRef.getContext('webgl2') || canvasRef.getContext('webgl');
+          if (webglCtx) {
+            console.log('[CanvasGraphics] drawImage2 - Got WebGL context directly');
+          }
+        } catch (e) {
+          console.log('[CanvasGraphics] drawImage2 - Failed to get WebGL context:', e);
+        }
+      }
+      
+      console.log('[CanvasGraphics] drawImage2 - webglCtx:', !!webglCtx);
+      
+      if (webglCtx) {
+        // WORKAROUND: drawImage from WebGL canvas to 2D canvas doesn't work reliably
+        // Use readPixels + putImageData instead
+        try {
+          const srcWidth = canvasRef.width;
+          const srcHeight = canvasRef.height;
+          console.log('[CanvasGraphics] drawImage2 - Reading', srcWidth, 'x', srcHeight, 'pixels');
+          
+          // Read all pixels from WebGL canvas
+          const pixels = new Uint8Array(srcWidth * srcHeight * 4);
+          webglCtx.readPixels(0, 0, srcWidth, srcHeight, webglCtx.RGBA, webglCtx.UNSIGNED_BYTE, pixels);
+          
+          // Check first pixel
+          console.log('[CanvasGraphics] drawImage2 - First pixel:', pixels[0], pixels[1], pixels[2], pixels[3]);
+          // Check center pixel (note: WebGL Y=0 is at bottom)
+          const centerIdx = (Math.floor(srcHeight/2) * srcWidth + Math.floor(srcWidth/2)) * 4;
+          console.log('[CanvasGraphics] drawImage2 - Center pixel:', pixels[centerIdx], pixels[centerIdx+1], pixels[centerIdx+2], pixels[centerIdx+3]);
+          
+          // Create ImageData for the destination
+          const imageData = ctx.createImageData(srcWidth, srcHeight);
+          
+          // Copy pixels with Y-flip (WebGL has Y=0 at bottom, Canvas has Y=0 at top)
+          // WebGL readPixels reads bottom-to-top, Canvas putImageData writes top-to-bottom
+          // So we ALWAYS need to flip Y to get correct orientation
+          // The flipY parameter from the caller indicates additional flip request
+          // flipY=1 means the caller wants normal orientation (so we flip WebGL's inverted data)
+          // flipY=0 means the caller wants inverted (so we don't flip, keeping WebGL's inversion)
+          for (let row = 0; row < srcHeight; row++) {
+            for (let col = 0; col < srcWidth; col++) {
+              // When flipY is true (1), we need to flip to correct WebGL's bottom-to-top order
+              // srcRow should be from bottom when flipY=true to flip the image correctly
+              const srcRow = flipY ? (srcHeight - 1 - row) : row;
+              const srcIdx = (srcRow * srcWidth + col) * 4;
+              const dstIdx = (row * srcWidth + col) * 4;
+              imageData.data[dstIdx] = pixels[srcIdx];         // R
+              imageData.data[dstIdx + 1] = pixels[srcIdx + 1]; // G
+              imageData.data[dstIdx + 2] = pixels[srcIdx + 2]; // B
+              imageData.data[dstIdx + 3] = pixels[srcIdx + 3]; // A
+            }
+          }
+          
+          // Put the image data to destination canvas (offscreen)
+          ctx.putImageData(imageData, 0, 0);
+          console.log('[CanvasGraphics] drawImage2 - putImageData to offscreen completed');
+          
+          // CRITICAL FIX: Also write directly to the device canvas for immediate display
+          // The refresh0 function will copy from offscreen to device, but we may have timing issues
+          // So we also write directly to ensure the content is visible
+          if (deviceCtx) {
+            try {
+              deviceCtx.putImageData(imageData, 0, 0);
+              console.log('[CanvasGraphics] drawImage2 - putImageData to DEVICE canvas completed!');
+              
+              // CRITICAL: Set flag to tell refresh0 to skip its drawImage
+              // Otherwise refresh0 will overwrite our content with stale offscreen data
+              window.gles2JustRendered = true;
+              console.log('[CanvasGraphics] drawImage2 - Set gles2JustRendered=true to skip refresh0 copy');
+              
+              // Verify on device canvas
+              const deviceVerify = deviceCtx.getImageData(srcWidth/2, srcHeight/2, 1, 1).data;
+              console.log('[CanvasGraphics] drawImage2 - Device canvas verify pixel:', deviceVerify[0], deviceVerify[1], deviceVerify[2], deviceVerify[3]);
+            } catch (e) {
+              console.error('[CanvasGraphics] drawImage2 - Device canvas putImageData failed:', e);
+            }
+          }
+          
+          // Verify on offscreen
+          try {
+            const verifyData = ctx.getImageData(srcWidth/2, srcHeight/2, 1, 1).data;
+            console.log('[CanvasGraphics] drawImage2 - Offscreen verify pixel after putImageData:', verifyData[0], verifyData[1], verifyData[2], verifyData[3]);
+          } catch (e) {
+            console.warn('[CanvasGraphics] drawImage2 - Offscreen verify failed:', e);
+          }
+          
+        } catch (e) {
+          console.error('[CanvasGraphics] drawImage2 - WebGL readPixels failed:', e, e.stack);
+        }
+      } else {
+        console.log('[CanvasGraphics] drawImage2 - No WebGL context, using drawImage fallback');
+        // Fallback for non-WebGL source: use regular drawImage
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1.0;
+        
+        try {
+          if (flipY) {
+            ctx.translate(x + width / 2, y + height / 2);
+            ctx.scale(1, -1);
+            ctx.drawImage(canvasRef, sx, sy, width, height, -width / 2, -height / 2, width, height);
+          } else {
+            ctx.drawImage(canvasRef, sx, sy, width, height, x, y, width, height);
+          }
+        } catch (e) {
+          console.error('[CanvasGraphics] drawImage2 - drawImage error:', e);
+        }
+        
+        ctx.restore();
+      }
     },
 
     // Get RGBA data from context
@@ -579,17 +676,14 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
     // drawImage2 with signature (Object, Object, int sx, int sy, int x, int y, int width, int height, boolean flipY, boolean withAlpha)
     Native[cgBasePath + '.drawImage2.(Ljava/lang/Object;Ljava/lang/Object;IIIIIIZZ)V'] = function(addr, ctxAddr, canvasAddr, sx, sy, x, y, w, h, flipY, withAlpha) {
-      // Reduce log spam - only log occasionally for blitGL
-      var shouldLogBlit = Math.random() < 0.01; // Log ~1% of calls
-      if (shouldLogBlit || DEBUG) {
-        console.log('[CanvasGraphics] drawImage2 (blitGL) called - ctxAddr:', ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY, 'withAlpha:', withAlpha);
-      }
-      log('[CanvasGraphics] drawImage2 called - ctxAddr:', ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY, 'withAlpha:', withAlpha);
+      // ALWAYS log blitGL calls for debugging
+      console.log('[CanvasGraphics] drawImage2 (blitGL) called - ctxAddr:', ctxAddr, 'typeof:', typeof ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY);
+      console.log('[CanvasGraphics] drawImage2 - globals: screenContext2D:', !!window.screenContext2D, 'screenCanvas:', !!window.screenCanvas, 'GLES2Context:', !!window.GLES2Context);
       
       let ctx = getCtx(ctxAddr);
       let canvas = getCtx(canvasAddr);
       
-      log('[CanvasGraphics] drawImage2 - initial ctx:', ctx, 'canvas:', canvas);
+      console.log('[CanvasGraphics] drawImage2 - after getCtx: ctx:', ctx, 'typeof ctx:', typeof ctx, 'canvas:', canvas);
       
       // canvasAddr might be a canvas element reference from GLES2.getCanvasRef()
       if (!canvas && canvasAddr) {
@@ -656,34 +750,46 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       }
       
       // Fallback for ctx: if ctxAddr is 0 or ctx is null, try to use screen context
-      if (!ctx && (ctxAddr === 0 || ctxAddr === null)) {
+      // CRITICAL FIX: Check for falsy ctx (including 0) not just null/undefined
+      if (!ctx || ctx === 0 || ctxAddr === 0 || ctxAddr === null) {
+        console.log('[CanvasGraphics] drawImage2 - ctx fallback triggered, ctx:', ctx, 'ctxAddr:', ctxAddr);
         // Try to get screen context from global
         if (window.screenContext2D) {
           ctx = window.screenContext2D;
-          log('[CanvasGraphics] drawImage2 - using screenContext2D as fallback');
+          console.log('[CanvasGraphics] drawImage2 - using screenContext2D as fallback, ctx:', ctx);
         } else if (window.screenContextInfo && window.screenContextInfo.ctx) {
           ctx = window.screenContextInfo.ctx;
-          log('[CanvasGraphics] drawImage2 - using screenContextInfo as fallback');
+          console.log('[CanvasGraphics] drawImage2 - using screenContextInfo as fallback');
         } else if (window.screenCanvas) {
           ctx = window.screenCanvas.getContext('2d');
-          log('[CanvasGraphics] drawImage2 - using screenCanvas as fallback');
+          console.log('[CanvasGraphics] drawImage2 - using screenCanvas as fallback');
+        } else {
+          console.error('[CanvasGraphics] drawImage2 - NO FALLBACK AVAILABLE! screenContext2D:', window.screenContext2D, 'screenCanvas:', window.screenCanvas);
         }
       }
       
       if (!ctx || !sourceCanvas) {
-        console.error('[CanvasGraphics] drawImage2 - missing ctx or canvas, ctxAddr:', ctxAddr, 'canvasAddr:', canvasAddr, 'sourceCanvas:', sourceCanvas);
+        console.error('[CanvasGraphics] drawImage2 - missing ctx or canvas, ctx:', ctx, 'sourceCanvas:', sourceCanvas);
         // As a last resort for blitGL, try to draw directly to screen canvas
         if (sourceCanvas && window.screenCanvas) {
           try {
             const screenCtx = window.screenCanvas.getContext('2d');
             if (screenCtx) {
-              log('[CanvasGraphics] drawImage2 - using screenCanvas directly as last resort');
+              console.log('[CanvasGraphics] drawImage2 - using screenCanvas directly as LAST RESORT');
               ctx = screenCtx;
             }
-          } catch (e) {}
+          } catch (e) {
+            console.error('[CanvasGraphics] drawImage2 - last resort failed:', e);
+          }
         }
-        if (!ctx) return;
+        if (!ctx) {
+          console.error('[CanvasGraphics] drawImage2 - ABORTING: no ctx available');
+          return;
+        }
       }
+      
+      // Final check and log
+      console.log('[CanvasGraphics] drawImage2 - FINAL: ctx:', ctx, 'sourceCanvas:', sourceCanvas, 'sourceCanvas.width:', sourceCanvas?.width);
       
       // Clamp source dimensions to canvas size to avoid IndexOutOfBounds
       const srcWidth = sourceCanvas.width || 0;
@@ -750,11 +856,19 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
     };
 
     Native[cgBasePath + '.getRGBAFromCtx.(Ljava/lang/Object;IIII)[B'] = function(addr, ctxAddr, sx, sy, w, h) {
-      const ctx = getCtx(ctxAddr);
+      let ctx = getCtx(ctxAddr);
       if (!ctx) {
         console.warn('[CanvasGraphics] getRGBAFromCtx - ctx is null, ctxAddr:', ctxAddr, 'typeof:', typeof ctxAddr);
-        // Try to get from global map using addr instead
-        if (window.CanvasGraphicsContexts) {
+        
+        // CRITICAL FIX: For 3D games, try to read from the device canvas or screen canvas
+        // This allows games to read back rendered 3D content
+        if (window.MIDP && window.MIDP.deviceContext) {
+          console.log('[CanvasGraphics] getRGBAFromCtx - using MIDP.deviceContext as fallback');
+          ctx = window.MIDP.deviceContext;
+        } else if (window.screenContext2D) {
+          console.log('[CanvasGraphics] getRGBAFromCtx - using screenContext2D as fallback');
+          ctx = window.screenContext2D;
+        } else if (window.CanvasGraphicsContexts) {
           // Try to find any valid context with matching dimensions
           for (const [key, value] of window.CanvasGraphicsContexts) {
             if (value && (value.canvas || value._canvas)) {
@@ -762,17 +876,18 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
               // Only use if dimensions are compatible
               if (canvas.width >= w && canvas.height >= h) {
                 console.log('[CanvasGraphics] getRGBAFromCtx - using fallback ctx from global map, key:', key);
-                const result = CanvasGraphicsNatives.getRGBAFromCtx(null, value, sx, sy, w, h);
-                if (result && result.length > 0) {
-                  return result;
-                }
+                ctx = value;
+                break;
               }
             }
           }
         }
-        // Return empty array instead of null to prevent NullPointerException
-        console.warn('[CanvasGraphics] getRGBAFromCtx - returning empty array');
-        return new Int8Array(0);
+        
+        if (!ctx) {
+          // Return empty array instead of null to prevent NullPointerException
+          console.warn('[CanvasGraphics] getRGBAFromCtx - no fallback found, returning empty array');
+          return new Int8Array(0);
+        }
       }
       const result = CanvasGraphicsNatives.getRGBAFromCtx(null, ctx, sx, sy, w, h);
       // Never return null, return empty array instead

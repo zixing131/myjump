@@ -995,11 +995,15 @@ public final class Emulator3D {
 		boolean depthTestEnabled = cm.isDepthTestEnabled();
 		boolean depthWriteEnabled = cm.isDepthWriteEnabled();
 		
+		// DEBUG: Temporarily FORCE DISABLE depth test to see if fragments are being culled
+		GLES2.disable(GLES2.Constants.GL_DEPTH_TEST);
+		GLES2.depthMask(false);  // Also disable depth write
+		boolean forceDepthTest = false;
+		/*
 		// CRITICAL FIX: If depthBuffer is enabled but depthTest is disabled,
 		// force enable depth test to prevent severe overlapping/ghosting
 		// This is a workaround for m3g files that incorrectly set depthTestEnabled=false
 		// Many m3g files have objects with depthTestEnabled=false, causing severe overlapping
-		boolean forceDepthTest = false;
 		if (depthBufferEnabled && !depthTestEnabled) {
 			// Force enable depth test to prevent overlapping
 			forceDepthTest = true;
@@ -1015,6 +1019,7 @@ public final class Emulator3D {
 			GLES2.disable(GLES2.Constants.GL_DEPTH_TEST);
 			GLES2.depthFunc(GLES2.Constants.GL_ALWAYS); // Set default, but test is disabled
 		}
+		*/
 
 		// CRITICAL FIX: Force enable depth write when depth test is enabled
 		// If depth test is on but depth write is off, objects won't establish depth
@@ -1312,7 +1317,9 @@ public final class Emulator3D {
 
 			GLES2.uniform1i(meshProgram.uUsedTextures, usedTextures);
 			if (usedTextures == 0) {
-				System.err.println("[Emulator3D] draw - WARNING: No textures bound! This may cause black output if shader expects textures.");
+				System.err.println("[Emulator3D] draw - WARNING: No textures bound! SKIPPING this draw call to test if it's the culprit.");
+				// TEMPORARY: Skip draw calls without textures to see if they're covering everything
+				return;
 			} else {
 				System.out.println("[Emulator3D] draw - Bound " + usedTextures + " texture(s)");
 			}

@@ -8348,8 +8348,12 @@ var currentlyFocusedTextEditor;
   // CRITICAL FIX: Auto-clear offscreen canvas after refresh to prevent ghosting
   // Some J2ME games don't properly clear the screen between frames
   // Mode: 0=disabled, 1=clear refresh area only, 2=clear entire canvas (aggressive)
-  window.autoClearMode = 2; // Default to aggressive mode to fix ghosting
+  // NOTE: For 3D games using GLES2, this should be 0 to avoid clearing the rendered content
+  window.autoClearMode = 0; // Disabled - 3D content needs to persist
   // Can be changed via console: window.autoClearMode = 0 (disable), 1 (area only), 2 (full canvas)
+  
+  // Flag to skip refresh0's drawImage when 3D content was just rendered
+  window.gles2JustRendered = false;
   
   Native["com/sun/midp/lcdui/DisplayDevice.refresh0.(IIIIII)V"] = function(addr, hardwareId, displayId, x1, y1, x2, y2) {
     x1 = Math.max(0, x1);
@@ -8370,6 +8374,15 @@ var currentlyFocusedTextEditor;
     var ctx = $.ctx;
     
     window.requestAnimationFrame(function() {
+      // CRITICAL FIX: Skip the offscreen->device copy if 3D content was just rendered directly to device
+      // The blitGL function already wrote the 3D content directly to MIDP.deviceContext
+      if (window.gles2JustRendered) {
+        console.log('[refresh0] Skipping drawImage - 3D content already rendered to device canvas');
+        window.gles2JustRendered = false;
+        J2ME.Scheduler.enqueue(ctx);
+        return;
+      }
+      
       // CRITICAL FIX: Clear the device canvas area BEFORE drawing to prevent ghosting
       // This ensures no old content shows through from previous frames
       MIDP.deviceContext.clearRect(x1, y1, width, height);

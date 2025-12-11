@@ -673,10 +673,36 @@ window.GLES2_LIB_VERSION = '20251212g';
       if (viewport[2] === 0 || viewport[3] === 0) {
         console.warn('[GLES2] drawElements - invalid viewport:', viewport);
       }
+      
+      // DEBUG: Check ELEMENT_ARRAY_BUFFER binding
+      const elementBuffer = ptr.gl.getParameter(ptr.gl.ELEMENT_ARRAY_BUFFER_BINDING);
+      if (!elementBuffer) {
+        console.warn('[GLES2] drawElements - no element array buffer bound!');
+      }
+      
+      // DEBUG: Check ARRAY_BUFFER binding
+      const arrayBuffer = ptr.gl.getParameter(ptr.gl.ARRAY_BUFFER_BINDING);
+      
       ptr.gl.drawElements(mode, count, type, offset);
       const error = ptr.gl.getError();
       if (error !== ptr.gl.NO_ERROR) {
         console.warn('[GLES2] GL error after drawElements:', error, 'mode:', mode, 'count:', count);
+      }
+      
+      // DEBUG: Read center pixel after draw to check if anything was rendered
+      // Only check first few draws to reduce spam
+      if (!window._drawElementsCheckCount) window._drawElementsCheckCount = 0;
+      window._drawElementsCheckCount++;
+      if (window._drawElementsCheckCount <= 5) {
+        try {
+          const pixel = new Uint8Array(4);
+          const centerX = Math.floor(viewport[2] / 2);
+          const centerY = Math.floor(viewport[3] / 2);
+          ptr.gl.readPixels(centerX, centerY, 1, 1, ptr.gl.RGBA, ptr.gl.UNSIGNED_BYTE, pixel);
+          console.log('[GLES2] drawElements #' + window._drawElementsCheckCount + ' - center pixel after draw:', pixel[0], pixel[1], pixel[2], pixel[3], 'count:', count, 'elemBuf:', !!elementBuffer, 'arrayBuf:', !!arrayBuffer);
+        } catch (e) {
+          console.warn('[GLES2] drawElements - failed to read pixel:', e);
+        }
       }
     },
 

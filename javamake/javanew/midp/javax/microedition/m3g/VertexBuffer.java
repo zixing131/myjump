@@ -494,23 +494,36 @@ public class VertexBuffer extends Object3D {
 
 			int stride = 4*cc*2;
 
-			GLES2.enableVertexAttribArray(mp.aVColor);
-			GLES2.vertexAttribPointer(mp.aVColor, 4, GLES2.Constants.GL_UNSIGNED_SHORT, true, stride, 4*2*4);
+			// Only enable/bind attributes that exist in the shader (index >= 0)
+			if (mp.aVColor >= 0) {
+				GLES2.enableVertexAttribArray(mp.aVColor);
+				GLES2.vertexAttribPointer(mp.aVColor, 4, GLES2.Constants.GL_UNSIGNED_SHORT, true, stride, 4*2*4);
+			}
 
-			GLES2.enableVertexAttribArray(mp.aVNormal);
-			GLES2.vertexAttribPointer(mp.aVNormal, 3, GLES2.Constants.GL_SHORT, true, stride, 4*2*1);
+			if (mp.aVNormal >= 0) {
+				GLES2.enableVertexAttribArray(mp.aVNormal);
+				GLES2.vertexAttribPointer(mp.aVNormal, 3, GLES2.Constants.GL_SHORT, true, stride, 4*2*1);
+			}
 
-			GLES2.enableVertexAttribArray(mp.aVPos);
-			GLES2.vertexAttribPointer(mp.aVPos, 3, GLES2.Constants.GL_SHORT, false, stride, 0);
+			if (mp.aVPos >= 0) {
+				GLES2.enableVertexAttribArray(mp.aVPos);
+				GLES2.vertexAttribPointer(mp.aVPos, 3, GLES2.Constants.GL_SHORT, false, stride, 0);
+			}
 
-			GLES2.enableVertexAttribArray(mp.aVPosLight);
-			GLES2.vertexAttribPointer(mp.aVPosLight, 3, GLES2.Constants.GL_SHORT, false, stride, 4*2*5);
+			if (mp.aVPosLight >= 0) {
+				GLES2.enableVertexAttribArray(mp.aVPosLight);
+				GLES2.vertexAttribPointer(mp.aVPosLight, 3, GLES2.Constants.GL_SHORT, false, stride, 4*2*5);
+			}
 
-			GLES2.enableVertexAttribArray(mp.aVCoords[0]);
-			GLES2.vertexAttribPointer(mp.aVCoords[0], 2, GLES2.Constants.GL_SHORT, false, stride, 4*2*(2+0));
+			if (mp.aVCoords[0] >= 0) {
+				GLES2.enableVertexAttribArray(mp.aVCoords[0]);
+				GLES2.vertexAttribPointer(mp.aVCoords[0], 2, GLES2.Constants.GL_SHORT, false, stride, 4*2*(2+0));
+			}
 
-			GLES2.enableVertexAttribArray(mp.aVCoords[1]);
-			GLES2.vertexAttribPointer(mp.aVCoords[1], 2, GLES2.Constants.GL_SHORT, false, stride, 4*2*(2+1));
+			if (mp.aVCoords[1] >= 0) {
+				GLES2.enableVertexAttribArray(mp.aVCoords[1]);
+				GLES2.vertexAttribPointer(mp.aVCoords[1], 2, GLES2.Constants.GL_SHORT, false, stride, 4*2*(2+1));
+			}
 
 		} else {
 			GLES2.bindVertexArray(vaoHandle);
