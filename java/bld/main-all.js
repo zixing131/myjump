@@ -9144,6 +9144,9 @@ Native["com/nokia/mid/ui/DirectGraphicsImp.drawImage.(Ljavax/microedition/lcdui/
     c.lineTo(x3, y3);
     c.closePath();
     c.fill();
+    // Stroke with same fill color to cover anti-aliasing gaps between adjacent triangles
+    c.lineWidth = 1;
+    c.stroke();
   };
   Native["javax/microedition/lcdui/Graphics.drawRect.(IIII)V"] = function(addr, x, y, w, h) {
     if (w < 0 || h < 0) {
