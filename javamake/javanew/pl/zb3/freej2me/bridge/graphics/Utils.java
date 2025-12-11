@@ -7,24 +7,38 @@ public class Utils {
     }
 
     public static int[] rgbaToArgb(byte[] rgba) {
+        if (rgba == null || rgba.length < 4) {
+            return new int[0];
+        }
         int[] argb = new int[rgba.length / 4];
 
         for (int i = 0; i < argb.length; i++) {
-            argb[i] = ((rgba[i * 4 + 3] & 0xFF) << 24) |
-                    ((rgba[i * 4] & 0xFF) << 16) |
-                    ((rgba[i * 4 + 1] & 0xFF) << 8) |
-                    (rgba[i * 4 + 2] & 0xFF);
+            int baseIndex = i * 4;
+            if (baseIndex + 3 < rgba.length) {
+                argb[i] = ((rgba[baseIndex + 3] & 0xFF) << 24) |
+                        ((rgba[baseIndex] & 0xFF) << 16) |
+                        ((rgba[baseIndex + 1] & 0xFF) << 8) |
+                        (rgba[baseIndex + 2] & 0xFF);
+            }
         }
 
         return argb;
     }
 
     public static byte[] argbRegionToRgba(int[] argb, int offset, int scanlength, int width, int height, boolean withAlpha) {
+        if (argb == null || width <= 0 || height <= 0) {
+            return new byte[0];
+        }
+        
         byte[] rgba = new byte[width * height * 4];
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 int argbIndex = offset + i * scanlength + j;
+                // Boundary check to prevent ArrayIndexOutOfBoundsException
+                if (argbIndex < 0 || argbIndex >= argb.length) {
+                    continue; // Skip invalid indices
+                }
                 int rgbaIndex = (i * width + j) * 4;
                 rgba[rgbaIndex] = (byte) ((argb[argbIndex] >> 16) & 0xFF);
                 rgba[rgbaIndex + 1] = (byte) ((argb[argbIndex] >> 8) & 0xFF);
@@ -37,11 +51,19 @@ public class Utils {
     }
 
     public static byte[] argbRegionToRgba(int[] argb, int x, int y, int width, int height, int scanlength, boolean withAlpha) {
+        if (argb == null || width <= 0 || height <= 0) {
+            return new byte[0];
+        }
+        
         byte[] rgba = new byte[width * height * 4];
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 int argbIndex = (i + y) * scanlength + j + x;
+                // Boundary check to prevent ArrayIndexOutOfBoundsException
+                if (argbIndex < 0 || argbIndex >= argb.length) {
+                    continue; // Skip invalid indices
+                }
                 int rgbaIndex = (i * width + j) * 4;
                 rgba[rgbaIndex] = (byte) ((argb[argbIndex] >> 16) & 0xFF);
                 rgba[rgbaIndex + 1] = (byte) ((argb[argbIndex] >> 8) & 0xFF);

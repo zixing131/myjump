@@ -146,11 +146,26 @@ public class CanvasGraphics extends javax.microedition.lcdui.Graphics {
 
     public void drawRGB(int[] argbData, int offset, int scanlength, int x, int y, int width, int height, boolean processAlpha)
 	{
-        if (width<1 || height<1) { return; }
+        if (width < 1 || height < 1 || argbData == null) { return; }
+        
+        // Validate that source array has enough data
+        int requiredSrcSize = offset + (height - 1) * scanlength + width;
+        if (argbData.length < requiredSrcSize) {
+            System.err.println("[CanvasGraphics] drawRGB - source array too small: need " + requiredSrcSize + ", got " + argbData.length);
+            // Try to continue with available data
+            int availableRows = (argbData.length - offset) / scanlength;
+            if (availableRows <= 0) return;
+            height = Math.min(height, availableRows);
+        }
 
-        byte[] rgbaData = Utils.argbRegionToRgba(argbData, offset, scanlength, width, height, processAlpha);
-
-        drawRGBAData(ctxHandle, rgbaData, width, height, x, y, processAlpha);
+        try {
+            byte[] rgbaData = Utils.argbRegionToRgba(argbData, offset, scanlength, width, height, processAlpha);
+            if (rgbaData != null) {
+                drawRGBAData(ctxHandle, rgbaData, width, height, x, y, processAlpha);
+            }
+        } catch (Exception e) {
+            System.err.println("[CanvasGraphics] drawRGB - error: " + e.getMessage());
+        }
         argbCache = null;
 	}
 
@@ -364,13 +379,57 @@ public class CanvasGraphics extends javax.microedition.lcdui.Graphics {
 	}
 
     public void getRGB(int[] argbData, int offset, int scanlength, int x, int y, int width, int height) {
+        // Validate parameters to prevent ArrayIndexOutOfBoundsException
+        if (argbData == null || width <= 0 || height <= 0) {
+            return;
+        }
+        
+        // Clamp coordinates to valid range
+        if (x < 0) { width += x; x = 0; }
+        if (y < 0) { height += y; y = 0; }
+        if (x + width > this.width) { width = this.width - x; }
+        if (y + height > this.height) { height = this.height - y; }
+        
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        
         if (argbCache == null) {
             byte[] rgbaData = getRGBAFromCtx(ctxHandle, 0, 0, this.width, this.height);
+            if (rgbaData == null) {
+                System.err.println("[CanvasGraphics] getRGB - getRGBAFromCtx returned null");
+                return;
+            }
             argbCache = Utils.rgbaToArgb(rgbaData);
+            if (argbCache == null) {
+                System.err.println("[CanvasGraphics] getRGB - rgbaToArgb returned null");
+                return;
+            }
         }
 
-        for (int b=y; b<y+height; b++) {
-            System.arraycopy(argbCache, b * this.width + x, argbData, offset + (b - y) * scanlength, width);
+        // Validate argbCache size
+        int expectedCacheSize = this.width * this.height;
+        if (argbCache.length < expectedCacheSize) {
+            System.err.println("[CanvasGraphics] getRGB - argbCache size mismatch: expected " + expectedCacheSize + ", got " + argbCache.length);
+            return;
+        }
+        
+        // Validate destination array size
+        int requiredDestSize = offset + (height - 1) * scanlength + width;
+        if (argbData.length < requiredDestSize) {
+            System.err.println("[CanvasGraphics] getRGB - destination array too small: need " + requiredDestSize + ", got " + argbData.length);
+            return;
+        }
+
+        for (int b = y; b < y + height; b++) {
+            int srcOffset = b * this.width + x;
+            int dstOffset = offset + (b - y) * scanlength;
+            
+            // Final boundary check before arraycopy
+            if (srcOffset >= 0 && srcOffset + width <= argbCache.length &&
+                dstOffset >= 0 && dstOffset + width <= argbData.length) {
+                System.arraycopy(argbCache, srcOffset, argbData, dstOffset, width);
+            }
         }
     }
 

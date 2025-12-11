@@ -8345,12 +8345,11 @@ var currentlyFocusedTextEditor;
     return 1;
   };
   var refreshStr = "refresh";
-  // CRITICAL FIX: Auto-clear offscreen canvas after full-screen refresh to prevent ghosting
+  // CRITICAL FIX: Auto-clear offscreen canvas after refresh to prevent ghosting
   // Some J2ME games don't properly clear the screen between frames
-  // This only clears when the refresh covers most of the screen (>80% area)
-  // to avoid breaking games that use incremental updates
-  window.autoClearAfterRefresh = true; // Can be disabled via console: window.autoClearAfterRefresh = false
-  window.autoClearThreshold = 0.8; // Percentage of screen area that triggers auto-clear
+  // Mode: 0=disabled, 1=clear refresh area only, 2=clear entire canvas (aggressive)
+  window.autoClearMode = 2; // Default to aggressive mode to fix ghosting
+  // Can be changed via console: window.autoClearMode = 0 (disable), 1 (area only), 2 (full canvas)
   
   Native["com/sun/midp/lcdui/DisplayDevice.refresh0.(IIIIII)V"] = function(addr, hardwareId, displayId, x1, y1, x2, y2) {
     x1 = Math.max(0, x1);
@@ -8370,19 +8369,23 @@ var currentlyFocusedTextEditor;
     }
     var ctx = $.ctx;
     
-    // Calculate if this is a full-screen or near-full-screen refresh
-    var screenArea = offscreenCanvas.width * offscreenCanvas.height;
-    var refreshArea = width * height;
-    var isFullScreenRefresh = screenArea > 0 && (refreshArea / screenArea) >= window.autoClearThreshold;
-    
     window.requestAnimationFrame(function() {
+      // CRITICAL FIX: Clear the device canvas area BEFORE drawing to prevent ghosting
+      // This ensures no old content shows through from previous frames
+      MIDP.deviceContext.clearRect(x1, y1, width, height);
+      
       // Copy offscreen canvas to device canvas
       MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height);
       
-      // CRITICAL FIX: Clear the offscreen canvas after full-screen refresh
-      // This prevents ghosting when games don't clear the screen themselves
-      // Only clear for large refreshes to avoid breaking incremental update games
-      if (window.autoClearAfterRefresh && isFullScreenRefresh) {
+      // CRITICAL FIX: Clear the offscreen canvas after refresh to prevent ghosting
+      // Mode 2 (aggressive): Clear entire canvas - fixes most ghosting issues
+      // Mode 1: Clear only the refreshed area - may miss some ghosting
+      // Mode 0: Disabled - for games that use incremental updates
+      if (window.autoClearMode === 2) {
+        // Aggressive mode: clear entire canvas to ensure no residual content
+        offscreenContext2D.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      } else if (window.autoClearMode === 1) {
+        // Conservative mode: only clear the refreshed area
         offscreenContext2D.clearRect(x1, y1, width, height);
       }
       
