@@ -71,7 +71,7 @@ public abstract class Displayable {
     /**
      * Create a new Displayable
      */
-    public  Displayable() {
+    protected Displayable() {
     }
 
     /**
@@ -79,7 +79,7 @@ public abstract class Displayable {
      *
      * @param title the Displayable's title, or null for no title
      */
-    public Displayable(String title) {
+    Displayable(String title) {
         synchronized (Display.LCDUILock) {
             this.title = title;
         }

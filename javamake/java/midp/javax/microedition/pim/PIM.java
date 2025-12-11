@@ -55,10 +55,12 @@ public abstract class PIM {
     public static final int READ_WRITE = 3;
     /** Current PIM instance handle. */
     private static PIM instance;
+    /** Static lock object for Java 1.4 compatibility */
+    private static final Object CLASS_LOCK = new Object();
 
     // JAVADOC COMMENT ELIDED
     public static PIM getInstance() {
-        synchronized (PIM.class) {
+        synchronized (CLASS_LOCK) {
             if (instance == null) {
                 String className =
                     Configuration.getProperty("javax.microedition.pim.impl");

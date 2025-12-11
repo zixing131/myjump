@@ -46,6 +46,8 @@ class ObexAuth {
     boolean access;
     byte[] nonce;
     private static int counter = 0;
+    /* Static lock object for Java 1.4 compatibility */
+    private static final Object CLASS_LOCK = new Object();
 
     // used in prepareChallenge, addChallenge
     private byte[] realm_array;
@@ -145,7 +147,7 @@ class ObexAuth {
         timestamp[6] = (byte)(time >> 8);
         timestamp[7] = (byte)(time);
 
-        synchronized (ObexAuth.class) {
+        synchronized (CLASS_LOCK) {
             timestamp[8] = (byte)(counter++);
         }
         return timestamp;

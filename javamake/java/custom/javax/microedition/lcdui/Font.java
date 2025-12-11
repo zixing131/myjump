@@ -456,6 +456,23 @@ public final class Font {
      */
     public native int substringWidth(String str, int offset, int len);
 
+    /**
+     * Gets the point size of the font for canvas graphics.
+     * @return the font size in points
+     */
+    public int getPointSize() {
+        // Map SIZE_SMALL/MEDIUM/LARGE to typical point sizes
+        switch (size) {
+            case SIZE_SMALL:
+                return 12;
+            case SIZE_LARGE:
+                return 20;
+            case SIZE_MEDIUM:
+            default:
+                return 16;
+        }
+    }
+
 
     // private implementation //
 
@@ -470,6 +487,9 @@ public final class Font {
     /** The height of this Font */
     private int height;
 
+    /** The canvas font instance for bridge graphics */
+    public Object canvasFont;
+
     /**
      * The "default" font, constructed from the 'system' face,
      * plain style, and 'medium' size point.
@@ -481,27 +501,6 @@ public final class Font {
      * so they are not re-created in the future
      */
     private static java.util.Hashtable table = new java.util.Hashtable(4);
-
-    // Extension for CanvasGraphics support
-    public pl.zb3.freej2me.bridge.graphics.CanvasFont canvasFont;
-
-    /**
-     * Gets the point size of the font (extension method for CanvasGraphics)
-     * @return point size in pixels
-     */
-    public int getPointSize() {
-        // Convert SIZE constants to approximate pixel sizes
-        switch (size) {
-            case SIZE_SMALL:
-                return 10;
-            case SIZE_MEDIUM:
-                return 12;
-            case SIZE_LARGE:
-                return 16;
-            default:
-                return 12;
-        }
-    }
 
     /**
      * Natively initialize this Font object's peer

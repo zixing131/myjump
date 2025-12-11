@@ -245,11 +245,6 @@ public final class EventTypes {
     public static final int TEST_EVENT = 34;
 
     /**
-     * Major ID for a gesture event (Nokia extension).
-     */
-    public static final int GESTURE_EVENT = 50;
-
-    /**
      * Sent to the AMS isolate when a paused MIDlet is requesting to be
      * moved to active state.
      */
@@ -443,4 +438,9 @@ public final class EventTypes {
      * Request to exit a running midlet from the debug agent to AMS.
      */
     public static final int MIDP_ODD_EXIT_MIDLET_EVENT = 70;
+
+    /**
+     * Major ID for gesture events (Nokia UI API).
+     */
+    public static final int GESTURE_EVENT = 71;
 }

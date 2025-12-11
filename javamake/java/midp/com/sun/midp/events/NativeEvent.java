@@ -142,6 +142,7 @@ public class NativeEvent extends Event {
         intParam14 = 0;
         intParam15 = 0;
         intParam16 = 0;
+
         floatParam1 = 0.0f;
 
         stringParam1 = null;

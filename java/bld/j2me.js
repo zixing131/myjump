@@ -5060,25 +5060,38 @@ var J2ME;
                             case 183 /* INVOKESPECIAL */:
                                 if (address === 0 /* NULL */) {
                                     thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
+                                    continue;
                                 }
                             case 184 /* INVOKESTATIC */:
                                 calleeTargetMethodInfo = calleeMethodInfo;
                                 break;
                             case 182 /* INVOKEVIRTUAL */:
-    
+                                if (address === 0 /* NULL */) {
+                                    thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
+                                    continue;
+                                }
                                 calleeTargetMethodInfo = classInfo.vTable[calleeMethodInfo.vTableIndex];
     
                                 break;
                             case 185 /* INVOKEINTERFACE */:
+                                if (address === 0 /* NULL */) {
+                                    thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
+                                    continue;
+                                }
                                 calleeTargetMethodInfo = classInfo.iTable[calleeMethodInfo.mangledName];
                                 break;
                             default:
                                 release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
                                 assert(false, "Not Implemented: " + J2ME.Bytecode.getBytecodesName(op));
                         }
-    
-    
-    
+
+                        // Check if method was found in vTable/iTable
+                        if (!calleeTargetMethodInfo) {
+                            console.error("Method not found: " + calleeMethodInfo.implKey + " in class " + (classInfo ? classInfo._name : "null"));
+                            thread.throwException(fp, sp, opPC, 3 /* NullPointerException */);
+                            continue;
+                        }
+
                         // Call Native or Compiled Method.
                         var callMethod = calleeTargetMethodInfo.isNative || calleeTargetMethodInfo.state === 1 /* Compiled */;
                         var calleeStats = calleeTargetMethodInfo.stats;
@@ -10573,9 +10586,24 @@ var J2ME;
             J2ME.runtimeCounter && J2ME.runtimeCounter.count("createException " + className);
             var exceptionAddress = J2ME.allocObject(classInfo);
             J2ME.setUncollectable(exceptionAddress);
+            // Try constructor with String parameter first, fallback to no-arg constructor
             var methodInfo = classInfo.getMethodByNameString("<init>", "(Ljava/lang/String;)V");
             J2ME.preemptionLockLevel++;
-            J2ME.getLinkedMethod(methodInfo)(exceptionAddress, message ? J2ME.newString(message) : 0 /* NULL */);
+            if (methodInfo) {
+                var fn = J2ME.getLinkedMethod(methodInfo);
+                if (fn) {
+                    fn(exceptionAddress, message ? J2ME.newString(message) : 0 /* NULL */);
+                }
+            } else {
+                // Fallback to no-arg constructor
+                methodInfo = classInfo.getMethodByNameString("<init>", "()V");
+                if (methodInfo) {
+                    var fn = J2ME.getLinkedMethod(methodInfo);
+                    if (fn) {
+                        fn(exceptionAddress);
+                    }
+                }
+            }
             release || J2ME.Debug.assert(!U, "Unexpected unwind during createException.");
             J2ME.preemptionLockLevel--;
             J2ME.unsetUncollectable(exceptionAddress);

@@ -40,6 +40,9 @@ import javax.microedition.io.Connection;
 // JAVADOC COMMENT ELIDED
 public class LocalDevice {
 
+    /* Static lock object for Java 1.4 compatibility */
+    private static final Object CLASS_LOCK = new Object();
+
     /* Keeps this singleton object. */
     private static LocalDevice localDevice;
 
@@ -78,7 +81,7 @@ public class LocalDevice {
          * The method is not declared as synchronized to keep
          * its signature unchanged.
          */
-        synchronized (LocalDevice.class) {
+        synchronized (CLASS_LOCK) {
             if (localDevice == null) {
                 try {
                     // create a shared impl object and 'this'

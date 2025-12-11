@@ -1,8 +1,9 @@
 @echo off
 REM Windows batch script to build classes.jar
 REM Usage: build.bat
+REM Note: JDK 8 is required to compile with -source 1.4 -target 1.4
 
-REM Find Java installation
+REM Find Java installation - prefer JDK 8 for 1.4 compatibility
 set "JAVA_BIN="
 
 REM Check JAVA_HOME first
@@ -13,45 +14,45 @@ if defined JAVA_HOME (
     )
 )
 
-REM Search common Java installation paths
-for %%v in (21 17 11 8) do (
-    if exist "C:\Program Files\Java\jdk-%%v\bin\javac.exe" (
-        set "JAVA_BIN=C:\Program Files\Java\jdk-%%v\bin\"
-        goto :java_found
-    )
-    if exist "C:\Program Files\Java\jdk%%v\bin\javac.exe" (
-        set "JAVA_BIN=C:\Program Files\Java\jdk%%v\bin\"
+REM Search for JDK 1.8.x (required for -source 1.4 -target 1.4)
+for /d %%d in ("C:\Program Files\Java\jdk1.8*") do (
+    if exist "%%d\bin\javac.exe" (
+        set "JAVA_BIN=%%d\bin\"
         goto :java_found
     )
 )
 
-REM Search for versioned JDKs (e.g. jdk-21.0.8)
-for /d %%d in ("C:\Program Files\Java\jdk-21*") do (
+REM Search for JDK 8 alternative naming
+if exist "C:\Program Files\Java\jdk-8\bin\javac.exe" (
+    set "JAVA_BIN=C:\Program Files\Java\jdk-8\bin\"
+    goto :java_found
+)
+if exist "C:\Program Files\Java\jdk8\bin\javac.exe" (
+    set "JAVA_BIN=C:\Program Files\Java\jdk8\bin\"
+    goto :java_found
+)
+
+REM Search for versioned JDK 8 (e.g. jdk-8u202)
+for /d %%d in ("C:\Program Files\Java\jdk-8*") do (
     if exist "%%d\bin\javac.exe" (
         set "JAVA_BIN=%%d\bin\"
         goto :java_found
     )
 )
-for /d %%d in ("C:\Program Files\Java\jdk-17*") do (
-    if exist "%%d\bin\javac.exe" (
-        set "JAVA_BIN=%%d\bin\"
-        goto :java_found
-    )
-)
-for /d %%d in ("C:\Program Files\Java\jdk-11*") do (
-    if exist "%%d\bin\javac.exe" (
-        set "JAVA_BIN=%%d\bin\"
-        goto :java_found
-    )
-)
+
+REM Fallback: search any JDK (but warn about compatibility)
 for /d %%d in ("C:\Program Files\Java\jdk*") do (
     if exist "%%d\bin\javac.exe" (
         set "JAVA_BIN=%%d\bin\"
+        echo WARNING: JDK 8 not found, using %%d
+        echo NOTE: JDK 9+ does not support -source 1.4, will use -source 8 instead.
+        set "USE_JAVA8_COMPAT=1"
         goto :java_found
     )
 )
 
-echo ERROR: Java JDK not found! Please install JDK or set JAVA_HOME.
+echo ERROR: Java JDK not found! Please install JDK 8 or set JAVA_HOME.
+echo JDK 8 is required to compile with -source 1.4 -target 1.4
 pause
 exit /b 1
 
@@ -144,7 +145,14 @@ dir /s /b build-src\*.java > build-srcs.txt
 echo Compiling Java files...
 REM For CLDC, we need to compile without bootclasspath first to let javac find classes from source
 REM Then use the compiled classes as bootclasspath for dependent classes
-"%JAVA_BIN%javac" -cp build-src -g:none -source 8 -target 8 -bootclasspath "" -extdirs "" -d build @build-srcs.txt > compile-errors.txt 2>&1
+REM JDK 8 supports -source 1.4, JDK 9+ minimum is -source 8
+if defined USE_JAVA8_COMPAT (
+    echo Using -source 8 -target 8 for JDK 9+ compatibility...
+    "%JAVA_BIN%javac" -cp build-src -g:none -source 8 -target 8 -bootclasspath "" -extdirs "" -d build @build-srcs.txt > compile-errors.txt 2>&1
+) else (
+    echo Using -source 1.4 -target 1.4 for JDK 8...
+    "%JAVA_BIN%javac" -cp build-src -g:none -source 1.4 -target 1.4 -bootclasspath "" -extdirs "" -d build @build-srcs.txt > compile-errors.txt 2>&1
+)
 if errorlevel 1 (
     echo Compilation failed! Check compile-errors.txt for details.
     type compile-errors.txt | findstr /V /C:"警告" /C:"warning" /C:"deprecation" /C:"deprecated" /C:"Note:"
@@ -178,4 +186,5 @@ pause
 
 
 pause
+
 

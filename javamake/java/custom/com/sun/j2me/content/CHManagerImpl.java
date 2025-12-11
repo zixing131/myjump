@@ -79,8 +79,12 @@ public class CHManagerImpl extends com.sun.midp.content.CHManager
         AppProxy.setSecurityToken(classSecurityToken);
         
         // load Invocation class
-        Class cl = Invocation.class;
-        cl = cl.getClass();
+        try {
+            Class cl = Class.forName("javax.microedition.content.Invocation");
+            cl = cl.getClass();
+        } catch (ClassNotFoundException e) {
+            // Ignore
+        }
     }
 
     /** Installed handlers accumulator. */

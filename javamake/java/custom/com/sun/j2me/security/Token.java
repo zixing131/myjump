@@ -38,4 +38,13 @@ public final class Token {
     public SecurityToken getSecurityToken() {
         return securityToken;
     }
+
+    /**
+     * Check if a permission is allowed and throw an exception if not.
+     * @param permission the permission to check
+     * @throws SecurityException if the permission is not allowed
+     */
+    public void checkIfPermissionAllowed(Object permission) throws SecurityException {
+        // Allow all permissions in this stub implementation
+    }
 }

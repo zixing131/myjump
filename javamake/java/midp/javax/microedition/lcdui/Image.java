@@ -878,15 +878,15 @@ public class Image {
     }
 
     /**
-     * Protected constructor for subclasses (extension for CanvasImage)
-     * @param imageData <code>ImageData</code> instance to be used to
-     *                  create new Image
+     * Protected constructor for subclasses.
+     * @param imageData the image data (can be null for subclass initialization)
+     * @param subclass flag to indicate subclass construction
      */
-    protected Image(ImageData imageData, boolean dummy) {
+    protected Image(ImageData imageData, boolean subclass) {
         this.imageData = imageData;
         if (imageData != null) {
-            this.width     = imageData.getWidth();
-            this.height    = imageData.getHeight();
+            this.width = imageData.getWidth();
+            this.height = imageData.getHeight();
         }
     }
 

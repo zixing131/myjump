@@ -137,7 +137,7 @@ public final class InvocationStoreProxy {
             // so we will start only one new midlet
             done = done || (launchedMidletsCount > 0);
         }
-        if(AppProxy.LOGGER!=null) AppProxy.LOGGER.println( InvocationStore.class.getName() + ".invokeNext() finished: started midlets = " + launchedMidletsCount);
+        if(AppProxy.LOGGER!=null) AppProxy.LOGGER.println( "com.sun.j2me.content.InvocationStore.invokeNext() finished: started midlets = " + launchedMidletsCount);
         return launchedMidletsCount > 0;
     }
 }

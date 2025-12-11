@@ -223,7 +223,7 @@ class DirectVideo implements VideoControl, MIDPVideoPainter {
 
 
 
-        boolean containerIsCanvas = Canvas.class.isInstance(container);
+        boolean containerIsCanvas = (container instanceof Canvas);
 
         if (mode == USE_DIRECT_VIDEO && !containerIsCanvas) {
             throw new IllegalArgumentException("container needs to be a Canvas");

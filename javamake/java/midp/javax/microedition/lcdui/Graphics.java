@@ -530,9 +530,10 @@ public class Graphics {
     }
 
     /**
-     * Protected constructor for subclasses (extension for CanvasGraphics)
+     * Protected constructor for subclasses.
+     * @param subclass flag to indicate subclass construction
      */
-    protected Graphics(boolean dummy) {
+    protected Graphics(boolean subclass) {
     }
 
     /**

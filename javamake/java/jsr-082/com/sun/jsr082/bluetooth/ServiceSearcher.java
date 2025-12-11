@@ -77,6 +77,9 @@ public class ServiceSearcher extends ServiceSearcherBase implements
     /* Indicates if listener notification has been called. */
     private boolean notified = false;
 
+    /* Static lock object for Java 1.4 compatibility */
+    private static final Object CLASS_LOCK = new Object();
+
     /* Current quantity of service discovering requests. */
     private static int requestCounter = 0;
 
@@ -146,7 +149,7 @@ public class ServiceSearcher extends ServiceSearcherBase implements
         if (DEBUG) {
             System.out.println("- serviceSearcher: start");
         }
-        synchronized (ServiceSearcher.class) {
+        synchronized (CLASS_LOCK) {
             if (requestCounter == ServiceRecordImpl.TRANS_MAX) {
                 throw new BluetoothStateException(
                         "Too much concurrent requests");
@@ -429,7 +432,7 @@ public class ServiceSearcher extends ServiceSearcherBase implements
             this.sdp = null;
         }
 
-        synchronized (ServiceSearcher.class) {
+        synchronized (CLASS_LOCK) {
             requestCounter--;
         }
 
