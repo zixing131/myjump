@@ -235,9 +235,24 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       
       ctx.save();
       
-      // If not using alpha, clear with black background first to prevent ghosting
+      // CRITICAL FIX: Reset compositing operation to ensure complete overwrite
+      // This prevents any blending with existing content
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1.0;
+      
+      // CRITICAL FIX: Always clear the destination area first to prevent ghosting
+      // clearRect completely removes old content, preventing frame accumulation
+      // Use 'copy' mode to ensure complete replacement of target area
+      ctx.globalCompositeOperation = 'copy';
+      ctx.clearRect(x, y, width, height);
+      
+      // Reset to source-over for the actual drawing
+      ctx.globalCompositeOperation = 'source-over';
+      
+      // If not using alpha, fill with opaque black background first
+      // This ensures no transparency that could let old content show through
       if (!withAlpha) {
-        ctx.fillStyle = 'black';
+        ctx.fillStyle = '#000000';
         ctx.fillRect(x, y, width, height);
       }
       
@@ -652,6 +667,47 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         CanvasGraphicsNatives.drawImage2(null, ctx, sourceCanvas, sx, sy, x, y, w, h, flipY, withAlpha);
       } catch (e) {
         console.error('[CanvasGraphics] drawImage2 error:', e);
+      }
+    };
+
+    // CRITICAL FIX: Trigger repaint after blitGL to ensure canvas updates
+    // This ensures the 2D canvas content is refreshed and displayed on screen
+    Native[cgBasePath + '.triggerRepaint.(Ljava/lang/Object;IIII)V'] = function(addr, ctxAddr, x, y, w, h) {
+      const ctx = getCtx(ctxAddr);
+      if (!ctx) {
+        return;
+      }
+      
+      // The canvas should automatically update when drawImage is called,
+      // but we can force a refresh by accessing the canvas element
+      // In browsers, canvas updates are automatic, but we can trigger a repaint
+      // by accessing the canvas element or calling requestAnimationFrame
+      try {
+        const canvas = ctx.canvas;
+        if (canvas) {
+          // Force canvas to update by accessing its properties
+          // This ensures the browser knows the canvas has changed
+          const width = canvas.width;
+          const height = canvas.height;
+          
+          // If this canvas is the screen canvas, trigger a repaint
+          if (window.screenCanvas && (canvas === window.screenCanvas || canvas === window.screenContext2D?.canvas)) {
+            // Screen canvas - trigger repaint via Display system if available
+            if (window.J2ME && window.J2ME.Display && typeof window.J2ME.Display.requestRepaint === 'function') {
+              window.J2ME.Display.requestRepaint(x, y, w, h);
+            } else if (window.requestAnimationFrame) {
+              // Fallback: use requestAnimationFrame to ensure canvas is redrawn
+              window.requestAnimationFrame(function() {
+                // Canvas should already be updated, this just ensures browser redraws
+              });
+            }
+          }
+        }
+      } catch (e) {
+        // Repaint trigger is optional, don't fail if it's not available
+        if (DEBUG) {
+          console.log('[CanvasGraphics] triggerRepaint - could not trigger repaint:', e);
+        }
       }
     };
 

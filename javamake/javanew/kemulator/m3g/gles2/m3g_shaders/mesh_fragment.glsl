@@ -57,7 +57,6 @@ void main() {
         color = v_backColor;
     }
 
-
     vec2 v_coords[MAX_TEXTURES];
     v_coords[0] = v_coords0;
     v_coords[1] = v_coords1;

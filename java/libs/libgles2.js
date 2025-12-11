@@ -391,15 +391,29 @@ window.GLES2_LIB_VERSION = '20251212g';
         return;
       }
       
+      // DEBUG: Log array info to diagnose vertex data issues
+      if (DEBUG || Math.random() < 0.01) {
+        console.log('[GLES2] bufferSubData - type:', type, 'offset:', offset, 'byteSize:', byteSize, 
+          'array type:', array.constructor ? array.constructor.name : typeof array,
+          'array length:', array.length, 'byteLength:', array.byteLength);
+        if (array.length > 0) {
+          console.log('[GLES2] bufferSubData - first 10 values:', Array.from(array.slice(0, 10)));
+        }
+      }
+      
       // Based on freej2me-web: TypedArrays have buffer and byteOffset properties
       if (array.buffer && array.byteOffset !== undefined) {
         // TypedArray (Int8Array, Int16Array, Int32Array, Float32Array)
-        // Create a Uint8Array view of the underlying buffer
-        const actualByteSize = Math.min(array.byteLength, byteSize);
-        const uint8View = new Uint8Array(array.buffer, array.byteOffset, actualByteSize);
-        gl.bufferSubData(type, offset, uint8View);
+        // CRITICAL: Pass the TypedArray directly to WebGL, not a Uint8Array view
+        // WebGL's bufferSubData accepts any ArrayBufferView
+        gl.bufferSubData(type, offset, array);
+      } else if (Array.isArray(array)) {
+        // Plain JavaScript array - convert to appropriate TypedArray
+        console.warn('bufferSubData: received plain array, converting to Int16Array');
+        const typedArray = new Int16Array(array);
+        gl.bufferSubData(type, offset, typedArray);
       } else {
-        console.error('bufferSubData: array is not a TypedArray', array);
+        console.error('bufferSubData: array is not a TypedArray or Array', array, typeof array);
       }
     },
 

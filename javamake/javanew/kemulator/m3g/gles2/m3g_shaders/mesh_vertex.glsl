@@ -97,7 +97,6 @@ vec4 lightColor(int i, in vec3 ecPosition3, in vec3 normal, in vec4 ambient, in 
     float spot = 1.0;
 
     if (lSpotCutoffCos[i] != -1.0) {
-        return vec4(1.0, 0.0, 0.0, 1.0);
         float sdot = max(0.0, dot(PV, normalize(mat3(lMatrix[i]) * lDirection[i])));
 
         if (sdot >= lSpotCutoffCos[i]) {
@@ -184,6 +183,7 @@ void main() {
         normal3 = normalize(normal3);
 
         color = applyLights(ecPosition3, normal3, ambient, diffuse);
+        
         if (isTwoSided) {
             // at this point we don't know whether the face is front or back faced
             // so we need to compute both versions and then pick the correct one

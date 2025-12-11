@@ -8345,6 +8345,13 @@ var currentlyFocusedTextEditor;
     return 1;
   };
   var refreshStr = "refresh";
+  // CRITICAL FIX: Auto-clear offscreen canvas after full-screen refresh to prevent ghosting
+  // Some J2ME games don't properly clear the screen between frames
+  // This only clears when the refresh covers most of the screen (>80% area)
+  // to avoid breaking games that use incremental updates
+  window.autoClearAfterRefresh = true; // Can be disabled via console: window.autoClearAfterRefresh = false
+  window.autoClearThreshold = 0.8; // Percentage of screen area that triggers auto-clear
+  
   Native["com/sun/midp/lcdui/DisplayDevice.refresh0.(IIIIII)V"] = function(addr, hardwareId, displayId, x1, y1, x2, y2) {
     x1 = Math.max(0, x1);
     y1 = Math.max(0, y1);
@@ -8362,8 +8369,23 @@ var currentlyFocusedTextEditor;
       return;
     }
     var ctx = $.ctx;
+    
+    // Calculate if this is a full-screen or near-full-screen refresh
+    var screenArea = offscreenCanvas.width * offscreenCanvas.height;
+    var refreshArea = width * height;
+    var isFullScreenRefresh = screenArea > 0 && (refreshArea / screenArea) >= window.autoClearThreshold;
+    
     window.requestAnimationFrame(function() {
-      MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height); 
+      // Copy offscreen canvas to device canvas
+      MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height);
+      
+      // CRITICAL FIX: Clear the offscreen canvas after full-screen refresh
+      // This prevents ghosting when games don't clear the screen themselves
+      // Only clear for large refreshes to avoid breaking incremental update games
+      if (window.autoClearAfterRefresh && isFullScreenRefresh) {
+        offscreenContext2D.clearRect(x1, y1, width, height);
+      }
+      
       J2ME.Scheduler.enqueue(ctx);
     });
     $.pause(refreshStr);

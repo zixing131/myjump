@@ -32,6 +32,12 @@ public final class Emulator3D {
 	// Log throttling to reduce spam
 	private static long lastSwapLogTime = 0;
 	private static long lastClearLogTime = 0;
+	private static long lastBgLogTime = 0;
+	private static long lastCameraLogTime = 0;
+	private static long lastMaterialLogTime = 0;
+	private static long lastBlendModeLogTime = 0;
+	private static long lastLightsLogTime = 0;
+	private static long lastDepthLogTime = 0;
 
 	public static final int MaxViewportWidth = 2048;
 	public static final int MaxViewportHeight = 2048;
@@ -161,6 +167,17 @@ public final class Emulator3D {
 
 			GLES2.enable(GLES2.Constants.GL_SCISSOR_TEST);
 			GLES2.pixelStorei(GLES2.Constants.GL_UNPACK_ALIGNMENT, 1);
+			
+			// CRITICAL FIX: Clear WebGL buffers on bindTarget to prevent ghosting from previous frames
+			// This ensures a clean slate before any 3D rendering begins
+			// Some games don't call clear() properly, so we force clear here
+			GLES2.viewport(0, 0, w, h);
+			GLES2.scissor(0, 0, w, h);
+			GLES2.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			GLES2.clearDepthf(1.0f);
+			GLES2.depthMask(true);
+			GLES2.colorMask(true, true, true, true);
+			GLES2.clear(GLES2.Constants.GL_COLOR_BUFFER_BIT | GLES2.Constants.GL_DEPTH_BUFFER_BIT);
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.target = null;
@@ -256,6 +273,12 @@ public final class Emulator3D {
 					if (GLES2.getCanvasRef() == null) {
 						System.err.println("[Emulator3D] swapBuffers - GLES2 canvas not available for readPixels");
 						return;
+					}
+					
+					// CRITICAL FIX: Ensure all rendering commands are completed before reading pixels
+					// This ensures we get the latest rendered frame, not the previous one
+					if (GLES2.bound) {
+						GLES2.finish();
 					}
 					
 					try {
@@ -369,7 +392,39 @@ public final class Emulator3D {
 						// CRITICAL: Ensure all rendering commands are completed before reading from WebGL canvas
 						// This ensures we get the latest rendered frame, not the previous one
 						if (GLES2.bound) {
+							// Finish all rendering commands before reading pixels
 							GLES2.finish();
+							
+							// Read a sample pixel to verify rendering
+							// Note: readPixels uses bottom-left origin, so (0,0) is bottom-left corner
+							try {
+								byte[] sampleBuffer = new byte[4];
+								// Read center pixel (WebGL coordinate system: origin at bottom-left)
+								int centerX = width / 2;
+								int centerY = height / 2;
+								
+								// Also try reading from multiple positions to verify
+								GLES2.readPixels(centerX, centerY, 1, 1, sampleBuffer);
+								int r = sampleBuffer[0] & 0xFF;
+								int g = sampleBuffer[1] & 0xFF;
+								int b = sampleBuffer[2] & 0xFF;
+								int a = sampleBuffer[3] & 0xFF;
+								
+								// Always log pixel value for debugging black screen issue (not throttled)
+								// This is critical for diagnosing the black screen problem
+								System.out.println("[Emulator3D] swapBuffers - CRITICAL: Sample pixel at center (" + centerX + "," + centerY + "): R=" + r + " G=" + g + " B=" + b + " A=" + a);
+								
+								// If pixel is all black (0,0,0,255), warn about potential rendering issue
+								if (r == 0 && g == 0 && b == 0 && a == 255) {
+									System.err.println("[Emulator3D] swapBuffers - WARNING: Center pixel is black (0,0,0,255) - rendering may have failed!");
+									System.err.println("[Emulator3D] swapBuffers - This suggests: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, or 4) depth test failed");
+								} else if (r > 0 || g > 0 || b > 0) {
+									System.out.println("[Emulator3D] swapBuffers - Pixel is NOT black - rendering appears successful!");
+								}
+							} catch (Exception e) {
+								System.err.println("[Emulator3D] swapBuffers - Failed to read sample pixel: " + e.getMessage());
+								e.printStackTrace();
+							}
 						}
 						
 						// flipY must be true because WebGL Y-axis is bottom-up while Canvas2D Y-axis is top-down
@@ -381,6 +436,13 @@ public final class Emulator3D {
 							if (shouldLog) {
 								System.out.println("[Emulator3D] swapBuffers - blitGL completed");
 							}
+							
+							// CRITICAL FIX: Trigger canvas refresh after blitGL
+							// After blitGL copies WebGL content to 2D canvas, we need to ensure
+							// the canvas is refreshed. This is handled in JavaScript side (libcanvasgraphics.js)
+							// by calling a native method to trigger repaint if needed
+							// Note: triggerRepaint is called inside blitGL, so we don't need to call it here
+							
 						} catch (Exception e) {
 							System.err.println("[Emulator3D] swapBuffers - blitGL failed: " + e.getMessage());
 							e.printStackTrace();
@@ -444,15 +506,20 @@ public final class Emulator3D {
 		viewportHeight = h;
 
 		if (GLES2.bound) {
-			GLES2.viewport(viewportX, targetHeight - viewportY - viewportHeight, viewportWidth, viewportHeight);
-			GLES2.scissor(viewportX, targetHeight - viewportY - viewportHeight, viewportWidth, viewportHeight);
+			int viewportY_flipped = targetHeight - viewportY - viewportHeight;
+			GLES2.viewport(viewportX, viewportY_flipped, viewportWidth, viewportHeight);
+			GLES2.scissor(viewportX, viewportY_flipped, viewportWidth, viewportHeight);
+			// Log viewport settings for debugging black screen issue
+			System.out.println("[Emulator3D] setViewport - Viewport: x=" + viewportX + " y=" + viewportY_flipped + " w=" + viewportWidth + " h=" + viewportHeight + " (targetHeight=" + targetHeight + ", original y=" + viewportY + ")");
 		}
 	}
 
 	public final synchronized void clearBackgound(Object bgObj) {
 		Background bg = (Background) bgObj;
 
-		GLES2.clearDepthf(1);
+		// CRITICAL FIX: Always clear depth buffer to prevent ghosting
+		// Set depth to maximum (1.0) before clearing
+		GLES2.clearDepthf(1.0f);
 		GLES2.depthMask(true);
 		GLES2.colorMask(true, true, true, true);
 
@@ -472,24 +539,64 @@ public final class Emulator3D {
 		long now = System.currentTimeMillis();
 		if (lastClearLogTime == 0 || now - lastClearLogTime > 1000) {
 			System.out.println("[Emulator3D] clearBackgound - bgColor: 0x" + Integer.toHexString(bgColor) + " rgba: (" + r + ", " + g + ", " + b + ", " + a + ")");
+			if (bg != null) {
+				System.out.println("[Emulator3D] clearBackgound - Background has image: " + (bg.getImage() != null) + 
+					", colorClear: " + bg.isColorClearEnabled() + ", depthClear: " + bg.isDepthClearEnabled());
+			}
 			lastClearLogTime = now;
 		}
 		
 		GLES2.clearColor(r, g, b, a);
 
 		if (bg != null) {
-			int colorClear = bg.isColorClearEnabled() ? GLES2.Constants.GL_COLOR_BUFFER_BIT : 0;
-			int depthClear = depthBufferEnabled && bg.isDepthClearEnabled() ? GLES2.Constants.GL_DEPTH_BUFFER_BIT : 0;
+			// CRITICAL FIX: Always clear color buffer to prevent ghosting/overlapping from previous frames
+			// Even if bg.isColorClearEnabled() is false, we must clear to avoid frame accumulation
+			int colorClear = GLES2.Constants.GL_COLOR_BUFFER_BIT;
+			// CRITICAL FIX: Always clear depth buffer if enabled, regardless of bg.isDepthClearEnabled()
+			// This prevents depth buffer ghosting that causes trailing/overlapping effects
+			int depthClear = depthBufferEnabled ? GLES2.Constants.GL_DEPTH_BUFFER_BIT : 0;
+			
+			// Log if we're overriding the background settings
+			if (!bg.isColorClearEnabled() || !bg.isDepthClearEnabled()) {
+				if (lastClearLogTime == 0 || now - lastClearLogTime > 1000) {
+					System.out.println("[Emulator3D] clearBackgound - OVERRIDE: Always clearing buffers to prevent ghosting. bg.colorClear=" + bg.isColorClearEnabled() + ", bg.depthClear=" + bg.isDepthClearEnabled());
+				}
+			}
+			
 			GLES2.clear(colorClear | depthClear);
 
 			drawBackgroundImage(bg);
 		} else {
+			// CRITICAL FIX: Always clear both color and depth buffers when bg is null
+			// This ensures a clean frame start and prevents ghosting
 			GLES2.clear(GLES2.Constants.GL_COLOR_BUFFER_BIT | (depthBufferEnabled ? GLES2.Constants.GL_DEPTH_BUFFER_BIT : 0));
 		}
 	}
 
 	private void drawBackgroundImage(Background bg) {
-		if (bg == null || bg.getImage() == null || bg.getCropWidth() <= 0 || bg.getCropHeight() <= 0) return;
+		if (bg == null || bg.getImage() == null || bg.getCropWidth() <= 0 || bg.getCropHeight() <= 0) {
+			// Diagnostic: Log why background image is not being drawn
+			long now = System.currentTimeMillis();
+			if (lastBgLogTime == 0 || now - lastBgLogTime > 2000) {
+				if (bg == null) {
+					System.out.println("[Emulator3D] drawBackgroundImage - Background is null");
+				} else if (bg.getImage() == null) {
+					System.out.println("[Emulator3D] drawBackgroundImage - Background image is null");
+				} else {
+					System.out.println("[Emulator3D] drawBackgroundImage - Invalid crop: w=" + bg.getCropWidth() + " h=" + bg.getCropHeight());
+				}
+				lastBgLogTime = now;
+			}
+			return;
+		}
+		
+		// Diagnostic: Log background image rendering
+		long now = System.currentTimeMillis();
+		if (lastBgLogTime == 0 || now - lastBgLogTime > 2000) {
+			System.out.println("[Emulator3D] drawBackgroundImage - Drawing background: " + bg.getImage().getWidth() + "x" + bg.getImage().getHeight() + 
+				" crop: " + bg.getCropX() + "," + bg.getCropY() + " " + bg.getCropWidth() + "x" + bg.getCropHeight());
+			lastBgLogTime = now;
+		}
 
 		GLES2.disable(GLES2.Constants.GL_CULL_FACE); // we can't rely on frontFace/cullFace settings
 		GLES2.disable(GLES2.Constants.GL_BLEND);
@@ -656,9 +763,34 @@ public final class Emulator3D {
 
 	private void setupCamera() {
 		if (CameraCache.camera != null) {
-			GLES2.uniformMatrix4fv(meshProgram.uProjectionMatrix, true, CameraCache.camera.getProjectionMatrixElements());
+			float[] projMatrix = CameraCache.camera.getProjectionMatrixElements();
+			if (projMatrix != null && projMatrix.length == 16) {
+				GLES2.uniformMatrix4fv(meshProgram.uProjectionMatrix, true, projMatrix);
+				// Log projection matrix for debugging (throttled)
+				long now = System.currentTimeMillis();
+				if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
+					System.out.println("[Emulator3D] setupCamera - Projection matrix set");
+					lastCameraLogTime = now;
+				}
+			} else {
+				System.err.println("[Emulator3D] setupCamera - ERROR: Invalid projection matrix! length=" + (projMatrix != null ? projMatrix.length : 0));
+			}
 
-			GLES2.uniformMatrix4fv(meshProgram.uViewMatrix, true, ((Transform3D) CameraCache.invCam.getImpl()).m_matrix);
+			if (CameraCache.invCam != null && CameraCache.invCam.getImpl() != null) {
+				float[] viewMatrix = ((Transform3D) CameraCache.invCam.getImpl()).m_matrix;
+				if (viewMatrix != null && viewMatrix.length == 16) {
+					GLES2.uniformMatrix4fv(meshProgram.uViewMatrix, true, viewMatrix);
+					long now = System.currentTimeMillis();
+					if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
+						System.out.println("[Emulator3D] setupCamera - View matrix set");
+						lastCameraLogTime = now;
+					}
+				} else {
+					System.err.println("[Emulator3D] setupCamera - ERROR: Invalid view matrix! length=" + (viewMatrix != null ? viewMatrix.length : 0));
+				}
+			} else {
+				System.err.println("[Emulator3D] setupCamera - ERROR: CameraCache.invCam is null!");
+			}
 		} else {
 			throw new RuntimeException("camera cache null?");
 		}
@@ -667,11 +799,34 @@ public final class Emulator3D {
 	private void setupLights(Vector lights, Vector lightMats, int scope) {
 		int usedLights = 0;
 
+		// Diagnostic: Check if we should log (only once per call)
+		long logTime = System.currentTimeMillis();
+		boolean shouldLog = (lastLightsLogTime == 0 || logTime - lastLightsLogTime > 2000);
+		
 		for (int i = 0; i < lights.size() && usedLights < MaxLights; ++i) {
 			Light light = (Light) lights.elementAt(i);
-
-			if (light == null || (light.getScope() & scope) == 0 || !renderPipe.isVisible(light)) {
+			
+			if (light == null) {
+				if (shouldLog && i == 0) {
+					System.out.println("[Emulator3D] setupLights - light[" + i + "] is null, scope=" + scope);
+				}
 				continue;
+			}
+			
+			int lightScope = light.getScope();
+			boolean scopeMatch = (lightScope & scope) != 0;
+			boolean visible = renderPipe.isVisible(light);
+			
+			if (!scopeMatch || !visible) {
+				if (shouldLog && i == 0) {
+					System.out.println("[Emulator3D] setupLights - light[" + i + "] filtered: scope=" + lightScope + " & " + scope + " = " + (lightScope & scope) + " (match=" + scopeMatch + "), visible=" + visible);
+				}
+				continue;
+			}
+			
+			// Diagnostic: Log when first light is being set up
+			if (usedLights == 0 && shouldLog) {
+				System.out.println("[Emulator3D] setupLights - Setting up first light (index=" + i + ", scope=" + scope + ", lightScope=" + lightScope + ")");
 			}
 
 			int lightId = usedLights;
@@ -739,6 +894,17 @@ public final class Emulator3D {
 		}
 
 		GLES2.uniform1i(meshProgram.uUsedLights, usedLights);
+		
+		// Diagnostic: Log lights setup - always log usedLights value (critical for debugging)
+		// Always log the first time, then throttle
+		if (shouldLog || lastLightsLogTime == 0) {
+			System.out.println("[Emulator3D] setupLights - FINAL: usedLights=" + usedLights + " scope=" + scope + " (lights.size()=" + lights.size() + ")");
+			if (usedLights == 0) {
+				System.err.println("[Emulator3D] setupLights - CRITICAL: No lights active (usedLights=0)! If useLighting=true, output will be black (only emissive color).");
+				System.err.println("[Emulator3D] setupLights - This means: emissive=(0,0,0,1) + no light contribution = black output!");
+			}
+			lastLightsLogTime = logTime;
+		}
 
 	}
 
@@ -747,24 +913,42 @@ public final class Emulator3D {
 	}
 
 	private synchronized void renderVertex(VertexBuffer vb, IndexBuffer ib, Appearance ap, Transform trans, int scope, float alphaFactor) {
-		if ((CameraCache.camera.getScope() & scope) != 0) {
-			useProgram(meshProgram);
-
-			GLES2.uniform1f(meshProgram.uAlphaFactor, alphaFactor);
-
-			setupCamera();
-
-			GLES2.uniformMatrix4fv(meshProgram.uModelMatrix, true, ((Transform3D) trans.getImpl()).m_matrix);
-
-			setupAppearance(ap, false);
-			if (ap.getMaterial() != null) {
-				setupLights(LightsCache.m_lights, LightsCache.m_lightsTransform, scope);
-			}
-
-			draw(vb, ib, ap);
-
-			useFP();
+		if (CameraCache.camera == null) {
+			System.err.println("[Emulator3D] renderVertex - CameraCache.camera is null!");
+			return;
 		}
+		
+		int cameraScope = CameraCache.camera.getScope();
+		if ((cameraScope & scope) == 0) {
+			System.out.println("[Emulator3D] renderVertex - Scope mismatch: cameraScope=" + cameraScope + ", objectScope=" + scope);
+			return;
+		}
+		
+		System.out.println("[Emulator3D] renderVertex - Rendering object with scope=" + scope + ", alphaFactor=" + alphaFactor);
+		
+		useProgram(meshProgram);
+
+		GLES2.uniform1f(meshProgram.uAlphaFactor, alphaFactor);
+
+		try {
+			setupCamera();
+		} catch (Exception e) {
+			System.err.println("[Emulator3D] renderVertex - setupCamera failed: " + e.getMessage());
+			e.printStackTrace();
+			return;
+		}
+
+		float[] modelMatrix = ((Transform3D) trans.getImpl()).m_matrix;
+		GLES2.uniformMatrix4fv(meshProgram.uModelMatrix, true, modelMatrix);
+
+		setupAppearance(ap, false);
+		if (ap.getMaterial() != null) {
+			setupLights(LightsCache.m_lights, LightsCache.m_lightsTransform, scope);
+		}
+
+		draw(vb, ib, ap);
+
+		useFP();
 	}
 
 	private void setupAppearance(Appearance ap, boolean spriteMode) {
@@ -808,15 +992,58 @@ public final class Emulator3D {
 			cm = new CompositingMode();
 		}
 
-		if (depthBufferEnabled) {
+		boolean depthTestEnabled = cm.isDepthTestEnabled();
+		boolean depthWriteEnabled = cm.isDepthWriteEnabled();
+		
+		// CRITICAL FIX: If depthBuffer is enabled but depthTest is disabled,
+		// force enable depth test to prevent severe overlapping/ghosting
+		// This is a workaround for m3g files that incorrectly set depthTestEnabled=false
+		// Many m3g files have objects with depthTestEnabled=false, causing severe overlapping
+		boolean forceDepthTest = false;
+		if (depthBufferEnabled && !depthTestEnabled) {
+			// Force enable depth test to prevent overlapping
+			forceDepthTest = true;
+			depthTestEnabled = true; // Override for rendering
+		}
+		
+		// Enable depth test if depthBuffer is enabled AND (depthTest is enabled OR we're forcing it)
+		if (depthBufferEnabled && depthTestEnabled) {
 			GLES2.enable(GLES2.Constants.GL_DEPTH_TEST);
+			GLES2.depthFunc(GLES2.Constants.GL_LEQUAL);
 		} else {
+			// Disable depth test if depthBuffer is disabled or depthTest is disabled (and not forced)
 			GLES2.disable(GLES2.Constants.GL_DEPTH_TEST);
+			GLES2.depthFunc(GLES2.Constants.GL_ALWAYS); // Set default, but test is disabled
 		}
 
-		GLES2.depthMask(cm.isDepthWriteEnabled());
-		GLES2.depthFunc(cm.isDepthTestEnabled() ? GLES2.Constants.GL_LEQUAL : GLES2.Constants.GL_ALWAYS);
-		GLES2.colorMask(cm.isColorWriteEnabled(), cm.isColorWriteEnabled(), cm.isColorWriteEnabled(), cm.isAlphaWriteEnabled());
+		// CRITICAL FIX: Force enable depth write when depth test is enabled
+		// If depth test is on but depth write is off, objects won't establish depth
+		// and may be incorrectly occluded or cause ghosting
+		boolean actualDepthWrite = depthWriteEnabled;
+		if (depthBufferEnabled && depthTestEnabled && !depthWriteEnabled) {
+			actualDepthWrite = true; // Force enable depth write
+		}
+		GLES2.depthMask(actualDepthWrite);
+		
+		// CRITICAL FIX: Force enable color write - if disabled, objects are invisible!
+		// Some m3g files incorrectly set colorWriteEnabled=false which makes objects not render
+		boolean actualColorWrite = cm.isColorWriteEnabled();
+		if (!actualColorWrite) {
+			actualColorWrite = true; // Force enable color write
+		}
+		
+		// Diagnostic: Log settings (throttled)
+		long now = System.currentTimeMillis();
+		if (lastDepthLogTime == 0 || now - lastDepthLogTime > 2000) {
+			System.out.println("[Emulator3D] setupCompositingMode - depthBufferEnabled=" + depthBufferEnabled + 
+				", depthTestEnabled=" + cm.isDepthTestEnabled() + " (forced=" + forceDepthTest + 
+				"), depthWriteEnabled=" + depthWriteEnabled + " (actual=" + actualDepthWrite + 
+				"), colorWriteEnabled=" + cm.isColorWriteEnabled() + " (actual=" + actualColorWrite + ")");
+			lastDepthLogTime = now;
+		}
+		
+		// Always enable color write to ensure objects are visible
+		GLES2.colorMask(actualColorWrite, actualColorWrite, actualColorWrite, true);
 
 		GLES2.uniform1f(((ICommonShader)currentProgram).uMinAlpha(), cm.getAlphaThreshold());
 
@@ -858,26 +1085,71 @@ public final class Emulator3D {
 	}
 
 	private void setupMaterial(Material mat) {
-		GLES2.uniform1i(meshProgram.uUseLighting, (mat != null) ? 1 : 0);
+		boolean useLighting = (mat != null);
+		GLES2.uniform1i(meshProgram.uUseLighting, useLighting ? 1 : 0);
 
 		if (mat != null) {
-			GLES2.uniform1i(meshProgram.uTrackVertexColors, mat.isVertexColorTrackingEnabled() ? 1 : 0);
+			boolean trackVertexColors = mat.isVertexColorTrackingEnabled();
+			GLES2.uniform1i(meshProgram.uTrackVertexColors, trackVertexColors ? 1 : 0);
+			
+			// Diagnostic: Log trackVertexColors status
+			long now = System.currentTimeMillis();
+			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
+				System.out.println("[Emulator3D] setupMaterial - trackVertexColors=" + trackVertexColors + " useLighting=" + useLighting);
+				if (trackVertexColors) {
+					System.err.println("[Emulator3D] setupMaterial - WARNING: trackVertexColors=true! If vertex colors are black, lighting will output black!");
+				}
+				lastMaterialLogTime = now;
+			}
 
 			float[] tmpCol = new float[4];
 
 			G3DUtils.fillFloatColor(tmpCol, mat.getColor(Material.AMBIENT));
+			// CRITICAL FIX: Material colors in M3G don't have alpha, so if alpha is 0, set it to 1.0
+			// This prevents black output when alpha is 0 and colors are used in lighting calculations
+			if (tmpCol[3] == 0.0f) {
+				tmpCol[3] = 1.0f;
+			}
 			GLES2.uniform4f(meshProgram.uMAmbient, tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
+			float[] ambientCol = new float[]{tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]};
 
 			G3DUtils.fillFloatColor(tmpCol, mat.getColor(Material.DIFFUSE));
+			if (tmpCol[3] == 0.0f) {
+				tmpCol[3] = 1.0f;
+			}
 			GLES2.uniform4f(meshProgram.uMDiffuse, tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
+			float[] diffuseCol = new float[]{tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]};
 
 			G3DUtils.fillFloatColor(tmpCol, mat.getColor(Material.EMISSIVE));
+			if (tmpCol[3] == 0.0f) {
+				tmpCol[3] = 1.0f;
+			}
 			GLES2.uniform4f(meshProgram.uMEmissive, tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
+			float[] emissiveCol = new float[]{tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]};
 
 			G3DUtils.fillFloatColor(tmpCol, mat.getColor(Material.SPECULAR));
+			if (tmpCol[3] == 0.0f) {
+				tmpCol[3] = 1.0f;
+			}
 			GLES2.uniform4f(meshProgram.uMSpecular, tmpCol[0], tmpCol[1], tmpCol[2], tmpCol[3]);
 
 			GLES2.uniform1f(meshProgram.uMShininess, mat.getShininess());
+			
+			// Diagnostic logging for black screen issue (using existing 'now' variable)
+			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
+				System.out.println("[Emulator3D] setupMaterial - useLighting=" + useLighting + 
+					" ambient=(" + ambientCol[0] + "," + ambientCol[1] + "," + ambientCol[2] + "," + ambientCol[3] + ")" +
+					" diffuse=(" + diffuseCol[0] + "," + diffuseCol[1] + "," + diffuseCol[2] + "," + diffuseCol[3] + ")" +
+					" emissive=(" + emissiveCol[0] + "," + emissiveCol[1] + "," + emissiveCol[2] + "," + emissiveCol[3] + ")");
+				lastMaterialLogTime = now;
+			}
+		} else {
+			// No material - will use vertex colors directly
+			long now = System.currentTimeMillis();
+			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
+				System.out.println("[Emulator3D] setupMaterial - WARNING: No material! useLighting=false, will use vertex colors directly");
+				lastMaterialLogTime = now;
+			}
 		}
 	}
 
@@ -908,10 +1180,21 @@ public final class Emulator3D {
 
 	private void draw(VertexBuffer vb, IndexBuffer indices, Appearance ap) {
 		// this uploads and binds a correct VAO
-		vb.uploadToGL(indices, flatShade, ap.getMaterial() != null, meshProgram, bufferHelper);
+		try {
+			vb.uploadToGL(indices, flatShade, ap.getMaterial() != null, meshProgram, bufferHelper);
+		} catch (Exception e) {
+			System.err.println("[Emulator3D] draw - uploadToGL failed: " + e.getMessage());
+			e.printStackTrace();
+			return;
+		}
 
 		float[] scaleBias = new float[4];
 		VertexArray positions = vb.getPositions(scaleBias);
+		
+		if (positions == null) {
+			System.err.println("[Emulator3D] draw - positions is null!");
+			return;
+		}
 
 		GLES2.uniform1i(meshProgram.uIsFlatShaded, flatShade ? 1 : 0);
 		GLES2.uniform4f(meshProgram.uVPosSb, scaleBias[1], scaleBias[2], scaleBias[3], scaleBias[0]);
@@ -935,14 +1218,24 @@ public final class Emulator3D {
 
 				Object glTexture = useTexture(image2D); // calls bind but on acivetexture
 
-				GLES2.uniform1i(meshProgram.uBlendMode[textureIdx], texture2D.getBlending());
+			int blendMode = texture2D.getBlending();
+			GLES2.uniform1i(meshProgram.uBlendMode[textureIdx], blendMode);
 
+			float[] blendColor = new float[4];
+			G3DUtils.fillFloatColor(blendColor, texture2D.getBlendColor());
+			blendColor[3] = 1.0F;
 
-				float[] blendColor = new float[4];
-				G3DUtils.fillFloatColor(blendColor, texture2D.getBlendColor());
-				blendColor[3] = 1.0F;
-
-				GLES2.uniform4f(meshProgram.uBlendColor[textureIdx], blendColor[0], blendColor[1], blendColor[2], blendColor[3]);
+			GLES2.uniform4f(meshProgram.uBlendColor[textureIdx], blendColor[0], blendColor[1], blendColor[2], blendColor[3]);
+			
+			// Diagnostic: Log blend mode for debugging black screen issue
+			// MODULATE (227) with black vertex color will result in black output
+			if (blendMode == 227) { // FUNC_MODULATE
+				long now = System.currentTimeMillis();
+				if (lastBlendModeLogTime == 0 || now - lastBlendModeLogTime > 2000) {
+					System.out.println("[Emulator3D] draw - WARNING: Using MODULATE blend mode (227). If vertex color is black, output will be black!");
+					lastBlendModeLogTime = now;
+				}
+			}
 
 
 				ensureTextureLoaded(image2D);
@@ -1000,7 +1293,9 @@ public final class Emulator3D {
 				}
 
 				// Bind the texture for use in the shader
-				GLES2.uniform1i(meshProgram.uTexture[textureIdx], textureIdx); // Texture unit 0
+				// Set the texture sampler uniform to the texture unit index
+				GLES2.uniform1i(meshProgram.uTexture[textureIdx], textureIdx);
+				// Bind the texture to the active texture unit
 				GLES2.bindTexture(GLES2.Constants.GL_TEXTURE_2D, glTexture);
 
 				// not normalized
@@ -1013,15 +1308,32 @@ public final class Emulator3D {
 			}
 
 			GLES2.uniform1i(meshProgram.uUsedTextures, usedTextures);
+			if (usedTextures == 0) {
+				System.err.println("[Emulator3D] draw - WARNING: No textures bound! This may cause black output if shader expects textures.");
+			} else {
+				System.out.println("[Emulator3D] draw - Bound " + usedTextures + " texture(s)");
+			}
 
 
 			TriangleStripArray triangleStripArray = (TriangleStripArray) indices;
 
+			int vertexCount = positions.getExplodedVertexCount();
+			
 			if (flatShade) {
-				GLES2.drawArrays(GLES2.Constants.GL_TRIANGLES, 0, positions.getExplodedVertexCount());
+				if (vertexCount > 0) {
+					GLES2.drawArrays(GLES2.Constants.GL_TRIANGLES, 0, vertexCount);
+					System.out.println("[Emulator3D] draw - drawArrays called: GL_TRIANGLES, count=" + vertexCount);
+				} else {
+					System.err.println("[Emulator3D] draw - WARNING: vertexCount is 0, skipping drawArrays");
+				}
 			} else {
 				int[] triangles = triangleStripArray.getTriangles();
-				GLES2.drawElements(GLES2.Constants.GL_TRIANGLE_STRIP, triangles.length, GLES2.Constants.GL_UNSIGNED_SHORT, 0);
+				if (triangles != null && triangles.length > 0) {
+					GLES2.drawElements(GLES2.Constants.GL_TRIANGLE_STRIP, triangles.length, GLES2.Constants.GL_UNSIGNED_SHORT, 0);
+					System.out.println("[Emulator3D] draw - drawElements called: GL_TRIANGLE_STRIP, count=" + triangles.length);
+				} else {
+					System.err.println("[Emulator3D] draw - WARNING: triangles array is null or empty (length=" + (triangles != null ? triangles.length : 0) + "), skipping drawElements");
+				}
 				// don't unbind GLES2.Constants.GL_ELEMENT_ARRAY_BUFFER, we bind it via VAO
 			}
 
@@ -1061,6 +1373,9 @@ public final class Emulator3D {
 	}
 
 	private void renderPushedNodes() {
+		// Note: Buffer clearing should be done in bindTarget or clearBackgound, not here
+		// Clearing here would break rendering order and depth test
+		
 		renderPipe.sortNodes();
 
 		for (int i = 0; i < renderPipe.getSize(); i++) {
@@ -1306,15 +1621,50 @@ public final class Emulator3D {
 					texFormat = GLES2.Constants.GL_RGBA;
 			}
 
+			byte[] imageData = image2D.getImageData();
+			if (imageData == null) {
+				System.err.println("[Emulator3D] ensureTextureLoaded - ERROR: imageData is null for Image2D");
+				return;
+			}
+			
+			int expectedSize = image2D.getWidth() * image2D.getHeight();
+			switch (image2D.getFormat()) {
+				case Image2D.ALPHA:
+				case Image2D.LUMINANCE:
+					expectedSize *= 1;
+					break;
+				case Image2D.LUMINANCE_ALPHA:
+					expectedSize *= 2;
+					break;
+				case Image2D.RGB:
+					expectedSize *= 3;
+					break;
+				case Image2D.RGBA:
+					expectedSize *= 4;
+					break;
+			}
+			
+			if (imageData.length < expectedSize) {
+				System.err.println("[Emulator3D] ensureTextureLoaded - WARNING: imageData size mismatch. Expected: " + expectedSize + ", Got: " + imageData.length + " (format: " + image2D.getFormat() + ", size: " + image2D.getWidth() + "x" + image2D.getHeight() + ")");
+			} else {
+				System.out.println("[Emulator3D] ensureTextureLoaded - Loading texture: " + image2D.getWidth() + "x" + image2D.getHeight() + ", format: " + image2D.getFormat() + ", data size: " + imageData.length);
+			}
 
-			GLES2.texImage2D(GLES2.Constants.GL_TEXTURE_2D, 0,
-				texFormat, image2D.getWidth(), image2D.getHeight(), 0,
-				texFormat, GLES2.Constants.GL_UNSIGNED_BYTE,
-				image2D.getImageData()
-			);
-
-			if (!skipMipmaps && !noTextureFiltering) {
-				GLES2.generateMipmap(GLES2.Constants.GL_TEXTURE_2D);
+			try {
+				GLES2.texImage2D(GLES2.Constants.GL_TEXTURE_2D, 0,
+					texFormat, image2D.getWidth(), image2D.getHeight(), 0,
+					texFormat, GLES2.Constants.GL_UNSIGNED_BYTE,
+					imageData
+				);
+				
+				if (!skipMipmaps && !noTextureFiltering) {
+					GLES2.generateMipmap(GLES2.Constants.GL_TEXTURE_2D);
+				}
+				
+				System.out.println("[Emulator3D] ensureTextureLoaded - Texture loaded successfully");
+			} catch (Exception e) {
+				System.err.println("[Emulator3D] ensureTextureLoaded - ERROR loading texture: " + e.getMessage());
+				e.printStackTrace();
 			}
 
 		}

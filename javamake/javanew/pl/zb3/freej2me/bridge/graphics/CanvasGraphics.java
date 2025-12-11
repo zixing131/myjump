@@ -413,7 +413,13 @@ public class CanvasGraphics extends javax.microedition.lcdui.Graphics {
 
         drawImage2(ctxHandle, GLES2.getCanvasRef(), sx, sy, x, y, width, height, flipY, withAlpha);
         argbCache = null;
+        
+        // CRITICAL FIX: Trigger repaint after blitGL to ensure canvas updates
+        // This ensures the 2D canvas content is refreshed and displayed on screen
+        triggerRepaint(ctxHandle, x, y, width, height);
 	}
+	
+	private static native void triggerRepaint(Object ctxHandle, int x, int y, int width, int height);
 
     //
 

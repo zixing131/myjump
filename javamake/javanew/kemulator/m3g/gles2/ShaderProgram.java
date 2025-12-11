@@ -50,11 +50,31 @@ public class ShaderProgram {
     }
 
     private void load() {
-        programHandle = GLES2.createProgram(getShaderSource(SHADER_BASE_PATH+name+"_vertex.glsl"), getShaderSource(SHADER_BASE_PATH+name+"_fragment.glsl"));
+        try {
+            String vertexSource = getShaderSource(SHADER_BASE_PATH+name+"_vertex.glsl");
+            String fragmentSource = getShaderSource(SHADER_BASE_PATH+name+"_fragment.glsl");
+            
+            System.out.println("[ShaderProgram] Loading shader: " + name);
+            System.out.println("[ShaderProgram] Vertex shader length: " + (vertexSource != null ? vertexSource.length() : 0));
+            System.out.println("[ShaderProgram] Fragment shader length: " + (fragmentSource != null ? fragmentSource.length() : 0));
+            
+            programHandle = GLES2.createProgram(vertexSource, fragmentSource);
+            
+            // Check if programHandle is null (createProgram throws exception on failure, so null check should be sufficient)
+            if (programHandle == null) {
+                System.err.println("[ShaderProgram] ERROR: Failed to create shader program for: " + name + " (programHandle is null)");
+                throw new RuntimeException("Shader program creation failed for: " + name);
+            }
+            
+            System.out.println("[ShaderProgram] Shader program created successfully: " + name);
+            loaded = true;
 
-        loaded = true;
-
-        onLoad();
+            onLoad();
+        } catch (Exception e) {
+            System.err.println("[ShaderProgram] ERROR loading shader " + name + ": " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public void use() {
