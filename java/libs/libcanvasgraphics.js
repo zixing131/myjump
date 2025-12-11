@@ -1,7 +1,7 @@
 // CanvasGraphics native methods for J2ME emulator
 // Provides 2D canvas rendering capabilities for CanvasGraphics Java class
-// VERSION: 20251212d
-console.log('[libcanvasgraphics.js] Loaded v20251212d');
+// VERSION: 20251212g
+console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
 (function() {
   'use strict';
@@ -526,6 +526,11 @@ console.log('[libcanvasgraphics.js] Loaded v20251212d');
 
     // drawImage2 with signature (Object, Object, int sx, int sy, int x, int y, int width, int height, boolean flipY, boolean withAlpha)
     Native[cgBasePath + '.drawImage2.(Ljava/lang/Object;Ljava/lang/Object;IIIIIIZZ)V'] = function(addr, ctxAddr, canvasAddr, sx, sy, x, y, w, h, flipY, withAlpha) {
+      // Reduce log spam - only log occasionally for blitGL
+      var shouldLogBlit = Math.random() < 0.01; // Log ~1% of calls
+      if (shouldLogBlit || DEBUG) {
+        console.log('[CanvasGraphics] drawImage2 (blitGL) called - ctxAddr:', ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY, 'withAlpha:', withAlpha);
+      }
       log('[CanvasGraphics] drawImage2 called - ctxAddr:', ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY, 'withAlpha:', withAlpha);
       
       let ctx = getCtx(ctxAddr);
@@ -577,6 +582,24 @@ console.log('[libcanvasgraphics.js] Loaded v20251212d');
         sourceCanvas = canvas._canvas;
       } else if (canvas && canvas.canvas) {
         sourceCanvas = canvas.canvas;
+      }
+      
+      // Log WebGL canvas info for blitGL debugging (reduced frequency to prevent spam)
+      var shouldLogBlit = Math.random() < 0.01; // Log ~1% of calls
+      if ((shouldLogBlit || DEBUG) && sourceCanvas && sourceCanvas instanceof HTMLCanvasElement) {
+        // Check if this is a WebGL canvas by checking for WebGL context
+        const webglCtx = sourceCanvas.getContext('webgl2') || sourceCanvas.getContext('webgl');
+        if (webglCtx) {
+          console.log('[CanvasGraphics] drawImage2 - WebGL canvas detected, size:', sourceCanvas.width, 'x', sourceCanvas.height);
+          // Try to read a pixel to check if canvas has content
+          try {
+            const pixel = new Uint8Array(4);
+            webglCtx.readPixels(0, 0, 1, 1, webglCtx.RGBA, webglCtx.UNSIGNED_BYTE, pixel);
+            console.log('[CanvasGraphics] drawImage2 - WebGL canvas pixel (0,0):', pixel[0], pixel[1], pixel[2], pixel[3]);
+          } catch (e) {
+            console.warn('[CanvasGraphics] drawImage2 - failed to read WebGL pixel:', e);
+          }
+        }
       }
       
       // Fallback for ctx: if ctxAddr is 0 or ctx is null, try to use screen context

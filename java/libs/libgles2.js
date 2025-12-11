@@ -1,8 +1,8 @@
 // WebGL2 bridge for J2ME 3D support
 // Based on freej2me-web implementation
-// VERSION: 20251212d
-console.log('[libgles2.js] Loaded v20251212d');
-window.GLES2_LIB_VERSION = '20251212d';
+// VERSION: 20251212g
+console.log('[libgles2.js] Loaded v20251212g');
+window.GLES2_LIB_VERSION = '20251212g';
 
 (function() {
   'use strict';
@@ -420,31 +420,78 @@ window.GLES2_LIB_VERSION = '20251212d';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_texParameterf: function(lib, ptr, target, pname, param) {
-      ptr.gl.texParameterf(target, pname, param);
+      // Check if this looks like an integer enum value being passed as float
+      // GL_TEXTURE_WRAP_S/T should use texParameteri, not texParameterf
+      if ((pname === 0x2802 || pname === 0x2803) && (param > 1000000 || param < -1000000)) {
+        console.warn('[GLES2] texParameterf called with integer enum value for wrap mode. This should use texParameteri instead.');
+        console.warn('[GLES2] Attempting to convert to integer and use texParameteri...');
+        ptr.gl.texParameteri(target, pname, Math.round(param));
+      } else {
+        ptr.gl.texParameterf(target, pname, param);
+      }
+      const error = ptr.gl.getError();
+      if (error !== ptr.gl.NO_ERROR) {
+        const errorName = error === 0x0500 ? 'GL_INVALID_ENUM' : 
+                         error === 0x0501 ? 'GL_INVALID_VALUE' : 
+                         error === 0x0502 ? 'GL_INVALID_OPERATION' : 'UNKNOWN';
+        console.warn('[GLES2] texParameterf error:', errorName, '(' + error + ')', 'target:', '0x' + target.toString(16), 'pname:', '0x' + pname.toString(16), 'param:', param);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_texParameteri: function(lib, ptr, target, pname, param) {
       ptr.gl.texParameteri(target, pname, param);
+      const error = ptr.gl.getError();
+      if (error !== ptr.gl.NO_ERROR) {
+        const errorName = error === 0x0500 ? 'GL_INVALID_ENUM' : 
+                         error === 0x0501 ? 'GL_INVALID_VALUE' : 
+                         error === 0x0502 ? 'GL_INVALID_OPERATION' : 'UNKNOWN';
+        console.warn('[GLES2] texParameteri error:', errorName, '(' + error + ')', 'target:', '0x' + target.toString(16), 'pname:', '0x' + pname.toString(16), 'param:', param);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_texImage2D: function(lib, ptr, target, level, intFormat, width, height, border, format, type, byteArray) {
       const gl = ptr.gl;
-      // Based on freej2me-web: directly use buffer and byteOffset if available
-      if (byteArray && byteArray.buffer && byteArray.byteOffset !== undefined) {
-        // TypedArray - use buffer directly
-        gl.texImage2D(target, level, intFormat, width, height, border, format, type, 
-          new Uint8Array(byteArray.buffer, byteArray.byteOffset, byteArray.byteLength));
-      } else if (byteArray === null || byteArray === undefined) {
-        // Null array is valid (for creating empty texture)
-        gl.texImage2D(target, level, intFormat, width, height, border, format, type, null);
-      } else {
-        // Fallback to helper function
-        const pixels = toUint8Array(byteArray);
-        if (pixels) {
+      try {
+        // Calculate expected data size based on format
+        let bytesPerPixel = 4; // Default to RGBA
+        if (format === gl.RGB) bytesPerPixel = 3;
+        else if (format === gl.LUMINANCE_ALPHA) bytesPerPixel = 2;
+        else if (format === gl.LUMINANCE || format === gl.ALPHA) bytesPerPixel = 1;
+        
+        const expectedSize = width * height * bytesPerPixel;
+        
+        // Based on freej2me-web: directly use buffer and byteOffset if available
+        if (byteArray && byteArray.buffer && byteArray.byteOffset !== undefined) {
+          // Validate buffer size
+          if (byteArray.byteLength < expectedSize) {
+            console.warn('[GLES2] texImage2D - buffer size mismatch. Expected:', expectedSize, 'Got:', byteArray.byteLength, 'format:', format, 'size:', width, 'x', height);
+            // Try to use what we have, but this may cause issues
+          }
+          // TypedArray - use buffer directly
+          const pixels = new Uint8Array(byteArray.buffer, byteArray.byteOffset, Math.min(byteArray.byteLength, expectedSize));
           gl.texImage2D(target, level, intFormat, width, height, border, format, type, pixels);
+        } else if (byteArray === null || byteArray === undefined) {
+          // Null array is valid (for creating empty texture)
+          gl.texImage2D(target, level, intFormat, width, height, border, format, type, null);
         } else {
-          console.error('texImage2D: Invalid byteArray', byteArray);
+          // Fallback to helper function
+          const pixels = toUint8Array(byteArray);
+          if (pixels) {
+            if (pixels.length < expectedSize) {
+              console.warn('[GLES2] texImage2D - buffer size mismatch. Expected:', expectedSize, 'Got:', pixels.length, 'format:', format, 'size:', width, 'x', height);
+            }
+            gl.texImage2D(target, level, intFormat, width, height, border, format, type, pixels);
+          } else {
+            console.error('[GLES2] texImage2D: Invalid byteArray', byteArray);
+          }
         }
+        
+        const error = gl.getError();
+        if (error !== gl.NO_ERROR) {
+          console.warn('[GLES2] texImage2D error:', error, 'target:', target, 'format:', format, 'size:', width, 'x', height);
+        }
+      } catch (e) {
+        console.error('[GLES2] texImage2D exception:', e, 'format:', format, 'size:', width, 'x', height);
       }
     },
 
@@ -521,11 +568,33 @@ window.GLES2_LIB_VERSION = '20251212d';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_clear: function(lib, ptr, mask) {
-      log('[GLES2] clear called:', mask, 'canvas size:', ptr.gl.canvas.width, 'x', ptr.gl.canvas.height);
-      ptr.gl.clear(mask);
+      if (!ptr || !ptr.gl) {
+        console.warn('[GLES2] clear - ptr or gl is null');
+        return;
+      }
+      if (mask === 0) {
+        return; // Nothing to clear
+      }
+      try {
+        // Reduce log spam - only log occasionally
+        if (DEBUG) {
+          console.log('[GLES2] clear called:', mask, 'canvas size:', ptr.gl.canvas.width, 'x', ptr.gl.canvas.height);
+        }
+        ptr.gl.clear(mask);
+        const error = ptr.gl.getError();
+        if (error !== ptr.gl.NO_ERROR) {
+          console.warn('[GLES2] GL error after clear:', error);
+        }
+      } catch (e) {
+        console.error('[GLES2] clear exception:', e);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_clearColor: function(lib, ptr, r, g, b, a) {
+      // Reduce log spam - only log if DEBUG is enabled
+      if (DEBUG) {
+        console.log('[GLES2] clearColor set:', r, g, b, a);
+      }
       ptr.gl.clearColor(r, g, b, a);
     },
 
@@ -562,11 +631,39 @@ window.GLES2_LIB_VERSION = '20251212d';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_drawArrays: function(lib, ptr, mode, first, count) {
+      logOnce('drawArrays', '[GLES2] drawArrays:', mode, first, count);
+      // Check GL state before draw
+      const currentProgram = ptr.gl.getParameter(ptr.gl.CURRENT_PROGRAM);
+      const viewport = ptr.gl.getParameter(ptr.gl.VIEWPORT);
+      if (currentProgram === null) {
+        console.warn('[GLES2] drawArrays - no program bound!');
+      }
+      if (viewport[2] === 0 || viewport[3] === 0) {
+        console.warn('[GLES2] drawArrays - invalid viewport:', viewport);
+      }
       ptr.gl.drawArrays(mode, first, count);
+      const error = ptr.gl.getError();
+      if (error !== ptr.gl.NO_ERROR) {
+        console.warn('[GLES2] GL error after drawArrays:', error, 'mode:', mode, 'count:', count);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_drawElements: function(lib, ptr, mode, count, type, offset) {
+      logOnce('drawElements', '[GLES2] drawElements:', mode, count, type, offset);
+      // Check GL state before draw
+      const currentProgram = ptr.gl.getParameter(ptr.gl.CURRENT_PROGRAM);
+      const viewport = ptr.gl.getParameter(ptr.gl.VIEWPORT);
+      if (currentProgram === null) {
+        console.warn('[GLES2] drawElements - no program bound!');
+      }
+      if (viewport[2] === 0 || viewport[3] === 0) {
+        console.warn('[GLES2] drawElements - invalid viewport:', viewport);
+      }
       ptr.gl.drawElements(mode, count, type, offset);
+      const error = ptr.gl.getError();
+      if (error !== ptr.gl.NO_ERROR) {
+        console.warn('[GLES2] GL error after drawElements:', error, 'mode:', mode, 'count:', count);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_enable: function(lib, ptr, flag) {
@@ -578,7 +675,20 @@ window.GLES2_LIB_VERSION = '20251212d';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_finish: function(lib, ptr) {
-      ptr.gl.finish();
+      if (!ptr || !ptr.gl) {
+        console.warn('[GLES2] finish - ptr or gl is null');
+        return;
+      }
+      try {
+        ptr.gl.finish();
+        // Check for GL errors after finish
+        const error = ptr.gl.getError();
+        if (error !== ptr.gl.NO_ERROR) {
+          console.warn('[GLES2] GL error after finish:', error);
+        }
+      } catch (e) {
+        console.error('[GLES2] finish exception:', e);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_frontFace: function(lib, ptr, mode) {
@@ -594,9 +704,49 @@ window.GLES2_LIB_VERSION = '20251212d';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_readPixels: function(lib, ptr, x, y, width, height, int8pixels) {
+      if (!ptr || !ptr.gl) {
+        console.warn('[GLES2] readPixels - ptr or gl is null');
+        return;
+      }
       const gl = ptr.gl;
-      const pixels = new Uint8Array(int8pixels.buffer, int8pixels.byteOffset, int8pixels.byteLength);
-      gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      try {
+        // Validate dimensions
+        if (width <= 0 || height <= 0 || x < 0 || y < 0) {
+          console.warn('[GLES2] readPixels - invalid dimensions. x:', x, 'y:', y, 'w:', width, 'h:', height);
+          return;
+        }
+        
+        const expectedSize = width * height * 4; // RGBA = 4 bytes per pixel
+        const actualSize = int8pixels ? int8pixels.byteLength : 0;
+        
+        if (!int8pixels || actualSize < expectedSize) {
+          console.warn('[GLES2] readPixels - buffer size mismatch. Expected:', expectedSize, 'Got:', actualSize, 'x:', x, 'y:', y, 'w:', width, 'h:', height);
+          return;
+        }
+        
+        // Ensure we're reading from valid coordinates within canvas bounds
+        const canvasWidth = gl.canvas.width || 0;
+        const canvasHeight = gl.canvas.height || 0;
+        if (x + width > canvasWidth || y + height > canvasHeight) {
+          console.warn('[GLES2] readPixels - coordinates out of bounds. Canvas:', canvasWidth, 'x', canvasHeight, 'Read:', x, y, width, height);
+          // Clamp to valid range
+          width = Math.min(width, canvasWidth - x);
+          height = Math.min(height, canvasHeight - y);
+          if (width <= 0 || height <= 0) {
+            return;
+          }
+        }
+        
+        const pixels = new Uint8Array(int8pixels.buffer, int8pixels.byteOffset, int8pixels.byteLength);
+        gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        
+        const error = gl.getError();
+        if (error !== gl.NO_ERROR) {
+          console.warn('[GLES2] readPixels error:', error, 'x:', x, 'y:', y, 'w:', width, 'h:', height);
+        }
+      } catch (e) {
+        console.error('[GLES2] readPixels exception:', e, 'x:', x, 'y:', y, 'w:', width, 'h:', height);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_scissor: function(lib, ptr, x, y, width, height) {
@@ -604,7 +754,27 @@ window.GLES2_LIB_VERSION = '20251212d';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_viewport: function(lib, ptr, x, y, width, height) {
-      ptr.gl.viewport(x, y, width, height);
+      if (!ptr || !ptr.gl) {
+        console.warn('[GLES2] viewport - ptr or gl is null');
+        return;
+      }
+      if (width <= 0 || height <= 0) {
+        console.warn('[GLES2] viewport - invalid dimensions:', width, 'x', height);
+        return;
+      }
+      try {
+        // Reduce log spam - only log if DEBUG is enabled
+        if (DEBUG) {
+          console.log('[GLES2] viewport set:', x, y, width, height, 'canvas size:', ptr.gl.canvas.width, 'x', ptr.gl.canvas.height);
+        }
+        ptr.gl.viewport(x, y, width, height);
+        const error = ptr.gl.getError();
+        if (error !== ptr.gl.NO_ERROR) {
+          console.warn('[GLES2] GL error after viewport:', error);
+        }
+      } catch (e) {
+        console.error('[GLES2] viewport exception:', e);
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_blendColor: function(lib, ptr, r, g, b, a) {
@@ -659,10 +829,7 @@ window.GLES2_LIB_VERSION = '20251212d';
       return ptr.gl.canvas;
     },
 
-    // Method to finish rendering and ensure all GL commands are executed
-    Java_pl_zb3_freej2me_bridge_gles2_GLES2_finish: function(lib, ptr) {
-      ptr.gl.finish();
-    }
+    // Note: finish is already defined above, this is a duplicate - removed
   };
 
   // Store the GL context globally for access by other parts of the system

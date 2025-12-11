@@ -189,17 +189,30 @@ public class Graphics3D {
 
 	public void releaseTarget() {
 		if (target != null) {
-			impl.releaseTarget();
+			try {
+				impl.releaseTarget();
+			} catch (Exception e) {
+				System.err.println("[Graphics3D] releaseTarget - error in impl.releaseTarget(): " + e.getMessage());
+				e.printStackTrace();
+				// Continue to clear target even if release fails
+			}
 			
 			// If we used an internal buffer, copy results to original Graphics target
 			if (originalGraphicsTarget != null && internalBuffer != null) {
-				// Get the rendered content as RGB data and draw to original Graphics
-				int[] rgbData = new int[internalBufferWidth * internalBufferHeight];
-				internalBuffer.getRGB(rgbData, 0, internalBufferWidth, 0, 0, internalBufferWidth, internalBufferHeight);
-				originalGraphicsTarget.drawRGB(rgbData, 0, internalBufferWidth, 0, 0, internalBufferWidth, internalBufferHeight, false);
-				originalGraphicsTarget = null;
+				try {
+					// Get the rendered content as RGB data and draw to original Graphics
+					int[] rgbData = new int[internalBufferWidth * internalBufferHeight];
+					internalBuffer.getRGB(rgbData, 0, internalBufferWidth, 0, 0, internalBufferWidth, internalBufferHeight);
+					originalGraphicsTarget.drawRGB(rgbData, 0, internalBufferWidth, 0, 0, internalBufferWidth, internalBufferHeight, false);
+				} catch (Exception e) {
+					System.err.println("[Graphics3D] releaseTarget - error copying internal buffer: " + e.getMessage());
+					// Continue even if copy fails
+				} finally {
+					originalGraphicsTarget = null;
+				}
 			}
 			
+			// Always clear target, even if there were errors
 			target = null;
 		}
 

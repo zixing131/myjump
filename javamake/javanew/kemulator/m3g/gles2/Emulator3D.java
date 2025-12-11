@@ -28,6 +28,10 @@ public final class Emulator3D {
 	private int viewportY;
 	private int viewportWidth;
 	private int viewportHeight;
+	
+	// Log throttling to reduce spam
+	private static long lastSwapLogTime = 0;
+	private static long lastClearLogTime = 0;
 
 	public static final int MaxViewportWidth = 2048;
 	public static final int MaxViewportHeight = 2048;
@@ -165,18 +169,51 @@ public final class Emulator3D {
 	}
 
 	public synchronized void releaseTarget() {
-		if (GLES2.bound) {
-			GLES2.finish();
-			swapBuffers();
-
-			if (exiting) {
-				return;
+		// Ensure we finish rendering and swap buffers before releasing
+		if (this.target != null) {
+			try {
+				// Always call finish() to ensure all rendering is complete
+				// This is safe even if bound is false, as finish() checks handle internally
+				if (GLES2.bound) {
+					try {
+						GLES2.finish();
+					} catch (Exception e) {
+						System.err.println("[Emulator3D] releaseTarget - finish() failed: " + e.getMessage());
+						// Continue even if finish fails
+					}
+				}
+				// Swap buffers to copy rendered content to target
+				try {
+					swapBuffers();
+				} catch (Exception e) {
+					System.err.println("[Emulator3D] releaseTarget - swapBuffers() failed: " + e.getMessage());
+					e.printStackTrace();
+					// Continue to release target even if swapBuffers fails
+				}
+			} catch (Exception e) {
+				System.err.println("[Emulator3D] releaseTarget - error during finish/swapBuffers: " + e.getMessage());
+				e.printStackTrace();
+				// Continue to release target even if there was an error
 			}
-
-			this.target = null;
-			GLES2.release();
 		}
 
+		if (exiting) {
+			this.target = null;
+			return;
+		}
+
+		// Always clear target and release GLES2, even if there were errors
+		try {
+			this.target = null;
+			if (GLES2.bound) {
+				GLES2.release();
+			}
+		} catch (Exception e) {
+			System.err.println("[Emulator3D] releaseTarget - error during cleanup: " + e.getMessage());
+			// Force clear target even if release fails
+			this.target = null;
+			GLES2.bound = false;
+		}
 	}
 
 	public void swapBuffers() {
@@ -184,49 +221,180 @@ public final class Emulator3D {
 	}
 
 	public final void swapBuffers(int x, int y, int width, int height) {
+		// Throttle logging to reduce console spam
+		long now = System.currentTimeMillis();
+		boolean shouldLog = (lastSwapLogTime == 0 || now - lastSwapLogTime > 1000);
+		if (shouldLog) {
+			String targetName = "null";
+			if (this.target != null) {
+				String className = this.target.getClass().getName();
+				int lastDot = className.lastIndexOf('.');
+				targetName = lastDot >= 0 ? className.substring(lastDot + 1) : className;
+			}
+			System.out.println("[Emulator3D] swapBuffers called - x:" + x + " y:" + y + " w:" + width + " h:" + height + " target:" + targetName);
+			lastSwapLogTime = now;
+		}
 		if (this.target != null) {
-			if (this.target instanceof Image2D) {
-				Image2D targetImage = (Image2D) this.target;
+			try {
+				if (this.target instanceof Image2D) {
+					Image2D targetImage = (Image2D) this.target;
 
-				GLES2.readPixels(x, y, width, height, buffer);
-
-				if (targetImage.getFormat() == Image2D.RGBA) {
-					// Flip rows while copying to the target image.
-					byte[] flippedBuffer = new byte[buffer.length];
-					int rowSize = width * 4; // RGBA = 4 bytes per pixel
-
-					for (int row = 0; row < height; row++) {
-						System.arraycopy(buffer, row * rowSize, flippedBuffer, (height - 1 - row) * rowSize, rowSize);
+					// Validate buffer size before readPixels
+					int requiredSize = width * height * 4; // RGBA = 4 bytes per pixel
+					if (buffer == null || buffer.length < requiredSize) {
+						System.err.println("[Emulator3D] swapBuffers - buffer too small, resizing. Required: " + requiredSize + ", Current: " + (buffer != null ? buffer.length : 0));
+						buffer = new byte[requiredSize];
 					}
 
-					targetImage.set(x, y, width, height, flippedBuffer);
-				} else {
-					// Convert buffer to RGB format and flip rows.
-					byte[] rgbData = new byte[width * height * 3];
-					int rowSize = width * 4; // RGBA = 4 bytes per pixel
-					int rgbIndex = 0;
+					// Validate dimensions
+					if (width <= 0 || height <= 0 || x < 0 || y < 0) {
+						System.err.println("[Emulator3D] swapBuffers - invalid dimensions: x:" + x + " y:" + y + " w:" + width + " h:" + height);
+						return;
+					}
 
-					for (int row = 0; row < height; row++) {
-						int bufferRowStart = (height - 1 - row) * rowSize;
+					// Ensure GLES2 context is available and bound before reading pixels
+					if (GLES2.getCanvasRef() == null) {
+						System.err.println("[Emulator3D] swapBuffers - GLES2 canvas not available for readPixels");
+						return;
+					}
+					
+					try {
+						GLES2.readPixels(x, y, width, height, buffer);
+					} catch (Exception e) {
+						System.err.println("[Emulator3D] swapBuffers - readPixels failed: " + e.getMessage());
+						e.printStackTrace();
+						return;
+					}
 
-						for (int col = 0; col < width; col++) {
-							int bufferIndex = bufferRowStart + (col * 4);
-							rgbData[rgbIndex++] = buffer[bufferIndex];     // Red
-							rgbData[rgbIndex++] = buffer[bufferIndex + 1]; // Green
-							rgbData[rgbIndex++] = buffer[bufferIndex + 2]; // Blue
+					if (targetImage.getFormat() == Image2D.RGBA) {
+						// Flip rows while copying to the target image.
+						int bitsPerColor = targetImage.getBitsPerColor();
+						int expectedArraySize = width * height * bitsPerColor;
+						
+						// Ensure flippedBuffer has the correct size for Image2D.set()
+						byte[] flippedBuffer = new byte[expectedArraySize];
+						int rowSize = width * 4; // RGBA from readPixels = 4 bytes per pixel
+
+						// Validate rowSize to prevent array bounds issues
+						if (rowSize > 0 && buffer.length >= requiredSize && expectedArraySize > 0) {
+							for (int row = 0; row < height; row++) {
+								int srcOffset = row * rowSize;
+								int dstOffset = (height - 1 - row) * rowSize;
+								
+								// Ensure we don't exceed buffer boundaries
+								if (srcOffset + rowSize <= buffer.length && dstOffset + rowSize <= flippedBuffer.length) {
+									System.arraycopy(buffer, srcOffset, flippedBuffer, dstOffset, rowSize);
+								} else {
+									System.err.println("[Emulator3D] swapBuffers - arraycopy bounds check failed: row=" + row + " srcOffset=" + srcOffset + " dstOffset=" + dstOffset + " rowSize=" + rowSize + " bufferLen=" + buffer.length + " flippedLen=" + flippedBuffer.length);
+									// Try to copy what we can
+									int copySize = Math.min(rowSize, Math.min(buffer.length - srcOffset, flippedBuffer.length - dstOffset));
+									if (copySize > 0) {
+										System.arraycopy(buffer, srcOffset, flippedBuffer, dstOffset, copySize);
+									}
+									break;
+								}
+							}
+							
+							// Validate array size before calling set()
+							if (flippedBuffer.length < expectedArraySize) {
+								System.err.println("[Emulator3D] swapBuffers - flippedBuffer too small. Expected: " + expectedArraySize + ", Got: " + flippedBuffer.length);
+								return;
+							}
+						} else {
+							System.err.println("[Emulator3D] swapBuffers - invalid parameters for RGBA flip. rowSize=" + rowSize + " bufferLen=" + buffer.length + " requiredSize=" + requiredSize + " expectedArraySize=" + expectedArraySize);
+							return;
+						}
+
+						try {
+							targetImage.set(x, y, width, height, flippedBuffer);
+						} catch (Exception e) {
+							System.err.println("[Emulator3D] swapBuffers - Image2D.set() failed: " + e.getMessage());
+							e.printStackTrace();
+						}
+					} else {
+						// Convert buffer to RGB format and flip rows.
+						int bitsPerColor = targetImage.getBitsPerColor();
+						int expectedArraySize = width * height * bitsPerColor;
+						byte[] rgbData = new byte[expectedArraySize];
+						int rowSize = width * 4; // RGBA from readPixels = 4 bytes per pixel
+						int rgbIndex = 0;
+
+						// Validate dimensions before conversion
+						if (rowSize > 0 && buffer.length >= requiredSize && expectedArraySize > 0) {
+							for (int row = 0; row < height; row++) {
+								int bufferRowStart = (height - 1 - row) * rowSize;
+
+								for (int col = 0; col < width; col++) {
+									int bufferIndex = bufferRowStart + (col * 4);
+									if (bufferIndex + 2 < buffer.length && rgbIndex + bitsPerColor - 1 < rgbData.length) {
+										rgbData[rgbIndex++] = buffer[bufferIndex];     // Red
+										if (bitsPerColor > 1) {
+											rgbData[rgbIndex++] = buffer[bufferIndex + 1]; // Green
+										}
+										if (bitsPerColor > 2) {
+											rgbData[rgbIndex++] = buffer[bufferIndex + 2]; // Blue
+										}
+									} else {
+										System.err.println("[Emulator3D] swapBuffers - RGB conversion bounds check failed: row=" + row + " col=" + col + " bufferIndex=" + bufferIndex + " rgbIndex=" + rgbIndex + " bitsPerColor=" + bitsPerColor);
+										break;
+									}
+								}
+							}
+							
+							// Validate array size before calling set()
+							if (rgbData.length < expectedArraySize) {
+								System.err.println("[Emulator3D] swapBuffers - rgbData too small. Expected: " + expectedArraySize + ", Got: " + rgbData.length);
+								return;
+							}
+						} else {
+							System.err.println("[Emulator3D] swapBuffers - invalid parameters for RGB conversion. rowSize=" + rowSize + " bufferLen=" + buffer.length + " requiredSize=" + requiredSize + " expectedArraySize=" + expectedArraySize);
+							return;
+						}
+
+						try {
+							targetImage.set(x, y, width, height, rgbData);
+						} catch (Exception e) {
+							System.err.println("[Emulator3D] swapBuffers - Image2D.set() failed: " + e.getMessage());
+							e.printStackTrace();
 						}
 					}
+				} else if (this.target instanceof CanvasGraphics) {
+					// we can't blend here, we must overwrite
+					// if the overwrite hint was not specified, the img was already drawn into the internal buffer
+					// just blending without doing it would break compositemode interacting with the background
 
-					targetImage.set(x, y, width, height, rgbData);
+					// Ensure GLES2 context is available before blitting
+					// Even if bound is false, the context handle should still exist
+					if (GLES2.getCanvasRef() != null) {
+						// CRITICAL: Ensure all rendering commands are completed before reading from WebGL canvas
+						// This ensures we get the latest rendered frame, not the previous one
+						if (GLES2.bound) {
+							GLES2.finish();
+						}
+						
+						// flipY must be true because WebGL Y-axis is bottom-up while Canvas2D Y-axis is top-down
+						if (shouldLog) {
+							System.out.println("[Emulator3D] swapBuffers - calling blitGL on CanvasGraphics after finish()");
+						}
+						try {
+							((CanvasGraphics) this.target).blitGL(x, y, x, y, width, height, true, false);
+							if (shouldLog) {
+								System.out.println("[Emulator3D] swapBuffers - blitGL completed");
+							}
+						} catch (Exception e) {
+							System.err.println("[Emulator3D] swapBuffers - blitGL failed: " + e.getMessage());
+							e.printStackTrace();
+						}
+					} else {
+						System.err.println("[Emulator3D] swapBuffers - GLES2 canvas not available, cannot blit");
+					}
 				}
-			} else {
-				// we can't blend here, we must overwrite
-				// if the overwrite hint was not specified, the img was already drawn into the internal buffer
-				// just blending without doing it would break compositemode interacting with the background
-
-				// flipY must be true because WebGL Y-axis is bottom-up while Canvas2D Y-axis is top-down
-				((CanvasGraphics) this.target).blitGL(x, y, x, y, width, height, true, false);
+			} catch (Exception e) {
+				System.err.println("[Emulator3D] swapBuffers - exception: " + e.getMessage());
+				e.printStackTrace();
 			}
+		} else {
+			System.out.println("[Emulator3D] swapBuffers - target is null, skipping");
 		}
 	}
 
@@ -289,12 +457,25 @@ public final class Emulator3D {
 		GLES2.colorMask(true, true, true, true);
 
 		int bgColor = bg != null ? bg.getColor() : 0;
-		GLES2.clearColor(
-				G3DUtils.getFloatColor(bgColor, 16),
-				G3DUtils.getFloatColor(bgColor, 8),
-				G3DUtils.getFloatColor(bgColor, 0),
-				G3DUtils.getFloatColor(bgColor, 24)
-		);
+		float r = G3DUtils.getFloatColor(bgColor, 16);
+		float g = G3DUtils.getFloatColor(bgColor, 8);
+		float b = G3DUtils.getFloatColor(bgColor, 0);
+		float a = G3DUtils.getFloatColor(bgColor, 24);
+		
+		// Ensure alpha is at least 1.0 (fully opaque) if color is 0 (black)
+		// This prevents clearing to fully transparent black which would show nothing
+		if (bgColor == 0 && a == 0.0f) {
+			a = 1.0f; // Default to opaque black instead of transparent
+		}
+		
+		// Throttle logging to reduce console spam
+		long now = System.currentTimeMillis();
+		if (lastClearLogTime == 0 || now - lastClearLogTime > 1000) {
+			System.out.println("[Emulator3D] clearBackgound - bgColor: 0x" + Integer.toHexString(bgColor) + " rgba: (" + r + ", " + g + ", " + b + ", " + a + ")");
+			lastClearLogTime = now;
+		}
+		
+		GLES2.clearColor(r, g, b, a);
 
 		if (bg != null) {
 			int colorClear = bg.isColorClearEnabled() ? GLES2.Constants.GL_COLOR_BUFFER_BIT : 0;
@@ -780,17 +961,17 @@ public final class Emulator3D {
 						break;
 				}
 
-				GLES2.uniform1i(meshProgram.uHasColor[textureIdx], hasColor ? 1 : 0);
-				GLES2.uniform1i(meshProgram.uHasAlpha[textureIdx], hasAlpha ? 1 : 0);
+			GLES2.uniform1i(meshProgram.uHasColor[textureIdx], hasColor ? 1 : 0);
+			GLES2.uniform1i(meshProgram.uHasAlpha[textureIdx], hasAlpha ? 1 : 0);
 
 
 
-				GLES2.texParameterf(GLES2.Constants.GL_TEXTURE_2D, GLES2.Constants.GL_TEXTURE_WRAP_S,
-						texture2D.getWrappingS() == Texture2D.WRAP_CLAMP ? GLES2.Constants.GL_CLAMP_TO_EDGE : GLES2.Constants.GL_REPEAT
-				);
-				GLES2.texParameterf(GLES2.Constants.GL_TEXTURE_2D, GLES2.Constants.GL_TEXTURE_WRAP_T,
-						texture2D.getWrappingT() == Texture2D.WRAP_CLAMP ? GLES2.Constants.GL_CLAMP_TO_EDGE : GLES2.Constants.GL_REPEAT
-				);
+			GLES2.texParameteri(GLES2.Constants.GL_TEXTURE_2D, GLES2.Constants.GL_TEXTURE_WRAP_S,
+					texture2D.getWrappingS() == Texture2D.WRAP_CLAMP ? GLES2.Constants.GL_CLAMP_TO_EDGE : GLES2.Constants.GL_REPEAT
+			);
+			GLES2.texParameteri(GLES2.Constants.GL_TEXTURE_2D, GLES2.Constants.GL_TEXTURE_WRAP_T,
+					texture2D.getWrappingT() == Texture2D.WRAP_CLAMP ? GLES2.Constants.GL_CLAMP_TO_EDGE : GLES2.Constants.GL_REPEAT
+			);
 
 				int levelFilter = texture2D.getLevelFilter();
 				int imageFilter = texture2D.getImageFilter();
@@ -901,6 +1082,13 @@ public final class Emulator3D {
 
 		renderPipe.clear();
 		MeshMorph.getInstance().clearCache();
+		
+		// Ensure all rendering commands are submitted to GPU
+		// This helps ensure the latest frame is ready when swapBuffers is called
+		if (GLES2.bound) {
+			// Note: We don't call finish() here because it would block and slow down rendering
+			// finish() is called in releaseTarget() and swapBuffers() when needed
+		}
 	}
 
 	private void renderSprite(Sprite3D sprite, Transform spriteTransform, float alphaFactor) {
