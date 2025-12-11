@@ -1227,14 +1227,12 @@ public final class Emulator3D {
 
 			GLES2.uniform4f(meshProgram.uBlendColor[textureIdx], blendColor[0], blendColor[1], blendColor[2], blendColor[3]);
 			
-			// Diagnostic: Log blend mode for debugging black screen issue
-			// MODULATE (227) with black vertex color will result in black output
-			if (blendMode == 227) { // FUNC_MODULATE
-				long now = System.currentTimeMillis();
-				if (lastBlendModeLogTime == 0 || now - lastBlendModeLogTime > 2000) {
-					System.out.println("[Emulator3D] draw - WARNING: Using MODULATE blend mode (227). If vertex color is black, output will be black!");
-					lastBlendModeLogTime = now;
-				}
+			// Diagnostic: Log blend mode for ALL textures
+			long now = System.currentTimeMillis();
+			if (lastBlendModeLogTime == 0 || now - lastBlendModeLogTime > 2000) {
+				System.out.println("[Emulator3D] draw - Texture " + textureIdx + ": blendMode=" + blendMode + 
+					" (REPLACE=228, MODULATE=227, DECAL=226, BLEND=225, ADD=224)");
+				lastBlendModeLogTime = now;
 			}
 
 
@@ -1256,6 +1254,11 @@ public final class Emulator3D {
 
 			GLES2.uniform1i(meshProgram.uHasColor[textureIdx], hasColor ? 1 : 0);
 			GLES2.uniform1i(meshProgram.uHasAlpha[textureIdx], hasAlpha ? 1 : 0);
+			
+			// Diagnostic: Log hasColor and hasAlpha
+			if (lastBlendModeLogTime == 0 || System.currentTimeMillis() - lastBlendModeLogTime < 100) {
+				System.out.println("[Emulator3D] draw - Texture " + textureIdx + ": hasColor=" + hasColor + ", hasAlpha=" + hasAlpha + ", format=" + image2D.getFormat());
+			}
 
 
 
@@ -1628,26 +1631,54 @@ public final class Emulator3D {
 			}
 			
 			int expectedSize = image2D.getWidth() * image2D.getHeight();
+			int bytesPerPixel = 1;
 			switch (image2D.getFormat()) {
 				case Image2D.ALPHA:
 				case Image2D.LUMINANCE:
-					expectedSize *= 1;
+					bytesPerPixel = 1;
 					break;
 				case Image2D.LUMINANCE_ALPHA:
-					expectedSize *= 2;
+					bytesPerPixel = 2;
 					break;
 				case Image2D.RGB:
-					expectedSize *= 3;
+					bytesPerPixel = 3;
 					break;
 				case Image2D.RGBA:
-					expectedSize *= 4;
+					bytesPerPixel = 4;
 					break;
 			}
+			expectedSize *= bytesPerPixel;
+			
+			// Check if texture data is all black (potential issue)
+			int nonZeroCount = 0;
+			int sampleCount = Math.min(imageData.length, 1000); // Sample first 1000 bytes
+			for (int i = 0; i < sampleCount; i++) {
+				if (imageData[i] != 0) {
+					nonZeroCount++;
+				}
+			}
+			float nonZeroPercent = (float)nonZeroCount / sampleCount * 100;
 			
 			if (imageData.length < expectedSize) {
 				System.err.println("[Emulator3D] ensureTextureLoaded - WARNING: imageData size mismatch. Expected: " + expectedSize + ", Got: " + imageData.length + " (format: " + image2D.getFormat() + ", size: " + image2D.getWidth() + "x" + image2D.getHeight() + ")");
 			} else {
 				System.out.println("[Emulator3D] ensureTextureLoaded - Loading texture: " + image2D.getWidth() + "x" + image2D.getHeight() + ", format: " + image2D.getFormat() + ", data size: " + imageData.length);
+			}
+			
+			// Diagnostic: Check if texture data looks valid
+			if (nonZeroPercent < 5.0f) {
+				System.err.println("[Emulator3D] ensureTextureLoaded - WARNING: Texture data appears to be mostly BLACK! Only " + nonZeroPercent + "% non-zero bytes in sample.");
+				// Print some sample bytes for debugging
+				StringBuilder sb = new StringBuilder("[Emulator3D] ensureTextureLoaded - Sample bytes: ");
+				for (int i = 0; i < Math.min(20, imageData.length); i++) {
+					int val = imageData[i] & 0xFF;
+					sb.append(Integer.toHexString((val >> 4) & 0xF));
+					sb.append(Integer.toHexString(val & 0xF));
+					sb.append(" ");
+				}
+				System.out.println(sb.toString());
+			} else {
+				System.out.println("[Emulator3D] ensureTextureLoaded - Texture data appears valid (" + nonZeroPercent + "% non-zero bytes in sample)");
 			}
 
 			try {

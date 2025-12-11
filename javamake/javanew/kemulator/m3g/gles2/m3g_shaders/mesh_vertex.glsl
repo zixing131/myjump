@@ -184,11 +184,22 @@ void main() {
 
         color = applyLights(ecPosition3, normal3, ambient, diffuse);
         
+        // CRITICAL FIX: If lighting calculation returns black or very dark,
+        // fall back to using material diffuse color to prevent black output
+        if (length(color.rgb) < 0.1 || (color.r < 0.05 && color.g < 0.05 && color.b < 0.05)) {
+            color = diffuse;
+        }
+        
         if (isTwoSided) {
             // at this point we don't know whether the face is front or back faced
             // so we need to compute both versions and then pick the correct one
             // in the fragment shader using gl_FrontFacing
             backColor = applyLights(ecPosition3, -normal3, ambient, diffuse);
+            
+            // Apply same fix for back color
+            if (length(backColor.rgb) < 0.1 || (backColor.r < 0.05 && backColor.g < 0.05 && backColor.b < 0.05)) {
+                backColor = diffuse;
+            }
         }
 
 

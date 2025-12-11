@@ -61,39 +61,86 @@ void main() {
     v_coords[0] = v_coords0;
     v_coords[1] = v_coords1;
 
+    // DEBUG TEST: Output texture coordinates as color to verify they are valid
+    // Red = U coordinate, Green = V coordinate
+    // If you see red/green gradient, tex coords are valid
+    // If you see solid color or black, tex coords have issues
+    if (usedTextures > 0) {
+        // First test: output tex coords as color
+        gl_FragColor = vec4(v_coords[0].x, v_coords[0].y, 0.0, 1.0);
+        return;
+    }
+    // END DEBUG TEST
+
+    // Store original vertex color brightness for fallback
+    float originalBrightness = length(color.rgb);
+    
+    // CRITICAL FIX: Force vertex color to white if too dark
+    // This ensures textures show properly with MODULATE blend mode
+    if (originalBrightness < 0.1) {
+        color.rgb = vec3(1.0, 1.0, 1.0);
+    }
+
+    // Track if we had any valid texture contribution
+    bool hadValidTexture = false;
+
     for (int i=0; i<MAX_TEXTURES; i++) {
         if (i < usedTextures) {
             vec4 texColor = vec4(0.0);
             if (i == 0) {
-                texColor += texture2D(texture[0], v_coords[0]);
+                texColor = texture2D(texture[0], v_coords[0]);
             }
             else if (i == 1) {
-                texColor += texture2D(texture[1], v_coords[1]);
+                texColor = texture2D(texture[1], v_coords[1]);
+            }
+            
+            // Check if texture sampled something valid (not completely black)
+            float texBrightness = length(texColor.rgb);
+            bool texIsValid = texBrightness > 0.01 || texColor.a > 0.01;
+            
+            if (texIsValid) {
+                hadValidTexture = true;
             }
 
             if (blendMode[i] == FUNC_REPLACE) {
                 if (hasColor[i]) {
-                    color.rgb = texColor.rgb;
+                    // REPLACE: use texture color, but if texture is black/invalid,
+                    // keep current color to avoid black output from failed texture load
+                    if (texBrightness > 0.01) {
+                        color.rgb = texColor.rgb;
+                    }
+                    // else: keep current color (texture might not have loaded properly)
                 }
                 if (hasAlpha[i]) {
                     color.a = texColor.a;
                 }
             } else if (blendMode[i] == FUNC_MODULATE) {
                 if (hasColor[i]) {
-                    color.rgb = color.rgb * texColor.rgb;
+                    // MODULATE: multiply colors
+                    // If texture is black/invalid, skip multiplication to avoid black output
+                    if (texBrightness > 0.01) {
+                        color.rgb = color.rgb * texColor.rgb;
+                    }
+                    // else: keep current color (don't multiply by black)
                 }
                 if (hasAlpha[i]) {
                     color.a = color.a * texColor.a;
                 }
             } else if (blendMode[i] == FUNC_DECAL) {
-                if (hasAlpha[i]) {
-                    color.rgb = color.rgb*vec3(1.0 - texColor.a) + texColor.rgb * texColor.a;
-                } else {
-                    color.rgb = texColor.rgb;
+                // Only apply DECAL if texture is valid
+                if (texBrightness > 0.01 || texColor.a > 0.01) {
+                    if (hasAlpha[i]) {
+                        color.rgb = color.rgb*vec3(1.0 - texColor.a) + texColor.rgb * texColor.a;
+                    } else {
+                        color.rgb = texColor.rgb;
+                    }
                 }
             } else if (blendMode[i] == FUNC_BLEND) {
-                if (hasColor[i]) {
-                    color.rgb = color.rgb * vec3(-texColor.rgb + 1.0) + blendColor[i].rgb * texColor.rgb;
+                // Only apply BLEND if texture is valid
+                if (texBrightness > 0.01) {
+                    if (hasColor[i]) {
+                        color.rgb = color.rgb * vec3(-texColor.rgb + 1.0) + blendColor[i].rgb * texColor.rgb;
+                    }
                 }
                 if (hasAlpha[i]) {
                     color.a = color.a * texColor.a;
@@ -105,9 +152,32 @@ void main() {
                 if (hasAlpha[i]) {
                     color.a = color.a * texColor.a;
                 }
+            } else {
+                // Unknown blend mode - just use texture color if valid
+                if (texBrightness > 0.01) {
+                    color.rgb = texColor.rgb;
+                }
             }
 
-            color = clamp(color, 0.0, 1.0); // clamp here?
+            color = clamp(color, 0.0, 1.0);
+        }
+    }
+    
+    // Final safety check: if result is still too dark, something went wrong
+    float finalBrightness = length(color.rgb);
+    
+    // DEBUG: Always show what state we're in
+    if (finalBrightness < 0.05) {
+        if (usedTextures > 0 && !hadValidTexture) {
+            // Texture sampling failed completely - show debug magenta
+            color.rgb = vec3(1.0, 0.0, 1.0);
+        } else if (usedTextures == 0) {
+            // No textures and still dark - show debug cyan
+            color.rgb = vec3(0.0, 1.0, 1.0);
+        } else {
+            // Had valid texture but still dark - show debug yellow
+            // This means texture was valid but blending produced black
+            color.rgb = vec3(1.0, 1.0, 0.0);
         }
     }
 

@@ -396,13 +396,13 @@ public class CanvasGraphics extends javax.microedition.lcdui.Graphics {
         
         if (argbCache == null) {
             byte[] rgbaData = getRGBAFromCtx(ctxHandle, 0, 0, this.width, this.height);
-            if (rgbaData == null) {
-                System.err.println("[CanvasGraphics] getRGB - getRGBAFromCtx returned null");
+            if (rgbaData == null || rgbaData.length == 0) {
+                System.err.println("[CanvasGraphics] getRGB - getRGBAFromCtx returned null or empty");
                 return;
             }
             argbCache = Utils.rgbaToArgb(rgbaData);
-            if (argbCache == null) {
-                System.err.println("[CanvasGraphics] getRGB - rgbaToArgb returned null");
+            if (argbCache == null || argbCache.length == 0) {
+                System.err.println("[CanvasGraphics] getRGB - rgbaToArgb returned null or empty");
                 return;
             }
         }

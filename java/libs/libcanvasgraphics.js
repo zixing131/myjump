@@ -274,9 +274,47 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
     // Get RGBA data from context
     getRGBAFromCtx: function(lib, ctx, sx, sy, width, height) {
-      if (!ctx) return null;
-      const imageData = ctx.getImageData(sx, sy, width, height);
-      return new Int8Array(imageData.data.buffer);
+      if (!ctx) {
+        console.warn('[CanvasGraphics] getRGBAFromCtx - ctx is null');
+        return null;
+      }
+      
+      // Get canvas dimensions
+      const canvas = ctx.canvas || ctx._canvas;
+      if (!canvas) {
+        console.warn('[CanvasGraphics] getRGBAFromCtx - no canvas found on ctx');
+        return null;
+      }
+      
+      const canvasWidth = canvas.width || 0;
+      const canvasHeight = canvas.height || 0;
+      
+      // Validate dimensions
+      if (canvasWidth <= 0 || canvasHeight <= 0) {
+        console.warn('[CanvasGraphics] getRGBAFromCtx - invalid canvas size:', canvasWidth, 'x', canvasHeight);
+        return null;
+      }
+      
+      // Clamp request to canvas bounds
+      if (sx < 0) { width += sx; sx = 0; }
+      if (sy < 0) { height += sy; sy = 0; }
+      if (sx + width > canvasWidth) { width = canvasWidth - sx; }
+      if (sy + height > canvasHeight) { height = canvasHeight - sy; }
+      
+      if (width <= 0 || height <= 0) {
+        console.warn('[CanvasGraphics] getRGBAFromCtx - invalid dimensions after clamping');
+        // Return empty array instead of null to prevent NullPointerException
+        return new Int8Array(0);
+      }
+      
+      try {
+        const imageData = ctx.getImageData(sx, sy, width, height);
+        return new Int8Array(imageData.data.buffer);
+      } catch (e) {
+        console.error('[CanvasGraphics] getRGBAFromCtx - getImageData failed:', e);
+        // Return empty array instead of null
+        return new Int8Array(0);
+      }
     },
 
     // Convert bitmap to canvas context
@@ -713,7 +751,32 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
     Native[cgBasePath + '.getRGBAFromCtx.(Ljava/lang/Object;IIII)[B'] = function(addr, ctxAddr, sx, sy, w, h) {
       const ctx = getCtx(ctxAddr);
-      return CanvasGraphicsNatives.getRGBAFromCtx(null, ctx, sx, sy, w, h);
+      if (!ctx) {
+        console.warn('[CanvasGraphics] getRGBAFromCtx - ctx is null, ctxAddr:', ctxAddr, 'typeof:', typeof ctxAddr);
+        // Try to get from global map using addr instead
+        if (window.CanvasGraphicsContexts) {
+          // Try to find any valid context with matching dimensions
+          for (const [key, value] of window.CanvasGraphicsContexts) {
+            if (value && (value.canvas || value._canvas)) {
+              const canvas = value.canvas || value._canvas;
+              // Only use if dimensions are compatible
+              if (canvas.width >= w && canvas.height >= h) {
+                console.log('[CanvasGraphics] getRGBAFromCtx - using fallback ctx from global map, key:', key);
+                const result = CanvasGraphicsNatives.getRGBAFromCtx(null, value, sx, sy, w, h);
+                if (result && result.length > 0) {
+                  return result;
+                }
+              }
+            }
+          }
+        }
+        // Return empty array instead of null to prevent NullPointerException
+        console.warn('[CanvasGraphics] getRGBAFromCtx - returning empty array');
+        return new Int8Array(0);
+      }
+      const result = CanvasGraphicsNatives.getRGBAFromCtx(null, ctx, sx, sy, w, h);
+      // Never return null, return empty array instead
+      return result || new Int8Array(0);
     };
 
     Native[cgBasePath + '.bitmapToCanvasCtx.(Ljava/lang/Object;)Ljava/lang/Object;'] = function(addr, bitmapAddr) {
