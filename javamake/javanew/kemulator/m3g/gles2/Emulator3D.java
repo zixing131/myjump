@@ -37,6 +37,8 @@ public final class Emulator3D {
 	private static long lastMaterialLogTime = 0;
 	private static long lastBlendModeLogTime = 0;
 	private static long lastLightsLogTime = 0;
+	private static int renderVertexCallCount = 0; // Track number of renderVertex calls for diagnosis
+	private static int drawCallCount = 0; // Track number of draw calls for diagnosis
 	private static long lastDepthLogTime = 0;
 	// Pixel sampling throttling to prevent browser freeze
 	private static long lastPixelSampleTime = 0;
@@ -880,18 +882,20 @@ public final class Emulator3D {
 				if (viewMatrix != null && viewMatrix.length == 16) {
 					GLES2.uniformMatrix4fv(meshProgram.uViewMatrix, true, viewMatrix);
 					long now = System.currentTimeMillis();
-					if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
-						// CRITICAL: Log view matrix translation to check camera position
-						float tx = viewMatrix[12];
-						float ty = viewMatrix[13];
-						float tz = viewMatrix[14];
-						System.out.println("[Emulator3D] setupCamera - View matrix set: translation=(" + tx + "," + ty + "," + tz + ")");
-						// Check if view matrix translation is reasonable
-						if (Math.abs(tx) > 1000 || Math.abs(ty) > 1000 || Math.abs(tz) > 1000) {
-							System.err.println("[Emulator3D] setupCamera - WARNING: View matrix translation is very large! Camera may be positioned incorrectly!");
-						}
-						lastCameraLogTime = now;
+				// Always log for first few calls, then throttle
+				boolean shouldLogView = (renderVertexCallCount <= 5) || (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000);
+				if (shouldLogView) {
+					// CRITICAL: Log view matrix translation to check camera position
+					float tx = viewMatrix[12];
+					float ty = viewMatrix[13];
+					float tz = viewMatrix[14];
+					System.out.println("[Emulator3D] setupCamera - View matrix set: translation=(" + tx + "," + ty + "," + tz + ")");
+					// Check if view matrix translation is reasonable
+					if (Math.abs(tx) > 1000 || Math.abs(ty) > 1000 || Math.abs(tz) > 1000) {
+						System.err.println("[Emulator3D] setupCamera - WARNING: View matrix translation is very large! Camera may be positioned incorrectly!");
 					}
+					lastCameraLogTime = now;
+				}
 				} else {
 					System.err.println("[Emulator3D] setupCamera - ERROR: Invalid view matrix! length=" + (viewMatrix != null ? viewMatrix.length : 0));
 				}
@@ -1049,8 +1053,11 @@ public final class Emulator3D {
 		GLES2.uniformMatrix4fv(meshProgram.uModelMatrix, true, modelMatrix);
 		
 		// CRITICAL DIAGNOSIS: Log model matrix translation to check if objects are in view
+		// Always log for first few calls, then throttle
+		renderVertexCallCount++;
 		long now = System.currentTimeMillis();
-		if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
+		boolean shouldLog = (renderVertexCallCount <= 5) || (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000);
+		if (shouldLog) {
 			float mx = modelMatrix[12];
 			float my = modelMatrix[13];
 			float mz = modelMatrix[14];
@@ -1058,7 +1065,7 @@ public final class Emulator3D {
 			float sx = (float)Math.sqrt(modelMatrix[0]*modelMatrix[0] + modelMatrix[1]*modelMatrix[1] + modelMatrix[2]*modelMatrix[2]);
 			float sy = (float)Math.sqrt(modelMatrix[4]*modelMatrix[4] + modelMatrix[5]*modelMatrix[5] + modelMatrix[6]*modelMatrix[6]);
 			float sz = (float)Math.sqrt(modelMatrix[8]*modelMatrix[8] + modelMatrix[9]*modelMatrix[9] + modelMatrix[10]*modelMatrix[10]);
-			System.out.println("[Emulator3D] renderVertex - Model matrix: translation=(" + mx + "," + my + "," + mz + 
+			System.out.println("[Emulator3D] renderVertex - Call #" + renderVertexCallCount + " - Model matrix: translation=(" + mx + "," + my + "," + mz + 
 				"), scale=(" + sx + "," + sy + "," + sz + ")");
 			// Check if model matrix translation is reasonable (not too far from origin)
 			if (Math.abs(mx) > 1000 || Math.abs(my) > 1000 || Math.abs(mz) > 1000) {
@@ -1299,12 +1306,15 @@ public final class Emulator3D {
 
 			GLES2.uniform1f(meshProgram.uMShininess, mat.getShininess());
 			
-			// Diagnostic logging for black screen issue (using existing 'now' variable)
-			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
-				System.out.println("[Emulator3D] setupMaterial - useLighting=" + useLighting + 
-					" ambient=(" + ambientCol[0] + "," + ambientCol[1] + "," + ambientCol[2] + "," + ambientCol[3] + ")" +
-					" diffuse=(" + diffuseCol[0] + "," + diffuseCol[1] + "," + diffuseCol[2] + "," + diffuseCol[3] + ")" +
-					" emissive=(" + emissiveCol[0] + "," + emissiveCol[1] + "," + emissiveCol[2] + "," + emissiveCol[3] + ")");
+			// Diagnostic logging for black screen issue - always log first few times
+			// Use renderVertexCallCount to ensure we log for first few calls
+			boolean shouldLogMaterial = (renderVertexCallCount <= 5) || (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000);
+			if (shouldLogMaterial) {
+				System.out.println("[Emulator3D] setupMaterial - Call #" + renderVertexCallCount + " - useLighting=" + useLighting + 
+					", trackVertexColors=" + trackVertexColors +
+					", ambient=(" + ambientCol[0] + "," + ambientCol[1] + "," + ambientCol[2] + "," + ambientCol[3] + ")" +
+					", diffuse=(" + diffuseCol[0] + "," + diffuseCol[1] + "," + diffuseCol[2] + "," + diffuseCol[3] + ")" +
+					", emissive=(" + emissiveCol[0] + "," + emissiveCol[1] + "," + emissiveCol[2] + "," + emissiveCol[3] + ")");
 				
 				// check
 				boolean allBlack = (ambientCol[0] == 0.0f && ambientCol[1] == 0.0f && ambientCol[2] == 0.0f &&

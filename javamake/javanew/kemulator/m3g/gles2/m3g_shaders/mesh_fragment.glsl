@@ -128,10 +128,5 @@ void main() {
         color.rgb = mix(fogColor.rgb, color.rgb, ffact);
     }
 
-    // TEMPORARY TEST: Force output RED to verify rendering pipeline
-    // If you see red, rendering works but shader logic is wrong
-    // If you still see black, vertices are outside view frustum or not rendered
-    // TODO: Remove this after debugging
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // FORCE RED for testing
-    // gl_FragColor = color; // Original code - uncomment after testing
+    gl_FragColor = color;
 }

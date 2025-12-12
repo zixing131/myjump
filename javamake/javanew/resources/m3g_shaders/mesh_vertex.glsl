@@ -208,4 +208,13 @@ void main() {
     v_fogCoord = abs(ecPosition.z);
 
     gl_Position = projectionMatrix * ecPosition;
+    
+    // TEMPORARY TEST: Force gl_Position to cover entire screen for first vertex
+    // This will help verify if the problem is with vertex positions or rendering pipeline
+    // TODO: Remove this after debugging
+    // Uncomment the following line to force a full-screen quad:
+    // if (gl_VertexID == 0) gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);
+    // if (gl_VertexID == 1) gl_Position = vec4(1.0, -1.0, 0.0, 1.0);
+    // if (gl_VertexID == 2) gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);
+    // if (gl_VertexID == 3) gl_Position = vec4(1.0, 1.0, 0.0, 1.0);
 }
