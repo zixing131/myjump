@@ -2,7 +2,7 @@
 //var midiplayer;
 
 //debugString ByteStream.readString(readStringFast)
-var debugString= 
+//var debugString= 
 //是否是主页
 var isIndex = window.location.href.indexOf('main.html')==-1;
 var isLoadJarFinished = false;
