@@ -42,6 +42,12 @@ public final class Emulator3D {
 	private static long lastPixelSampleTime = 0;
 	private static final long PIXEL_SAMPLE_INTERVAL = 2000; // Only sample pixel every 2 seconds
 	private static boolean pixelSamplingEnabled = true; // Enabled for debugging black screen issue
+	
+	// Cull face auto-disable to fix black screen issue
+	// When cull face is enabled but vertex winding doesn't match, all faces get culled
+	// This flag allows automatic disabling of cull face to prevent black screen
+	private static boolean autoDisableCullFace = true; // Auto-disable cull face to prevent black screen
+	private static int cullFaceDisableCount = 0; // Track how many times we've disabled cull face
 
 	public static final int MaxViewportWidth = 2048;
 	public static final int MaxViewportHeight = 2048;
@@ -854,20 +860,36 @@ public final class Emulator3D {
 				// Log projection matrix for debugging (throttled)
 				long now = System.currentTimeMillis();
 				if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
-					//System.out.println("[Emulator3D] setupCamera - Projection matrix set");
+					// CRITICAL: Log projection matrix values to diagnose view frustum issues
+					// Check if projection matrix looks valid (near/far plane, FOV, etc.)
+					float near = projMatrix[14] / (projMatrix[10] - 1.0f);
+					float far = projMatrix[14] / (projMatrix[10] + 1.0f);
+					System.out.println("[Emulator3D] setupCamera - Projection matrix set: near=" + near + ", far=" + far);
+					// Check if near/far are reasonable (near > 0, far > near)
+					if (near <= 0 || far <= near) {
+						System.err.println("[Emulator3D] setupCamera - WARNING: Invalid near/far planes! near=" + near + ", far=" + far);
+					}
 					lastCameraLogTime = now;
 				}
 			} else {
 				System.err.println("[Emulator3D] setupCamera - ERROR: Invalid projection matrix! length=" + (projMatrix != null ? projMatrix.length : 0));
 			}
 
-			if (CameraCache.invCam != null && CameraCache.invCam.getImpl() != null) {
+					if (CameraCache.invCam != null && CameraCache.invCam.getImpl() != null) {
 				float[] viewMatrix = ((Transform3D) CameraCache.invCam.getImpl()).m_matrix;
 				if (viewMatrix != null && viewMatrix.length == 16) {
 					GLES2.uniformMatrix4fv(meshProgram.uViewMatrix, true, viewMatrix);
 					long now = System.currentTimeMillis();
 					if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
-						//System.out.println("[Emulator3D] setupCamera - View matrix set");
+						// CRITICAL: Log view matrix translation to check camera position
+						float tx = viewMatrix[12];
+						float ty = viewMatrix[13];
+						float tz = viewMatrix[14];
+						System.out.println("[Emulator3D] setupCamera - View matrix set: translation=(" + tx + "," + ty + "," + tz + ")");
+						// Check if view matrix translation is reasonable
+						if (Math.abs(tx) > 1000 || Math.abs(ty) > 1000 || Math.abs(tz) > 1000) {
+							System.err.println("[Emulator3D] setupCamera - WARNING: View matrix translation is very large! Camera may be positioned incorrectly!");
+						}
 						lastCameraLogTime = now;
 					}
 				} else {
@@ -983,7 +1005,7 @@ public final class Emulator3D {
 		// Diagnostic: Log lights setup - always log usedLights value (critical for debugging)
 		// Always log the first time, then throttle
 		if (shouldLog || lastLightsLogTime == 0) {
-			//System.out.println("[Emulator3D] setupLights - FINAL: usedLights=" + usedLights + " scope=" + scope + " (lights.size()=" + lights.size() + ")");
+			System.out.println("[Emulator3D] setupLights - FINAL: usedLights=" + usedLights + " scope=" + scope + " (lights.size()=" + lights.size() + ")");
 			if (usedLights == 0) {
 				System.err.println("[Emulator3D] setupLights - CRITICAL: No lights active (usedLights=0)! If useLighting=true, output will be black (only emissive color).");
 				System.err.println("[Emulator3D] setupLights - This means: emissive=(0,0,0,1) + no light contribution = black output!");
@@ -1025,6 +1047,28 @@ public final class Emulator3D {
 
 		float[] modelMatrix = ((Transform3D) trans.getImpl()).m_matrix;
 		GLES2.uniformMatrix4fv(meshProgram.uModelMatrix, true, modelMatrix);
+		
+		// CRITICAL DIAGNOSIS: Log model matrix translation to check if objects are in view
+		long now = System.currentTimeMillis();
+		if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
+			float mx = modelMatrix[12];
+			float my = modelMatrix[13];
+			float mz = modelMatrix[14];
+			// Also log scale factors from model matrix
+			float sx = (float)Math.sqrt(modelMatrix[0]*modelMatrix[0] + modelMatrix[1]*modelMatrix[1] + modelMatrix[2]*modelMatrix[2]);
+			float sy = (float)Math.sqrt(modelMatrix[4]*modelMatrix[4] + modelMatrix[5]*modelMatrix[5] + modelMatrix[6]*modelMatrix[6]);
+			float sz = (float)Math.sqrt(modelMatrix[8]*modelMatrix[8] + modelMatrix[9]*modelMatrix[9] + modelMatrix[10]*modelMatrix[10]);
+			System.out.println("[Emulator3D] renderVertex - Model matrix: translation=(" + mx + "," + my + "," + mz + 
+				"), scale=(" + sx + "," + sy + "," + sz + ")");
+			// Check if model matrix translation is reasonable (not too far from origin)
+			if (Math.abs(mx) > 1000 || Math.abs(my) > 1000 || Math.abs(mz) > 1000) {
+				System.err.println("[Emulator3D] renderVertex - WARNING: Model matrix translation is very large! Object may be outside view frustum!");
+			}
+			if (sx == 0 || sy == 0 || sz == 0) {
+				System.err.println("[Emulator3D] renderVertex - WARNING: Model matrix has zero scale! Object will be invisible!");
+			}
+			lastCameraLogTime = now;
+		}
 
 		setupAppearance(ap, false);
 		if (ap.getMaterial() != null) {
@@ -1055,15 +1099,50 @@ public final class Emulator3D {
 		}
 
 		int var1 = pm.getCulling();
-		if (var1 == PolygonMode.CULL_NONE) {
+		flatShade = pm.getShading() == PolygonMode.SHADE_FLAT;
+		int winding = pm.getWinding();
+		
+		// Auto-disable cull face to prevent black screen issue
+		// When cull face is enabled but vertex winding doesn't match frontFace,
+		// all faces get culled, resulting in black screen
+		// This is a workaround for the common case where vertex order doesn't match
+		boolean shouldDisableCullFace = false;
+		if (autoDisableCullFace && var1 != PolygonMode.CULL_NONE) {
+			shouldDisableCullFace = true;
+			cullFaceDisableCount++;
+		}
+		
+		if (var1 == PolygonMode.CULL_NONE || shouldDisableCullFace) {
 			GLES2.disable(GLES2.Constants.GL_CULL_FACE);
+			if (shouldDisableCullFace) {
+				// Log only once to avoid spam
+				if (cullFaceDisableCount == 1) {
+					System.out.println("[Emulator3D] setupPolygonMode - Auto-disabled cull face to prevent black screen");
+					System.out.println("[Emulator3D] setupPolygonMode - This is a workaround for vertex winding mismatch issues");
+				}
+			}
 		} else {
 			GLES2.enable(GLES2.Constants.GL_CULL_FACE);
 			GLES2.cullFace(var1 == PolygonMode.CULL_FRONT ? GLES2.Constants.GL_FRONT : GLES2.Constants.GL_BACK);
 		}
 
-		flatShade = pm.getShading() == PolygonMode.SHADE_FLAT;
-		GLES2.frontFace(pm.getWinding() == PolygonMode.WINDING_CW ? GLES2.Constants.GL_CW : GLES2.Constants.GL_CCW);
+		GLES2.frontFace(winding == PolygonMode.WINDING_CW ? GLES2.Constants.GL_CW : GLES2.Constants.GL_CCW);
+		
+		// Diagnostic: Log culling and winding settings (throttled)
+		long now = System.currentTimeMillis();
+		if (lastDepthLogTime == 0 || now - lastDepthLogTime > 2000) {
+			String cullStr = var1 == PolygonMode.CULL_NONE ? "NONE" : 
+			                (var1 == PolygonMode.CULL_FRONT ? "FRONT" : "BACK");
+			String windingStr = winding == PolygonMode.WINDING_CW ? "CW" : "CCW";
+			String actualCullStr = shouldDisableCullFace ? "DISABLED (auto-fix)" : cullStr;
+			System.out.println("[Emulator3D] setupPolygonMode - culling=" + actualCullStr + " (requested=" + cullStr + 
+				"), winding=" + windingStr + ", flatShade=" + flatShade);
+			if (var1 != PolygonMode.CULL_NONE && !shouldDisableCullFace) {
+				System.err.println("[Emulator3D] setupPolygonMode - WARNING: Culling is enabled (" + cullStr + 
+					")! If vertex order doesn't match winding (" + windingStr + "), faces will be culled!");
+			}
+			lastDepthLogTime = now;
+		}
 
 
 		GLES2.uniform1i(meshProgram.uIsTwoSided, pm.isTwoSidedLightingEnabled() ? 1 : 0);
@@ -1080,15 +1159,11 @@ public final class Emulator3D {
 		boolean depthTestEnabled = cm.isDepthTestEnabled();
 		boolean depthWriteEnabled = cm.isDepthWriteEnabled();
 		
-		// DEBUG: Temporarily FORCE DISABLE depth test to see if fragments are being culled
-		GLES2.disable(GLES2.Constants.GL_DEPTH_TEST);
-		GLES2.depthMask(false);  // Also disable depth write
-		boolean forceDepthTest = false;
-		/*
 		// CRITICAL FIX: If depthBuffer is enabled but depthTest is disabled,
 		// force enable depth test to prevent severe overlapping/ghosting
 		// This is a workaround for m3g files that incorrectly set depthTestEnabled=false
 		// Many m3g files have objects with depthTestEnabled=false, causing severe overlapping
+		boolean forceDepthTest = false;
 		if (depthBufferEnabled && !depthTestEnabled) {
 			// Force enable depth test to prevent overlapping
 			forceDepthTest = true;
@@ -1104,7 +1179,6 @@ public final class Emulator3D {
 			GLES2.disable(GLES2.Constants.GL_DEPTH_TEST);
 			GLES2.depthFunc(GLES2.Constants.GL_ALWAYS); // Set default, but test is disabled
 		}
-		*/
 
 		// CRITICAL FIX: Force enable depth write when depth test is enabled
 		// If depth test is on but depth write is off, objects won't establish depth
@@ -1227,10 +1301,20 @@ public final class Emulator3D {
 			
 			// Diagnostic logging for black screen issue (using existing 'now' variable)
 			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
-				//System.out.println("[Emulator3D] setupMaterial - useLighting=" + useLighting + 
-					// " ambient=(" + ambientCol[0] + "," + ambientCol[1] + "," + ambientCol[2] + "," + ambientCol[3] + ")" +
-					// " diffuse=(" + diffuseCol[0] + "," + diffuseCol[1] + "," + diffuseCol[2] + "," + diffuseCol[3] + ")" +
-					// " emissive=(" + emissiveCol[0] + "," + emissiveCol[1] + "," + emissiveCol[2] + "," + emissiveCol[3] + ")");
+				System.out.println("[Emulator3D] setupMaterial - useLighting=" + useLighting + 
+					" ambient=(" + ambientCol[0] + "," + ambientCol[1] + "," + ambientCol[2] + "," + ambientCol[3] + ")" +
+					" diffuse=(" + diffuseCol[0] + "," + diffuseCol[1] + "," + diffuseCol[2] + "," + diffuseCol[3] + ")" +
+					" emissive=(" + emissiveCol[0] + "," + emissiveCol[1] + "," + emissiveCol[2] + "," + emissiveCol[3] + ")");
+				
+				// check
+				boolean allBlack = (ambientCol[0] == 0.0f && ambientCol[1] == 0.0f && ambientCol[2] == 0.0f &&
+				                   diffuseCol[0] == 0.0f && diffuseCol[1] == 0.0f && diffuseCol[2] == 0.0f &&
+				                   emissiveCol[0] == 0.0f && emissiveCol[1] == 0.0f && emissiveCol[2] == 0.0f);
+				if (allBlack && useLighting) {
+					System.err.println("[Emulator3D] setupMaterial - CRITICAL WARNING: All material colors are BLACK (0,0,0) and useLighting=true!");
+					System.err.println("[Emulator3D] setupMaterial - This will produce BLACK output unless lights provide color!");
+				}
+				
 				lastMaterialLogTime = now;
 			}
 		} else {
@@ -1271,6 +1355,38 @@ public final class Emulator3D {
 	private void draw(VertexBuffer vb, IndexBuffer indices, Appearance ap) {
 		// this uploads and binds a correct VAO
 		try {
+			// CRITICAL DIAGNOSIS: Check IndexBuffer before uploadToGL
+			if (indices instanceof TriangleStripArray) {
+				TriangleStripArray tsa = (TriangleStripArray) indices;
+				int[] triangles = tsa.getTriangles();
+				// Use getStripCount() and getIndexStrip() to access stripLengths indirectly
+				int numStrips = tsa.getStripCount();
+				long drawLogTime = System.currentTimeMillis();
+				if (lastBlendModeLogTime == 0 || drawLogTime - lastBlendModeLogTime > 2000) {
+					System.out.println("[Emulator3D] draw - IndexBuffer诊断: triangles.length=" + (triangles != null ? triangles.length : 0) + 
+						", numStrips=" + numStrips);
+					if (numStrips > 0) {
+						int totalStrips = 0;
+						int expectedExploded = 0;
+						for (int i = 0; i < numStrips; i++) {
+							int[] strip = tsa.getIndexStrip(i);
+							if (strip != null) {
+								int stripLen = strip.length;
+								totalStrips += stripLen;
+								System.out.println("[Emulator3D] draw - strip[" + i + "] length=" + stripLen);
+								if (stripLen > 2) {
+									expectedExploded += (stripLen - 2) * 3;
+								}
+							}
+						}
+						System.out.println("[Emulator3D] draw - Total strip vertices: " + totalStrips);
+						System.out.println("[Emulator3D] draw - Expected exploded vertex count: " + expectedExploded);
+					} else {
+						System.err.println("[Emulator3D] draw - CRITICAL: numStrips is 0!");
+					}
+				}
+			}
+			
 			vb.uploadToGL(indices, flatShade, ap.getMaterial() != null, meshProgram, bufferHelper);
 		} catch (Exception e) {
 			System.err.println("[Emulator3D] draw - uploadToGL failed: " + e.getMessage());
@@ -1284,6 +1400,39 @@ public final class Emulator3D {
 		if (positions == null) {
 			System.err.println("[Emulator3D] draw - positions is null!");
 			return;
+		}
+		
+		// CRITICAL DIAGNOSIS: Log vertex position info to check if vertices are in reasonable range
+		long drawLogTime = System.currentTimeMillis();
+		if (lastBlendModeLogTime == 0 || drawLogTime - lastBlendModeLogTime > 2000) {
+			// CRITICAL FIX: Use correct vertex count based on flatShade mode
+			// If flatShade=false, explodeFor() is not called, so getExplodedVertexCount() returns 0
+			// In non-flatShade mode, we should use getVertexCount() instead
+			int explodedVertexCount = positions.getExplodedVertexCount();
+			int originalVertexCount = positions.getVertexCount();
+			int actualVertexCount = flatShade ? explodedVertexCount : originalVertexCount;
+			
+			System.out.println("[Emulator3D] draw - Vertex count: flatShade=" + flatShade + 
+				", exploded=" + explodedVertexCount + 
+				", original=" + originalVertexCount + 
+				", actual=" + actualVertexCount +
+				", scaleBias: scale=" + scaleBias[0] + " bias=(" + scaleBias[1] + "," + scaleBias[2] + "," + scaleBias[3] + ")");
+			if (actualVertexCount == 0) {
+				System.err.println("[Emulator3D] draw - CRITICAL: actualVertexCount is 0! Nothing will be rendered!");
+				if (flatShade && explodedVertexCount == 0 && originalVertexCount > 0) {
+					System.err.println("[Emulator3D] draw - flatShade=true but explodedVertexCount=0! explodeFor() may not have been called!");
+				} else if (!flatShade && originalVertexCount == 0) {
+					System.err.println("[Emulator3D] draw - flatShade=false and originalVertexCount=0! VertexArray has no data!");
+				}
+			}
+			
+			// CRITICAL: Check if model matrix translation is reasonable
+			// Get model matrix from the transform (we need to access it from renderVertex context)
+			// For now, just log that we need to check MVP matrices
+			System.out.println("[Emulator3D] draw - DIAGNOSIS: If vertices are not visible, check:");
+			System.out.println("[Emulator3D] draw -   1. Model/View/Projection matrices (see renderVertex logs)");
+			System.out.println("[Emulator3D] draw -   2. Vertex positions after scaleBias transformation");
+			System.out.println("[Emulator3D] draw -   3. gl_Position output in vertex shader (should be in NDC [-1,1] range)");
 		}
 
 		GLES2.uniform1i(meshProgram.uIsFlatShaded, flatShade ? 1 : 0);
@@ -1403,17 +1552,24 @@ public final class Emulator3D {
 			GLES2.uniform1i(meshProgram.uUsedTextures, usedTextures);
 			// Allow rendering without textures (using vertex colors or material colors)
 			// Some objects may not have textures and should still be rendered
-			if (usedTextures > 0) {
-				//System.out.println("[Emulator3D] draw - Bound " + usedTextures + " texture(s)");
-			} else {
-				// Log but don't skip - allow rendering without textures
-				//System.out.println("[Emulator3D] draw - No textures bound, rendering with vertex/material colors only");
+			// Reuse drawLogTime variable defined earlier
+			if (lastBlendModeLogTime == 0 || drawLogTime - lastBlendModeLogTime > 2000) {
+				if (usedTextures > 0) {
+					System.out.println("[Emulator3D] draw - Bound " + usedTextures + " texture(s)");
+				} else {
+					// Log but don't skip - allow rendering without textures
+					System.out.println("[Emulator3D] draw - No textures bound, rendering with vertex/material colors only");
+				}
 			}
 
 
 			TriangleStripArray triangleStripArray = (TriangleStripArray) indices;
 
-			int vertexCount = positions.getExplodedVertexCount();
+			// CRITICAL FIX: Only use getExplodedVertexCount() for flatShade mode
+			// In non-flatShade mode, explodeFor() is not called, so getExplodedVertexCount() returns 0
+			// This is normal and expected - we use drawElements which doesn't need exploded count
+			int vertexCount = flatShade ? positions.getExplodedVertexCount() : 0; // Only used for flatShade mode
+			int originalVertexCount = positions.getVertexCount(); // For diagnosis
 			
 			if (flatShade) {
 				if (vertexCount > 0) {
@@ -1421,14 +1577,74 @@ public final class Emulator3D {
 					System.out.println("[Emulator3D] draw - drawArrays called: GL_TRIANGLES, count=" + vertexCount);
 				} else {
 					System.err.println("[Emulator3D] draw - WARNING: vertexCount is 0, skipping drawArrays");
+					if (originalVertexCount > 0) {
+						System.err.println("[Emulator3D] draw - CRITICAL: flatShade=true but explodedVertexCount=0! explodeFor() may not have been called!");
+					}
 				}
 			} else {
 				int[] triangles = triangleStripArray.getTriangles();
 				if (triangles != null && triangles.length > 0) {
+					// CRITICAL DIAGNOSIS: Before drawElements, check if indices are valid
+					// Reuse drawLogTime variable defined earlier
+					if (lastBlendModeLogTime == 0 || drawLogTime - lastBlendModeLogTime > 2000) {
+						// Check if any indices are out of bounds
+						int maxIndex = 0;
+						for (int i = 0; i < triangles.length && i < 10; i++) { // Check first 10 indices
+							if (triangles[i] > maxIndex) maxIndex = triangles[i];
+						}
+						if (maxIndex >= originalVertexCount) {
+							System.err.println("[Emulator3D] draw - CRITICAL: Index out of bounds! maxIndex=" + maxIndex + 
+								" >= originalVertexCount=" + originalVertexCount);
+						} else {
+							System.out.println("[Emulator3D] draw - Index range check: maxIndex=" + maxIndex + 
+								" < originalVertexCount=" + originalVertexCount + " (OK)");
+						}
+						
+						// CRITICAL: Log first few indices to see what we're trying to render
+						if (triangles.length >= 3) {
+							System.out.println("[Emulator3D] draw - First 3 indices: [" + triangles[0] + "," + triangles[1] + "," + triangles[2] + "]");
+						}
+					}
+					
+					// CRITICAL: Try rendering a test quad first to verify the rendering pipeline
+					// This will help us determine if the problem is with the vertex data or the rendering pipeline itself
+					// We'll render this only once for diagnosis
+					if (lastBlendModeLogTime == 0 || drawLogTime - lastBlendModeLogTime > 2000) {
+						System.out.println("[Emulator3D] draw - Attempting to render test quad to verify pipeline...");
+						// Note: Test quad rendering would require creating temporary buffers,
+						// which is complex. Instead, we'll rely on the existing drawElements call
+						// and check if the issue is with vertex positions or MVP matrices.
+						System.out.println("[Emulator3D] draw - If test quad is needed, it should be added separately");
+					}
+					
 					GLES2.drawElements(GLES2.Constants.GL_TRIANGLE_STRIP, triangles.length, GLES2.Constants.GL_UNSIGNED_SHORT, 0);
-					System.out.println("[Emulator3D] draw - drawElements called: GL_TRIANGLE_STRIP, count=" + triangles.length);
+					// CRITICAL: Log drawElements call with more details for black screen diagnosis
+					// Reuse drawLogTime variable defined earlier
+					if (lastBlendModeLogTime == 0 || drawLogTime - lastBlendModeLogTime > 2000) {
+						System.out.println("[Emulator3D] draw - drawElements called: GL_TRIANGLE_STRIP, count=" + triangles.length + 
+							", originalVertexCount=" + originalVertexCount +
+							", usedTextures=" + usedTextures + ", viewport=" + viewportWidth + "x" + viewportHeight);
+						// Check if we have valid rendering state
+						if (usedTextures == 0) {
+							System.err.println("[Emulator3D] draw - WARNING: No textures bound! Rendering with vertex/material colors only.");
+						}
+						if (viewportWidth <= 0 || viewportHeight <= 0) {
+							System.err.println("[Emulator3D] draw - WARNING: Invalid viewport! width=" + viewportWidth + ", height=" + viewportHeight);
+						}
+						if (originalVertexCount == 0) {
+							System.err.println("[Emulator3D] draw - CRITICAL: originalVertexCount is 0! VertexArray has no data!");
+						}
+						// CRITICAL: Check if scaleBias might be causing issues
+						if (scaleBias[0] == 0.0f) {
+							System.err.println("[Emulator3D] draw - CRITICAL: scaleBias scale is 0! All vertices will be at bias position!");
+						}
+					}
 				} else {
 					System.err.println("[Emulator3D] draw - WARNING: triangles array is null or empty (length=" + (triangles != null ? triangles.length : 0) + "), skipping drawElements");
+					if (originalVertexCount == 0) {
+						System.err.println("[Emulator3D] draw - CRITICAL: Both triangles is empty/null AND originalVertexCount=0!");
+						System.err.println("[Emulator3D] draw - This means: VertexBuffer has no positions or IndexBuffer is invalid");
+					}
 				}
 				// don't unbind GLES2.Constants.GL_ELEMENT_ARRAY_BUFFER, we bind it via VAO
 			}

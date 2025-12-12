@@ -37,7 +37,7 @@ window.GLES2_LIB_VERSION = '20251212g';
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+      console.log('Shader compilation error:', gl.getShaderInfoLog(shader));
       return null;
     }
     return shader;
@@ -47,7 +47,7 @@ window.GLES2_LIB_VERSION = '20251212g';
     if (window.GLES2ExceptionHandler) {
       window.GLES2ExceptionHandler(str);
     } else {
-      console.error('GLES2 Error:', str);
+      console.log('GLES2 Error:', str);
     }
   }
 
@@ -95,7 +95,7 @@ window.GLES2_LIB_VERSION = '20251212g';
     if (Array.isArray(array) || (array.length !== undefined && typeof array.length === 'number')) {
       return new Uint8Array(array);
     }
-    console.error('toUint8Array: Unknown array type', typeof array, array);
+    console.log('toUint8Array: Unknown array type', typeof array, array);
     return null;
   }
 
@@ -111,7 +111,7 @@ window.GLES2_LIB_VERSION = '20251212g';
     if (Array.isArray(array) || (array.length !== undefined && typeof array.length === 'number')) {
       return new Float32Array(array);
     }
-    console.error('toFloat32Array: Unknown array type', typeof array, array);
+    console.log('toFloat32Array: Unknown array type', typeof array, array);
     return null;
   }
 
@@ -127,7 +127,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       });
 
       if (!gl) {
-        console.error('WebGL2 not supported!');
+        console.log('WebGL2 not supported!');
         return null;
       }
       log('[GLES2] WebGL2 context created successfully');
@@ -200,7 +200,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       if (!vertexShader || !fragmentShader) {
         if (vertexShader) gl.deleteShader(vertexShader);
         if (fragmentShader) gl.deleteShader(fragmentShader);
-        console.error("Shader creation failed.");
+        console.log("Shader creation failed.");
         doThrow(lib, "failed to compile shaders");
         return 0;
       }
@@ -211,7 +211,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       gl.linkProgram(program);
 
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        console.error('Program linking error:', gl.getProgramInfoLog(program));
+        console.log('Program linking error:', gl.getProgramInfoLog(program));
         gl.deleteProgram(program);
         gl.deleteShader(vertexShader);
         gl.deleteShader(fragmentShader);
@@ -636,11 +636,52 @@ window.GLES2_LIB_VERSION = '20251212g';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_colorMask: function(lib, ptr, r, g, b, a) {
+      // 检查是否所有颜色通道都被禁用（会导致黑屏）
+      if (!r && !g && !b) {
+        // 只在首次检测时打印（使用标志确保只输出一次）
+        if (!window._colorChannelsDisabledMessagePrinted) {
+          console.log('[GLES2] WARNING: All color channels disabled! This will cause black screen.');
+          window._colorChannelsDisabledMessagePrinted = true;
+        }
+        if (window.debugLog) {
+          window.debugLog.warn('BLACKSCREEN', 'All color channels disabled', { r, g, b, a });
+        }
+      }
       ptr.gl.colorMask(r, g, b, a);
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_cullFace: function(lib, ptr, mode) {
+      // 自动修复：如果检测到连续黑屏，自动禁用面剔除
+      if (window._drawElementsBlackCount && window._drawElementsBlackCount >= 3) {
+        const autoDisableCullFace = window.autoDisableCullFace !== false; // 默认启用
+        if (autoDisableCullFace) {
+          // 只在首次自动禁用时打印（使用标志确保只输出一次）
+          if (!window._autoDisableCullFaceMessagePrinted) {
+            console.log('[GLES2] Auto-disabling CULL_FACE due to black screen detection');
+            window._autoDisableCullFaceMessagePrinted = true;
+          }
+          ptr.gl.disable(ptr.gl.CULL_FACE);
+          if (window.debugLog) {
+            window.debugLog.warn('BLACKSCREEN', 'Auto-disabled CULL_FACE due to black screen', {
+              blackCount: window._drawElementsBlackCount,
+              requestedMode: mode
+            });
+          }
+          return; // 不执行cullFace，直接禁用
+        }
+      }
       ptr.gl.cullFace(mode);
+      
+      // 记录面剔除状态用于诊断
+      if (window.debugLog && (!window._cullFaceLogThrottle || Date.now() - window._cullFaceLogThrottle > 2000)) {
+        const cullFaceEnabled = ptr.gl.isEnabled(ptr.gl.CULL_FACE);
+        window.debugLog.debug('WEBGL', 'cullFace called', {
+          mode: mode,
+          enabled: cullFaceEnabled,
+          note: cullFaceEnabled ? 'May cause black screen if vertex order is wrong' : 'OK'
+        });
+        window._cullFaceLogThrottle = Date.now();
+      }
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_depthFunc: function(lib, ptr, mode) {
@@ -682,7 +723,7 @@ window.GLES2_LIB_VERSION = '20251212g';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_drawElements: function(lib, ptr, mode, count, type, offset) {
-      logOnce('drawElements', '[GLES2] drawElements:', mode, count, type, offset);
+      // 移除调用过程日志
       // Check GL state before draw
       const currentProgram = ptr.gl.getParameter(ptr.gl.CURRENT_PROGRAM);
       const viewport = ptr.gl.getParameter(ptr.gl.VIEWPORT);
@@ -732,33 +773,346 @@ window.GLES2_LIB_VERSION = '20251212g';
       }
       
       // DEBUG: Read center pixel after draw to check if anything was rendered
-      // Only check first few draws to reduce spam
+      // 只在检测到黑屏后持续检测，避免频繁检测
       if (!window._drawElementsCheckCount) window._drawElementsCheckCount = 0;
+      if (!window._drawElementsBlackCount) window._drawElementsBlackCount = 0;
       window._drawElementsCheckCount++;
-      if (window._drawElementsCheckCount <= 5) {
+      // 只在检测到黑屏后持续检测，移除每10次检测的逻辑
+      const shouldCheckPixel = window._drawElementsCheckCount <= 10 || 
+                                window._drawElementsBlackCount > 0;
+      if (shouldCheckPixel) {
         try {
           const pixel = new Uint8Array(4);
           const centerX = Math.floor(viewport[2] / 2);
           const centerY = Math.floor(viewport[3] / 2);
           ptr.gl.readPixels(centerX, centerY, 1, 1, ptr.gl.RGBA, ptr.gl.UNSIGNED_BYTE, pixel);
-          log('[GLES2] drawElements #' + window._drawElementsCheckCount + ' - center pixel after draw:', pixel[0], pixel[1], pixel[2], pixel[3], 'count:', count, 'elemBuf:', !!elementBuffer, 'arrayBuf:', !!arrayBuffer);
+          
+          const pixelData = { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
           
           if (window.debugLog) {
-            const pixelData = { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
             window.debugLog.info('WEBGL', `drawElements #${window._drawElementsCheckCount} - center pixel after draw`, {
               pixel: pixelData,
               count,
               position: { x: centerX, y: centerY }
             });
+          }
+          
+          // 检查是否为黑色 - 如果是黑色，输出详细诊断信息（无论是否有 debugLog）
+          if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] === 255) {
+            window._drawElementsBlackCount++;
+            // 收集详细的 WebGL 状态信息
+            const gl = ptr.gl;
+            const diagnostics = {
+              pixel: pixelData,
+              count,
+              hasProgram: !!currentProgram,
+              hasElementBuffer: !!elementBuffer,
+              hasArrayBuffer: !!arrayBuffer,
+              viewport: viewport
+            };
             
-            // 检查是否为黑色
-            if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] === 255) {
-              window.debugLog.warn('BLACKSCREEN', 'drawElements center pixel is BLACK!', {
-                pixel: pixelData,
-                count,
-                hasProgram: !!currentProgram,
-                hasElementBuffer: !!elementBuffer
+            // 检查 shader 程序状态
+            if (currentProgram) {
+              const programValid = gl.getProgramParameter(currentProgram, gl.LINK_STATUS);
+              const programInfoLog = gl.getProgramInfoLog(currentProgram);
+              diagnostics.programValid = programValid;
+              if (programInfoLog) diagnostics.programInfoLog = programInfoLog;
+            }
+            
+            // 检查纹理绑定状态（检查前 4 个纹理单元）
+            const textures = [];
+            for (let i = 0; i < 4; i++) {
+              gl.activeTexture(gl.TEXTURE0 + i);
+              const texture = gl.getParameter(gl.TEXTURE_BINDING_2D);
+              textures.push({
+                unit: i,
+                bound: !!texture
               });
+            }
+            diagnostics.textures = textures;
+            
+            // 检查深度测试状态
+            const depthTestEnabled = gl.isEnabled(gl.DEPTH_TEST);
+            const depthFunc = gl.getParameter(gl.DEPTH_FUNC);
+            const depthMask = gl.getParameter(gl.DEPTH_WRITEMASK);
+            diagnostics.depthTest = {
+              enabled: depthTestEnabled,
+              func: depthFunc,
+              writeMask: depthMask
+            };
+            
+            // 检查颜色掩码
+            const colorMask = gl.getParameter(gl.COLOR_WRITEMASK);
+            diagnostics.colorMask = colorMask;
+            
+            // 检查混合状态
+            const blendEnabled = gl.isEnabled(gl.BLEND);
+            const blendFunc = gl.getParameter(gl.BLEND_SRC_ALPHA) !== undefined 
+              ? [gl.getParameter(gl.BLEND_SRC_RGB), gl.getParameter(gl.BLEND_DST_RGB), 
+                 gl.getParameter(gl.BLEND_SRC_ALPHA), gl.getParameter(gl.BLEND_DST_ALPHA)]
+              : [gl.getParameter(gl.BLEND_SRC), gl.getParameter(gl.BLEND_DST)];
+            diagnostics.blend = {
+              enabled: blendEnabled,
+              func: blendFunc
+            };
+            
+            // 检查裁剪测试
+            const scissorTestEnabled = gl.isEnabled(gl.SCISSOR_TEST);
+            const scissorBox = gl.getParameter(gl.SCISSOR_BOX);
+            diagnostics.scissorTest = {
+              enabled: scissorTestEnabled,
+              box: scissorBox
+            };
+            
+              // 检查面剔除
+              const cullFaceEnabled = gl.isEnabled(gl.CULL_FACE);
+              const cullFace = gl.getParameter(gl.CULL_FACE_MODE);
+              const frontFace = gl.getParameter(gl.FRONT_FACE);
+              diagnostics.cullFace = {
+                enabled: cullFaceEnabled,
+                mode: cullFace,
+                frontFace: frontFace,
+                note: cullFaceEnabled ? 'If all faces are culled, nothing will render!' : 'OK'
+              };
+              
+              // 自动修复：如果连续3次黑屏且面剔除启用，尝试禁用面剔除（只在关键节点打印）
+              if (cullFaceEnabled && window._drawElementsBlackCount >= 3 && window.autoDisableCullFace !== false) {
+                const modeStr = cullFace === gl.BACK ? 'GL_BACK' : cullFace === gl.FRONT ? 'GL_FRONT' : 'GL_FRONT_AND_BACK';
+                const frontFaceStr = frontFace === gl.CW ? 'GL_CW' : 'GL_CCW';
+                
+                // 只在首次自动修复时打印
+                if (!window._drawElementsMessagesPrinted || !window._drawElementsMessagesPrinted.cullFaceFixed) {
+                  console.log('[BLACKSCREEN] Attempting auto-fix: Disabling CULL_FACE (mode=' + modeStr + ', frontFace=' + frontFaceStr + ')');
+                  if (!window._drawElementsMessagesPrinted) {
+                    window._drawElementsMessagesPrinted = {};
+                  }
+                  window._drawElementsMessagesPrinted.cullFaceFixed = true;
+                }
+                
+                gl.disable(gl.CULL_FACE);
+                diagnostics.cullFace.autoFixed = true;
+                diagnostics.cullFace.note = 'Auto-disabled due to black screen';
+                
+                if (window.debugLog) {
+                  window.debugLog.warn('BLACKSCREEN', 'Auto-disabled CULL_FACE', {
+                    blackCount: window._drawElementsBlackCount,
+                    previousMode: modeStr,
+                    previousFrontFace: frontFaceStr
+                  });
+                }
+              }
+            
+            // 检查顶点属性状态
+            const vertexAttribs = [];
+            if (currentProgram) {
+              const maxAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
+              for (let i = 0; i < Math.min(maxAttribs, 8); i++) {
+                const enabled = gl.getVertexAttrib(i, gl.VERTEX_ATTRIB_ARRAY_ENABLED);
+                const size = gl.getVertexAttrib(i, gl.VERTEX_ATTRIB_ARRAY_SIZE);
+                const type = gl.getVertexAttrib(i, gl.VERTEX_ATTRIB_ARRAY_TYPE);
+                const normalized = gl.getVertexAttrib(i, gl.VERTEX_ATTRIB_ARRAY_NORMALIZED);
+                const stride = gl.getVertexAttrib(i, gl.VERTEX_ATTRIB_ARRAY_STRIDE);
+                const buffer = gl.getVertexAttrib(i, gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING);
+                if (enabled || buffer) {
+                  vertexAttribs.push({
+                    index: i,
+                    enabled: !!enabled,
+                    size: size,
+                    type: type,
+                    normalized: !!normalized,
+                    stride: stride,
+                    hasBuffer: !!buffer
+                  });
+                }
+              }
+            }
+            diagnostics.vertexAttribs = vertexAttribs;
+            
+            // 检查GL错误
+            const glError = gl.getError();
+            diagnostics.glError = glError;
+            if (glError !== gl.NO_ERROR) {
+              const errorNames = {
+                [gl.INVALID_ENUM]: 'GL_INVALID_ENUM',
+                [gl.INVALID_VALUE]: 'GL_INVALID_VALUE',
+                [gl.INVALID_OPERATION]: 'GL_INVALID_OPERATION',
+                [gl.INVALID_FRAMEBUFFER_OPERATION]: 'GL_INVALID_FRAMEBUFFER_OPERATION',
+                [gl.OUT_OF_MEMORY]: 'GL_OUT_OF_MEMORY',
+                [gl.CONTEXT_LOST_WEBGL]: 'GL_CONTEXT_LOST_WEBGL'
+              };
+              diagnostics.glErrorName = errorNames[glError] || 'UNKNOWN';
+            }
+            
+            // 检查缓冲区大小
+            if (elementBuffer) {
+              const elementBufferSize = gl.getBufferParameter(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE);
+              diagnostics.elementBufferSize = elementBufferSize;
+            }
+            if (arrayBuffer) {
+              const arrayBufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+              diagnostics.arrayBufferSize = arrayBufferSize;
+            }
+            
+            // 分析可能的原因
+            const possibleCauses = [];
+            if (!currentProgram) {
+              possibleCauses.push('❌ 没有绑定着色器程序');
+            } else if (!diagnostics.programValid) {
+              possibleCauses.push('❌ 着色器程序链接失败: ' + (diagnostics.programInfoLog || '未知错误'));
+            }
+            if (cullFaceEnabled && !diagnostics.cullFace.autoFixed) {
+              possibleCauses.push('⚠️ 面剔除已启用，可能导致所有面被剔除');
+            }
+            if (depthTestEnabled && depthMask) {
+              possibleCauses.push('⚠️ 深度测试已启用，如果深度值不正确，像素可能被丢弃');
+            }
+            if (scissorTestEnabled) {
+              possibleCauses.push('⚠️ 裁剪测试已启用，如果绘制区域在裁剪框外，不会渲染');
+            }
+            if (!colorMask[0] || !colorMask[1] || !colorMask[2]) {
+              possibleCauses.push('⚠️ 颜色写入被禁用: R=' + colorMask[0] + ', G=' + colorMask[1] + ', B=' + colorMask[2]);
+            }
+            if (vertexAttribs.length === 0) {
+              possibleCauses.push('❌ 没有启用的顶点属性');
+            }
+            if (glError !== gl.NO_ERROR) {
+              possibleCauses.push('❌ WebGL错误: ' + (diagnostics.glErrorName || glError));
+            }
+            if (count === 0) {
+              possibleCauses.push('❌ 绘制元素数量为0');
+            }
+            if (!elementBuffer && !arrayBuffer) {
+              possibleCauses.push('❌ 没有绑定缓冲区');
+            }
+            if (diagnostics.textures && diagnostics.textures.every(t => !t.bound)) {
+              possibleCauses.push('⚠️ 没有绑定纹理（如果着色器需要纹理，这可能导致问题）');
+            }
+            if (possibleCauses.length === 0) {
+              possibleCauses.push('⚠️ 可能的原因：顶点数据在视口外、矩阵变换错误、着色器输出黑色等');
+            }
+            diagnostics.possibleCauses = possibleCauses;
+            
+            // 自动修复尝试（仅在连续黑屏达到阈值时）
+            const autoFixAttempted = window._autoFixAttempted || {};
+            const shouldAutoFix = window._drawElementsBlackCount >= 3 && window.autoDisableCullFace !== false;
+            
+            if (shouldAutoFix) {
+              const fixes = [];
+              
+              // 尝试禁用深度测试（如果启用且深度写入开启）
+              if (depthTestEnabled && depthMask && !autoFixAttempted.depthTest) {
+                gl.disable(gl.DEPTH_TEST);
+                fixes.push('禁用了深度测试');
+                autoFixAttempted.depthTest = true;
+                diagnostics.autoFix = diagnostics.autoFix || {};
+                diagnostics.autoFix.disabledDepthTest = true;
+              }
+              
+              // 尝试禁用裁剪测试（如果启用）
+              if (scissorTestEnabled && !autoFixAttempted.scissorTest) {
+                gl.disable(gl.SCISSOR_TEST);
+                fixes.push('禁用了裁剪测试');
+                autoFixAttempted.scissorTest = true;
+                diagnostics.autoFix = diagnostics.autoFix || {};
+                diagnostics.autoFix.disabledScissorTest = true;
+              }
+              
+              // 确保颜色写入开启
+              if ((!colorMask[0] || !colorMask[1] || !colorMask[2]) && !autoFixAttempted.colorMask) {
+                gl.colorMask(true, true, true, colorMask[3] !== undefined ? colorMask[3] : true);
+                fixes.push('启用了颜色写入');
+                autoFixAttempted.colorMask = true;
+                diagnostics.autoFix = diagnostics.autoFix || {};
+                diagnostics.autoFix.enabledColorMask = true;
+              }
+              
+              if (fixes.length > 0) {
+                // 只在首次自动修复时打印（全局只打印一次，避免与 drawImage2 重复）
+                if (!window._blackScreenGlobalMessagesPrinted || !window._blackScreenGlobalMessagesPrinted.autoFixAttempted) {
+                  console.log('[BLACKSCREEN] 自动修复: ' + fixes.join(', '));
+                  if (!window._blackScreenGlobalMessagesPrinted) {
+                    window._blackScreenGlobalMessagesPrinted = {};
+                  }
+                  window._blackScreenGlobalMessagesPrinted.autoFixAttempted = true;
+                }
+                if (window.debugLog) {
+                  window.debugLog.warn('BLACKSCREEN', 'Auto-fix attempts', { fixes });
+                }
+              }
+              
+              window._autoFixAttempted = autoFixAttempted;
+            }
+            
+            // 输出详细诊断 - 只在关键节点打印，避免刷屏
+            // 使用全局标志避免 drawElements 和 drawImage2 重复输出
+            if (!window._blackScreenGlobalMessagesPrinted) {
+              window._blackScreenGlobalMessagesPrinted = {
+                first: false,
+                threshold: false,
+                detailed: false,
+                autoFix: false
+              };
+            }
+            
+            // 只在关键节点打印详细消息：首次、达到阈值（3次）
+            const hasAutoFix = diagnostics.autoFix && Object.keys(diagnostics.autoFix).length > 0;
+            const shouldPrintDetails = window._drawElementsBlackCount === 1 || 
+                                      window._drawElementsBlackCount === 3;
+            
+            if (shouldPrintDetails) {
+              // 只在首次和阈值时打印分隔线和标题（全局只打印一次）
+              if ((window._drawElementsBlackCount === 1 && !window._blackScreenGlobalMessagesPrinted.first) ||
+                  (window._drawElementsBlackCount === 3 && !window._blackScreenGlobalMessagesPrinted.threshold)) {
+                console.log('========================================');
+                console.log('[BLACKSCREEN] drawElements - Center pixel is BLACK!');
+              }
+              
+              // 只在首次检测时打印完整诊断信息（全局只打印一次）
+              if (window._drawElementsBlackCount === 1 && !window._blackScreenGlobalMessagesPrinted.first) {
+                console.log('[BLACKSCREEN] 连续黑屏次数:', window._drawElementsBlackCount);
+                console.log('[BLACKSCREEN] 可能的原因:');
+                possibleCauses.forEach(cause => console.log('  ' + cause));
+                // 简化诊断信息，只输出关键字段（单行格式，更简洁）
+                const simplifiedDiagnostics = {
+                  pixel: diagnostics.pixel,
+                  hasProgram: diagnostics.hasProgram,
+                  hasBuffers: diagnostics.hasElementBuffer && diagnostics.hasArrayBuffer,
+                  viewport: `[${diagnostics.viewport[0]},${diagnostics.viewport[1]},${diagnostics.viewport[2]},${diagnostics.viewport[3]}]`,
+                  depthTest: diagnostics.depthTest.enabled,
+                  scissorTest: diagnostics.scissorTest.enabled,
+                  cullFace: diagnostics.cullFace.enabled
+                };
+                console.log('[BLACKSCREEN] 诊断:', JSON.stringify(simplifiedDiagnostics));
+                window._blackScreenGlobalMessagesPrinted.first = true;
+                window._blackScreenGlobalMessagesPrinted.detailed = true;
+              }
+              
+              // 只在达到阈值时打印（全局只打印一次，不重复"可能的原因"）
+              if (window._drawElementsBlackCount === 3 && !window._blackScreenGlobalMessagesPrinted.threshold) {
+                console.log('[BLACKSCREEN] 连续黑屏次数:', window._drawElementsBlackCount);
+                window._blackScreenGlobalMessagesPrinted.threshold = true;
+              }
+              
+              // 只在自动修复时打印（全局只打印一次，简化输出）
+              if (hasAutoFix && !window._blackScreenGlobalMessagesPrinted.autoFix) {
+                const fixes = [];
+                if (diagnostics.autoFix.disabledDepthTest) fixes.push('深度测试');
+                if (diagnostics.autoFix.disabledScissorTest) fixes.push('裁剪测试');
+                if (diagnostics.autoFix.enabledColorMask) fixes.push('颜色写入');
+                console.log('[BLACKSCREEN] 已尝试自动修复: 禁用 ' + fixes.join(', '));
+                window._blackScreenGlobalMessagesPrinted.autoFix = true;
+              }
+              
+              // 只在首次和阈值时打印结束分隔线
+              if ((window._drawElementsBlackCount === 1 && window._blackScreenGlobalMessagesPrinted.first) ||
+                  (window._drawElementsBlackCount === 3 && window._blackScreenGlobalMessagesPrinted.threshold)) {
+                console.log('========================================');
+              }
+            }
+            // 非关键节点完全不打印，避免刷屏
+            
+            if (window.debugLog) {
+              window.debugLog.warn('BLACKSCREEN', 'drawElements center pixel is BLACK!', diagnostics);
             }
           }
         } catch (e) {
@@ -771,6 +1125,19 @@ window.GLES2_LIB_VERSION = '20251212g';
     },
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_enable: function(lib, ptr, flag) {
+      // 如果启用CULL_FACE且之前检测到黑屏，记录警告
+      if (flag === ptr.gl.CULL_FACE && window._drawElementsBlackCount && window._drawElementsBlackCount >= 3) {
+        // 只在首次检测时打印（使用标志确保只输出一次）
+        if (!window._enableCullFaceAfterBlackScreenMessagePrinted) {
+          console.log('[GLES2] WARNING: Enabling CULL_FACE after black screen detected. This may cause issues.');
+          window._enableCullFaceAfterBlackScreenMessagePrinted = true;
+        }
+        if (window.debugLog) {
+          window.debugLog.warn('BLACKSCREEN', 'CULL_FACE being enabled after black screen', {
+            blackCount: window._drawElementsBlackCount
+          });
+        }
+      }
       ptr.gl.enable(flag);
     },
 
@@ -1004,6 +1371,199 @@ window.GLES2_LIB_VERSION = '20251212g';
 
   // Store the GL context globally for access by other parts of the system
   window.GLES2Context = null;
+  
+  // 全局诊断工具函数
+  window.diagnose3DBlackScreen = function() {
+    const gl = window.GLES2Context?.gl;
+    if (!gl) {
+      // 只在首次检测时打印（使用标志确保只输出一次）
+      if (!window._webglContextNotFoundMessagePrinted) {
+        console.log('❌ WebGL context not found!');
+        window._webglContextNotFoundMessagePrinted = true;
+      }
+      return null;
+    }
+    
+    const diagnostics = {
+      webglContext: '✅ Found',
+      viewport: gl.getParameter(gl.VIEWPORT),
+      currentProgram: gl.getParameter(gl.CURRENT_PROGRAM),
+      cullFace: {
+        enabled: gl.isEnabled(gl.CULL_FACE),
+        mode: gl.getParameter(gl.CULL_FACE_MODE),
+        frontFace: gl.getParameter(gl.FRONT_FACE)
+      },
+      depthTest: {
+        enabled: gl.isEnabled(gl.DEPTH_TEST),
+        func: gl.getParameter(gl.DEPTH_FUNC),
+        mask: gl.getParameter(gl.DEPTH_WRITEMASK)
+      },
+      colorMask: gl.getParameter(gl.COLOR_WRITEMASK),
+      blend: {
+        enabled: gl.isEnabled(gl.BLEND),
+        src: gl.getParameter(gl.BLEND_SRC),
+        dst: gl.getParameter(gl.BLEND_DST)
+      },
+      scissorTest: {
+        enabled: gl.isEnabled(gl.SCISSOR_TEST),
+        box: gl.getParameter(gl.SCISSOR_BOX)
+      },
+      elementBuffer: !!gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING),
+      arrayBuffer: !!gl.getParameter(gl.ARRAY_BUFFER_BINDING),
+      textures: []
+    };
+    
+    // 检查纹理绑定
+    for (let i = 0; i < 4; i++) {
+      gl.activeTexture(gl.TEXTURE0 + i);
+      const texture = gl.getParameter(gl.TEXTURE_BINDING_2D);
+      diagnostics.textures.push({
+        unit: i,
+        bound: !!texture
+      });
+    }
+    
+    // 读取中心像素
+    const viewport = diagnostics.viewport;
+    if (viewport[2] > 0 && viewport[3] > 0) {
+      const pixel = new Uint8Array(4);
+      const centerX = Math.floor(viewport[2] / 2);
+      const centerY = Math.floor(viewport[3] / 2);
+      gl.readPixels(centerX, centerY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+      diagnostics.centerPixel = {
+        r: pixel[0],
+        g: pixel[1],
+        b: pixel[2],
+        a: pixel[3],
+        isBlack: pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] === 255
+      };
+    }
+    
+    // 检查程序状态
+    if (diagnostics.currentProgram) {
+      diagnostics.program = {
+        linkStatus: gl.getProgramParameter(diagnostics.currentProgram, gl.LINK_STATUS),
+        infoLog: gl.getProgramInfoLog(diagnostics.currentProgram) || null
+      };
+    }
+    
+    // 只在首次诊断时输出（使用全局标志）
+    if (!window._blackScreenGlobalMessagesPrinted || !window._blackScreenGlobalMessagesPrinted.diagnoseOutput) {
+      // 简化诊断输出，只显示关键信息
+      const simplifiedDiagnostics = {
+        viewport: diagnostics.viewport,
+        hasProgram: !!diagnostics.currentProgram,
+        programValid: diagnostics.program ? diagnostics.program.linkStatus : false,
+        cullFace: diagnostics.cullFace,
+        depthTest: diagnostics.depthTest,
+        scissorTest: diagnostics.scissorTest,
+        colorMask: diagnostics.colorMask,
+        hasBuffers: diagnostics.elementBuffer || diagnostics.arrayBuffer,
+        centerPixel: diagnostics.centerPixel
+      };
+      
+      console.log('========================================');
+      console.log('3D Black Screen Diagnostics');
+      console.log('========================================');
+      console.log(JSON.stringify(simplifiedDiagnostics, null, 2));
+      console.log('========================================');
+      
+      // 检查常见问题
+      const issues = [];
+      if (!diagnostics.currentProgram) {
+        issues.push('❌ No shader program bound!');
+      } else if (!diagnostics.program.linkStatus) {
+        issues.push('❌ Shader program link failed!');
+      }
+      if (diagnostics.cullFace.enabled) {
+        issues.push('⚠️ CULL_FACE is enabled - may cause black screen if vertex order is wrong');
+      }
+      if (diagnostics.viewport[2] === 0 || diagnostics.viewport[3] === 0) {
+        issues.push('❌ Invalid viewport size!');
+      }
+      if (!diagnostics.elementBuffer && !diagnostics.arrayBuffer) {
+        issues.push('⚠️ No buffers bound!');
+      }
+      if (diagnostics.centerPixel && diagnostics.centerPixel.isBlack) {
+        issues.push('❌ Center pixel is BLACK (0,0,0,255)!');
+      }
+      
+      if (issues.length > 0) {
+        console.log('Detected Issues:');
+        issues.forEach(issue => console.log(issue));
+      } else {
+        console.log('✅ No obvious issues detected');
+      }
+      
+      if (!window._blackScreenGlobalMessagesPrinted) {
+        window._blackScreenGlobalMessagesPrinted = {};
+      }
+      window._blackScreenGlobalMessagesPrinted.diagnoseOutput = true;
+    }
+    
+    return diagnostics;
+  };
+  
+  // 自动修复函数
+  window.autoFix3DBlackScreen = function() {
+    const gl = window.GLES2Context?.gl;
+    if (!gl) {
+      // 只在首次检测时打印（使用标志确保只输出一次）
+      if (!window._autoFixWebglContextNotFoundMessagePrinted) {
+        console.log('❌ WebGL context not found!');
+        window._autoFixWebglContextNotFoundMessagePrinted = true;
+      }
+      return false;
+    }
+    
+    // 只在首次自动修复时打印（使用全局标志）
+    if (!window._blackScreenGlobalMessagesPrinted || !window._blackScreenGlobalMessagesPrinted.autoFixRun) {
+      console.log('Attempting auto-fix for 3D black screen...');
+      if (!window._blackScreenGlobalMessagesPrinted) {
+        window._blackScreenGlobalMessagesPrinted = {};
+      }
+      window._blackScreenGlobalMessagesPrinted.autoFixRun = true;
+    }
+    
+    let fixed = false;
+    const fixes = [];
+    
+    // 修复1: 禁用面剔除
+    if (gl.isEnabled(gl.CULL_FACE)) {
+      gl.disable(gl.CULL_FACE);
+      fixes.push('禁用 CULL_FACE');
+      fixed = true;
+    }
+    
+    // 修复2: 检查视口
+    const viewport = gl.getParameter(gl.VIEWPORT);
+    if (viewport[2] === 0 || viewport[3] === 0) {
+      // 视口无效，无法修复（已在其他地方打印）
+    }
+    
+    // 修复3: 检查颜色掩码
+    const colorMask = gl.getParameter(gl.COLOR_WRITEMASK);
+    if (!colorMask[0] || !colorMask[1] || !colorMask[2]) {
+      gl.colorMask(true, true, true, true);
+      fixes.push('启用所有颜色通道');
+      fixed = true;
+    }
+    
+    // 只在首次自动修复时打印结果（使用全局标志）
+    if (!window._blackScreenGlobalMessagesPrinted || !window._blackScreenGlobalMessagesPrinted.autoFixResult) {
+      if (fixed) {
+        console.log('✅ Auto-fix applied:', fixes.join(', '));
+      } else {
+        console.log('ℹ️ No auto-fixes needed or available.');
+      }
+      if (!window._blackScreenGlobalMessagesPrinted) {
+        window._blackScreenGlobalMessagesPrinted = {};
+      }
+      window._blackScreenGlobalMessagesPrinted.autoFixResult = true;
+    }
+    
+    return fixed;
+  };
 
   // Global object storage for WebGL objects (programs, textures, buffers, etc.)
   // Maps from object ID or address to actual WebGL object

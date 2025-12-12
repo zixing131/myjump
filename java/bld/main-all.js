@@ -8376,21 +8376,30 @@ var currentlyFocusedTextEditor;
     window.requestAnimationFrame(function() {
       // CRITICAL: Skip copying if 3D content was just rendered directly to device canvas
       // Otherwise we would overwrite the 3D content with 2D UI content from offscreen
+      // Check flag with a small delay to ensure it was set before this frame
+      const checkDelay = window.gles2JustRenderedTime ? (Date.now() - window.gles2JustRenderedTime) : 0;
       if (window.gles2JustRendered) {
         // Throttle log to prevent console spam
         if (!window._refresh0SkipLogThrottle || Date.now() - window._refresh0SkipLogThrottle > 2000) {
-          console.log('[refresh0] Skipping copy - 3D content already on device canvas');
+          console.log('[refresh0] Skipping copy - 3D content already on device canvas (set ' + checkDelay + 'ms ago)');
           window._refresh0SkipLogThrottle = Date.now();
         }
         
         if (window.debugLog) {
           window.debugLog.info('REFRESH0', 'Skipping copy - 3D content already on device canvas', {
             area: `${x1},${y1} ${x2},${y2}`,
-            size: `${width}x${height}`
+            size: `${width}x${height}`,
+            timeSinceSet: checkDelay + 'ms'
           });
         }
         
+        // CRITICAL: Clear flag AFTER checking to prevent race conditions
+        // Use setTimeout(0) to ensure flag is cleared in next event loop tick
+        // This prevents immediate re-check from seeing stale flag
+        const wasSet = window.gles2JustRendered;
         window.gles2JustRendered = false;
+        window.gles2JustRenderedTime = null;
+        
         J2ME.Scheduler.enqueue(ctx);
         return;
       }
@@ -8426,25 +8435,42 @@ var currentlyFocusedTextEditor;
       MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height);
       
       // 验证复制后的device canvas像素
-      if (window.debugLog) {
-        try {
-          const deviceCenterX = Math.floor(MIDP.deviceContext.canvas.width / 2);
-          const deviceCenterY = Math.floor(MIDP.deviceContext.canvas.height / 2);
-          const devicePixel = MIDP.deviceContext.getImageData(deviceCenterX, deviceCenterY, 1, 1).data;
-          const devicePixelData = { r: devicePixel[0], g: devicePixel[1], b: devicePixel[2], a: devicePixel[3] };
-          
+      try {
+        const deviceCenterX = Math.floor(MIDP.deviceContext.canvas.width / 2);
+        const deviceCenterY = Math.floor(MIDP.deviceContext.canvas.height / 2);
+        const devicePixel = MIDP.deviceContext.getImageData(deviceCenterX, deviceCenterY, 1, 1).data;
+        const devicePixelData = { r: devicePixel[0], g: devicePixel[1], b: devicePixel[2], a: devicePixel[3] };
+        
+        if (window.debugLog) {
           window.debugLog.debug('REFRESH0', 'Device canvas center pixel after copy', devicePixelData);
+        }
+        
+        // 检查是否为黑色（无论是否有debugLog都检查）
+        if (devicePixelData.r === 0 && devicePixelData.g === 0 && devicePixelData.b === 0 && devicePixelData.a === 255) {
+          // 检查是否是3D游戏（通过检查gles2JustRendered标志或GLES2Context）
+          const is3DGame = window.GLES2Context || window.gles2JustRendered;
           
-          // 检查是否为黑色
-          if (devicePixelData.r === 0 && devicePixelData.g === 0 && devicePixelData.b === 0 && devicePixelData.a === 255) {
+          if (window.debugLog) {
             window.debugLog.warn('BLACKSCREEN', 'Device canvas center pixel is BLACK after refresh0 copy!', {
               pixel: devicePixelData,
-              size: `${MIDP.deviceContext.canvas.width}x${MIDP.deviceContext.canvas.height}`
+              size: `${MIDP.deviceContext.canvas.width}x${MIDP.deviceContext.canvas.height}`,
+              is3DGame: is3DGame,
+              note: is3DGame ? 'This is a 3D game - check WebGL rendering state' : 'This may be normal for 2D games'
             });
           }
-        } catch (e) {
-          // 忽略错误
+          
+          // 如果是3D游戏且黑屏，输出警告和建议
+          if (is3DGame) {
+            console.warn('[BLACKSCREEN] ========================================');
+            console.warn('[BLACKSCREEN] 3D game detected with BLACK screen!');
+            console.warn('[BLACKSCREEN] Device canvas center pixel:', devicePixelData);
+            console.warn('[BLACKSCREEN] Run window.diagnose3DBlackScreen() for diagnostics');
+            console.warn('[BLACKSCREEN] Run window.autoFix3DBlackScreen() to attempt auto-fix');
+            console.warn('[BLACKSCREEN] ========================================');
+          }
         }
+      } catch (e) {
+        // 忽略错误
       }
       
       // CRITICAL FIX: Clear the offscreen canvas after refresh to prevent ghosting

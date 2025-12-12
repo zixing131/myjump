@@ -10,13 +10,13 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
   const log = DEBUG ? console.log.bind(console) : function() {};
   const warn = DEBUG ? console.warn.bind(console) : function() {};
   
-  // Throttled error logging to prevent console spam
+  // Throttled error logging to prevent console spam (已改为log)
   const throttledError = (function() {
     const lastLog = {};
     return function(key, ...args) {
       const now = Date.now();
       if (!lastLog[key] || now - lastLog[key] > 5000) {
-        console.error(...args);
+        console.log(...args);
         lastLog[key] = now;
       }
     };
@@ -239,20 +239,13 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
     // Draw image from another canvas
     // Parameters: ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha
     drawImage2: function(lib, ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha) {
-      if (window.debugLog) {
-        window.debugLog.debug('DRAWIMAGE2', 'drawImage2 START', {
-          hasCtx: !!ctx,
-          hasCanvasRef: !!canvasRef,
-          params: { sx, sy, x, y, width, height, flipY, withAlpha }
-        });
-      }
-      log('[CanvasGraphics] drawImage2 INNER START - ctx:', !!ctx, 'canvasRef:', !!canvasRef);
+      // 移除调用过程日志
       
       if (!ctx || !canvasRef) {
         if (window.debugLog) {
           window.debugLog.error('DRAWIMAGE2', 'Missing ctx or canvasRef!', { ctx: !!ctx, canvasRef: !!canvasRef });
         }
-        throttledError('drawImage2-missing', '[CanvasGraphics] drawImage2 inner - MISSING ctx or canvasRef!');
+        // 移除调用过程日志
         return;
       }
       
@@ -261,10 +254,6 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       let deviceCtx = null;
       if (window.MIDP && window.MIDP.deviceContext) {
         deviceCtx = window.MIDP.deviceContext;
-        if (window.debugLog) {
-          window.debugLog.info('DRAWIMAGE2', 'Found MIDP.deviceContext, will write to device canvas directly');
-        }
-        log('[CanvasGraphics] drawImage2 - Found MIDP.deviceContext, will write to device canvas directly');
       }
       
       // IMPORTANT: We need to get the existing WebGL context, not create a new one
@@ -277,7 +266,6 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         // Check if this is the same canvas
         if (window.GLES2Context.gl.canvas === canvasRef) {
           webglCtx = window.GLES2Context.gl;
-          log('[CanvasGraphics] drawImage2 - Using GLES2Context.gl');
         }
       }
       
@@ -285,15 +273,10 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       if (!webglCtx) {
         try {
           webglCtx = canvasRef.getContext('webgl2') || canvasRef.getContext('webgl');
-          if (webglCtx) {
-            log('[CanvasGraphics] drawImage2 - Got WebGL context directly');
-          }
         } catch (e) {
-          log('[CanvasGraphics] drawImage2 - Failed to get WebGL context:', e);
+          // 移除调用过程日志
         }
       }
-      
-      log('[CanvasGraphics] drawImage2 - webglCtx:', !!webglCtx);
       
       if (webglCtx) {
         // WORKAROUND: drawImage from WebGL canvas to 2D canvas doesn't work reliably
@@ -301,19 +284,41 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         try {
           const srcWidth = canvasRef.width;
           const srcHeight = canvasRef.height;
-          log('[CanvasGraphics] drawImage2 - Reading', srcWidth, 'x', srcHeight, 'pixels');
           
           // Read all pixels from WebGL canvas
           const pixels = new Uint8Array(srcWidth * srcHeight * 4);
           webglCtx.readPixels(0, 0, srcWidth, srcHeight, webglCtx.RGBA, webglCtx.UNSIGNED_BYTE, pixels);
           
-          // Check first pixel
+          // CRITICAL: Check multiple pixel positions to diagnose readPixels issues
+          // WebGL readPixels uses bottom-left origin, so (0,0) is bottom-left corner
+          // For center pixel in WebGL coordinates: centerY = srcHeight/2 (from bottom)
+          const centerX = Math.floor(srcWidth / 2);
+          const centerY = Math.floor(srcHeight / 2);
+          
+          // Check first pixel (bottom-left in WebGL = (0,0))
           const firstPixel = { r: pixels[0], g: pixels[1], b: pixels[2], a: pixels[3] };
-          log('[CanvasGraphics] drawImage2 - First pixel:', pixels[0], pixels[1], pixels[2], pixels[3]);
-          // Check center pixel (note: WebGL Y=0 is at bottom)
-          const centerIdx = (Math.floor(srcHeight/2) * srcWidth + Math.floor(srcWidth/2)) * 4;
-          const centerPixel = { r: pixels[centerIdx], g: pixels[centerIdx+1], b: pixels[centerIdx+2], a: pixels[centerIdx+3] };
-          log('[CanvasGraphics] drawImage2 - Center pixel:', pixels[centerIdx], pixels[centerIdx+1], pixels[centerIdx+2], pixels[centerIdx+3]);
+          
+          // Check center pixel in WebGL coordinates (from bottom-left origin)
+          // In readPixels buffer: row 0 = bottom row, row (height-1) = top row
+          const webglCenterRow = centerY; // This is the row index in the buffer (from bottom)
+          const webglCenterIdx = (webglCenterRow * srcWidth + centerX) * 4;
+          const centerPixel = { r: pixels[webglCenterIdx], g: pixels[webglCenterIdx+1], b: pixels[webglCenterIdx+2], a: pixels[webglCenterIdx+3] };
+          
+          // Also check top-left and bottom-right corners for debugging
+          const topLeftIdx = ((srcHeight - 1) * srcWidth + 0) * 4; // Top-left in WebGL = bottom row, left col
+          const bottomRightIdx = (0 * srcWidth + (srcWidth - 1)) * 4; // Bottom-right in WebGL = top row, right col
+          const topLeftPixel = { r: pixels[topLeftIdx], g: pixels[topLeftIdx+1], b: pixels[topLeftIdx+2], a: pixels[topLeftIdx+3] };
+          const bottomRightPixel = { r: pixels[bottomRightIdx], g: pixels[bottomRightIdx+1], b: pixels[bottomRightIdx+2], a: pixels[bottomRightIdx+3] };
+          
+          // CRITICAL DIAGNOSIS: Log pixel data from readPixels to verify WebGL content
+          if (!window._readPixelsDiagnosisPrinted) {
+            console.log('[DRAWIMAGE2] readPixels诊断 - WebGL原始像素数据:');
+            console.log('  中心像素 (WebGL坐标 ' + centerX + ',' + centerY + '):', centerPixel);
+            console.log('  左上角 (WebGL坐标 0,' + (srcHeight-1) + '):', topLeftPixel);
+            console.log('  右下角 (WebGL坐标 ' + (srcWidth-1) + ',0):', bottomRightPixel);
+            console.log('  左下角 (WebGL坐标 0,0):', firstPixel);
+            window._readPixelsDiagnosisPrinted = true;
+          }
           
           if (window.debugLog) {
             window.debugLog.info('DRAWIMAGE2', 'readPixels completed', {
@@ -324,20 +329,210 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             
             // 检查WebGL读取的像素是否为黑色
             if (centerPixel.r === 0 && centerPixel.g === 0 && centerPixel.b === 0 && centerPixel.a === 255) {
-              window.debugLog.warn('BLACKSCREEN', 'WebGL readPixels center pixel is BLACK!', {
+              // 跟踪连续黑屏次数
+              if (!window._drawImage2BlackCount) window._drawImage2BlackCount = 0;
+              window._drawImage2BlackCount++;
+              
+              // 初始化消息打印标志（用于debugLog分支）
+              if (!window._blackScreenMessagesPrintedDebugLog) {
+                window._blackScreenMessagesPrintedDebugLog = {
+                  initial: false,
+                  threshold: false,
+                  fixed: false
+                };
+              }
+              
+              // 收集WebGL状态用于诊断
+              const gl = webglCtx;
+              const diagnostics = {
                 pixel: centerPixel,
                 size: `${srcWidth}x${srcHeight}`,
-                firstPixel: firstPixel
-              });
-              // Also log to console for immediate visibility
-              console.warn('[BLACKSCREEN] WebGL canvas center pixel is BLACK (0,0,0,255)! This indicates rendering may have failed.');
-              console.warn('[BLACKSCREEN] Possible causes: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, 4) depth test failed, 5) no draw calls executed');
+                firstPixel: firstPixel,
+                consecutiveBlackFrames: window._drawImage2BlackCount,
+                viewport: gl.getParameter(gl.VIEWPORT),
+                currentProgram: !!gl.getParameter(gl.CURRENT_PROGRAM),
+                cullFace: {
+                  enabled: gl.isEnabled(gl.CULL_FACE),
+                  mode: gl.getParameter(gl.CULL_FACE_MODE)
+                },
+                depthTest: {
+                  enabled: gl.isEnabled(gl.DEPTH_TEST),
+                  func: gl.getParameter(gl.DEPTH_FUNC)
+                },
+                colorMask: gl.getParameter(gl.COLOR_WRITEMASK),
+                elementBuffer: !!gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING),
+                arrayBuffer: !!gl.getParameter(gl.ARRAY_BUFFER_BINDING)
+              };
+              
+              // 只在关键节点打印（首次和阈值）
+              const threshold = window.autoFixBlackScreenThreshold || 3;
+              const shouldPrintDetails = window._drawImage2BlackCount === 1 || window._drawImage2BlackCount === threshold;
+              
+              if (shouldPrintDetails) {
+                window.debugLog.warn('BLACKSCREEN', 'WebGL readPixels center pixel is BLACK!', diagnostics);
+                // Also log to console for immediate visibility
+                console.log('[BLACKSCREEN] ========================================');
+                console.log('[BLACKSCREEN] WebGL canvas center pixel is BLACK (0,0,0,255)!');
+                console.log('[BLACKSCREEN] 连续黑屏次数:', window._drawImage2BlackCount);
+                
+                // 只在首次检测时打印详细诊断信息
+                if (window._drawImage2BlackCount === 1) {
+                  console.log('[BLACKSCREEN] Detailed diagnostics:', JSON.stringify(diagnostics, null, 2));
+                  console.log('[BLACKSCREEN] Possible causes:');
+                  console.log('[BLACKSCREEN]   1) Shader outputs black');
+                  console.log('[BLACKSCREEN]   2) Textures not sampling');
+                  console.log('[BLACKSCREEN]   3) Vertices outside view frustum');
+                  console.log('[BLACKSCREEN]   4) Depth test failed');
+                  console.log('[BLACKSCREEN]   5) No draw calls executed');
+                  console.log('[BLACKSCREEN]   6) CULL_FACE enabled (check diagnostics above)');
+                  window._blackScreenMessagesPrintedDebugLog.initial = true;
+                }
+                
+                // 自动触发修复（如果连续3次黑屏且自动修复可用）
+                if (window._drawImage2BlackCount >= threshold) {
+                  if (window.autoFix3DBlackScreen && !window.autoFixBlackScreenAttempted) {
+                    console.log('[BLACKSCREEN] 🔧 自动尝试修复（连续' + window._drawImage2BlackCount + '次黑屏）...');
+                    try {
+                      window.autoFix3DBlackScreen();
+                      window.autoFixBlackScreenAttempted = true;
+                      window._blackScreenMessagesPrintedDebugLog.fixed = true;
+                    } catch (e) {
+                      console.log('[BLACKSCREEN] ❌ 自动修复函数执行失败:', e);
+                    }
+                  } else if (window.autoFixBlackScreenAttempted && !window._blackScreenMessagesPrintedDebugLog.fixed) {
+                    console.log('[BLACKSCREEN] ⚠️ 自动修复已尝试过，但问题仍然存在。可能需要手动检查。');
+                    window._blackScreenMessagesPrintedDebugLog.fixed = true;
+                  }
+                }
+                
+                console.log('[BLACKSCREEN] ========================================');
+              }
+            } else {
+              // 重置黑屏计数（如果像素不是黑色）
+              window._drawImage2BlackCount = 0;
+              // 重置debugLog分支的标志
+              if (window._blackScreenMessagesPrintedDebugLog) {
+                window._blackScreenMessagesPrintedDebugLog.initial = false;
+                window._blackScreenMessagesPrintedDebugLog.threshold = false;
+                window._blackScreenMessagesPrintedDebugLog.fixed = false;
+              }
             }
           } else {
             // Even without debugLog, check for black pixels and warn
             if (centerPixel.r === 0 && centerPixel.g === 0 && centerPixel.b === 0 && centerPixel.a === 255) {
-              console.warn('[BLACKSCREEN] WebGL canvas center pixel is BLACK (0,0,0,255)! This indicates rendering may have failed.');
-              console.warn('[BLACKSCREEN] Possible causes: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, 4) depth test failed, 5) no draw calls executed');
+              // 跟踪连续黑屏次数
+              if (!window._drawImage2BlackCount) window._drawImage2BlackCount = 0;
+              window._drawImage2BlackCount++;
+              
+              // 初始化消息打印标志
+              if (!window._blackScreenMessagesPrinted) {
+                window._blackScreenMessagesPrinted = {
+                  initial: false,
+                  functionCheck: false,
+                  threshold: false,
+                  fixed: false
+                };
+              }
+              
+              // 只在关键节点打印详细消息，避免刷屏
+              // 使用全局标志避免与 drawElements 重复输出
+              if (!window._blackScreenGlobalMessagesPrinted) {
+                window._blackScreenGlobalMessagesPrinted = {
+                  first: false,
+                  threshold: false,
+                  detailed: false,
+                  autoFix: false,
+                  functionCheck: false,
+                  diagnoseRun: false
+                };
+              }
+              
+              const threshold = window.autoFixBlackScreenThreshold || 3;
+              // 只在首次检测到黑屏或达到阈值时打印
+              const shouldPrintDetails = window._drawImage2BlackCount === 1 || 
+                                        window._drawImage2BlackCount === threshold;
+              
+              if (shouldPrintDetails) {
+                // 只在首次检测时打印（全局只打印一次，避免与 drawElements 重复）
+                if (window._drawImage2BlackCount === 1 && !window._blackScreenGlobalMessagesPrinted.first) {
+                  console.log('[BLACKSCREEN] ========================================');
+                  console.log('[BLACKSCREEN] WebGL canvas center pixel is BLACK (0,0,0,255)!');
+                  console.log('[BLACKSCREEN] 连续黑屏次数:', window._drawImage2BlackCount);
+                  
+                  // 检查诊断和修复函数是否可用（只打印一次）
+                  if (!window._blackScreenGlobalMessagesPrinted.functionCheck) {
+                    const hasDiagnose = typeof window.diagnose3DBlackScreen === 'function';
+                    const hasAutoFix = typeof window.autoFix3DBlackScreen === 'function';
+                    
+                    if (hasDiagnose) {
+                      console.log('[BLACKSCREEN] 诊断函数可用');
+                    } else {
+                      console.log('[BLACKSCREEN] ⚠️ 诊断函数不可用');
+                    }
+                    
+                    if (hasAutoFix) {
+                      console.log('[BLACKSCREEN] 自动修复函数可用');
+                    } else {
+                      console.log('[BLACKSCREEN] ⚠️ 自动修复函数不可用');
+                    }
+                    
+                    window._blackScreenGlobalMessagesPrinted.functionCheck = true;
+                  }
+                  
+                  // 自动触发诊断（如果可用且是第一次检测，全局只运行一次）
+                  const hasDiagnose = typeof window.diagnose3DBlackScreen === 'function';
+                  if (hasDiagnose && !window._blackScreenGlobalMessagesPrinted.diagnoseRun) {
+                    console.log('[BLACKSCREEN] 🔍 自动运行诊断（首次检测）...');
+                    try {
+                      window.diagnose3DBlackScreen();
+                      window._blackScreenGlobalMessagesPrinted.diagnoseRun = true;
+                    } catch (e) {
+                      console.log('[BLACKSCREEN] ❌ 诊断函数执行失败:', e);
+                    }
+                  }
+                  
+                  console.log('[BLACKSCREEN] ========================================');
+                  window._blackScreenGlobalMessagesPrinted.first = true;
+                }
+                
+                // 自动触发修复（如果连续3次黑屏且自动修复可用，全局只运行一次）
+                if (window._drawImage2BlackCount >= threshold && !window._blackScreenGlobalMessagesPrinted.threshold) {
+                  const hasAutoFix = typeof window.autoFix3DBlackScreen === 'function';
+                  if (hasAutoFix && !window.autoFixBlackScreenAttempted) {
+                    console.log('[BLACKSCREEN] 🔧 自动尝试修复（连续' + window._drawImage2BlackCount + '次黑屏）...');
+                    try {
+                      window.autoFix3DBlackScreen();
+                      window.autoFixBlackScreenAttempted = true;
+                      window._blackScreenGlobalMessagesPrinted.autoFix = true;
+                    } catch (e) {
+                      console.log('[BLACKSCREEN] ❌ 自动修复函数执行失败:', e);
+                    }
+                  } else if (window.autoFixBlackScreenAttempted && !window._blackScreenGlobalMessagesPrinted.autoFix) {
+                    console.log('[BLACKSCREEN] ⚠️ 自动修复已尝试过，但问题仍然存在。');
+                    window._blackScreenGlobalMessagesPrinted.autoFix = true;
+                  }
+                  window._blackScreenGlobalMessagesPrinted.threshold = true;
+                }
+              }
+              // 非关键节点完全不打印，避免刷屏
+            } else {
+              // 重置黑屏计数（如果像素不是黑色）
+              if (window._drawImage2BlackCount > 0) {
+                if (!window._blackScreenMessagesPrinted || !window._blackScreenMessagesPrinted.recovered) {
+                  console.log('[BLACKSCREEN] ✅ 像素恢复正常，重置黑屏计数');
+                  if (window._blackScreenMessagesPrinted) {
+                    window._blackScreenMessagesPrinted.recovered = true;
+                  }
+                }
+                // 重置所有标志，以便下次黑屏时重新打印
+                window._drawImage2BlackCount = 0;
+                if (window._blackScreenMessagesPrinted) {
+                  window._blackScreenMessagesPrinted.initial = false;
+                  window._blackScreenMessagesPrinted.threshold = false;
+                  window._blackScreenMessagesPrinted.fixed = false;
+                  window._blackScreenMessagesPrinted.recovered = false;
+                }
+              }
             }
           }
           
@@ -350,10 +545,19 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
           // The flipY parameter from the caller indicates additional flip request
           // flipY=1 means the caller wants normal orientation (so we flip WebGL's inverted data)
           // flipY=0 means the caller wants inverted (so we don't flip, keeping WebGL's inversion)
+          
+          // CRITICAL: WebGL readPixels stores pixels with Y=0 at bottom (row 0 = bottom row)
+          // Canvas ImageData stores pixels with Y=0 at top (row 0 = top row)
+          // So we need to flip: Canvas row 0 (top) = WebGL row (height-1) (top)
+          // When flipY=true: we want normal orientation, so flip the Y axis
+          // When flipY=false: we want inverted, so don't flip (but this seems wrong?)
+          
           for (let row = 0; row < srcHeight; row++) {
             for (let col = 0; col < srcWidth; col++) {
-              // When flipY is true (1), we need to flip to correct WebGL's bottom-to-top order
-              // srcRow should be from bottom when flipY=true to flip the image correctly
+              // Canvas row 'row' (0 = top) should come from WebGL row (height-1-row) (which is top in WebGL)
+              // But wait: readPixels row 0 is bottom, row (height-1) is top
+              // So: Canvas top row (row=0) = WebGL top row (srcRow = height-1)
+              //     Canvas bottom row (row=height-1) = WebGL bottom row (srcRow = 0)
               const srcRow = flipY ? (srcHeight - 1 - row) : row;
               const srcIdx = (srcRow * srcWidth + col) * 4;
               const dstIdx = (row * srcWidth + col) * 4;
@@ -364,43 +568,88 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             }
           }
           
+          // CRITICAL DIAGNOSIS: Verify flipped pixel data
+          if (!window._flippedPixelsDiagnosisPrinted) {
+            const flippedCenterIdx = (centerY * srcWidth + centerX) * 4;
+            const flippedCenterPixel = { 
+              r: imageData.data[flippedCenterIdx], 
+              g: imageData.data[flippedCenterIdx+1], 
+              b: imageData.data[flippedCenterIdx+2], 
+              a: imageData.data[flippedCenterIdx+3] 
+            };
+            console.log('[DRAWIMAGE2] Y轴翻转后 - ImageData中心像素:', flippedCenterPixel);
+            console.log('[DRAWIMAGE2] flipY参数:', flipY, '(true=正常方向, false=倒置)');
+            console.log('[DRAWIMAGE2] 原始WebGL中心像素:', centerPixel);
+            if (flippedCenterPixel.r !== centerPixel.r || flippedCenterPixel.g !== centerPixel.g || 
+                flippedCenterPixel.b !== centerPixel.b || flippedCenterPixel.a !== centerPixel.a) {
+              console.warn('[DRAWIMAGE2] ⚠️ 翻转后像素与原始像素不匹配！可能Y轴翻转逻辑有问题');
+            }
+            window._flippedPixelsDiagnosisPrinted = true;
+          }
+          
           // CRITICAL FIX: Write DIRECTLY to device canvas to avoid being overwritten by 2D content
           // The offscreen canvas gets overwritten by 2D UI rendering before refresh0 copies it
           // So we must write 3D content directly to the visible device canvas
           if (deviceCtx) {
-            deviceCtx.putImageData(imageData, 0, 0);
-            log('[CanvasGraphics] drawImage2 - putImageData to DEVICE canvas completed');
-            
-            if (window.debugLog) {
-              window.debugLog.info('DRAWIMAGE2', 'putImageData to DEVICE canvas completed', {
-                size: `${srcWidth}x${srcHeight}`,
-                centerPixel: centerPixel
-              });
-            }
-            
-            // CRITICAL: Set flag to tell refresh0 to skip copying offscreen to device
-            // Otherwise refresh0 will overwrite our 3D content with 2D UI content
+            // CRITICAL: Set flag BEFORE writing to ensure refresh0 can detect it
+            // This prevents race condition where refresh0 checks flag before it's set
             window.gles2JustRendered = true;
             
-            if (window.debugLog) {
-              window.debugLog.info('DRAWIMAGE2', 'Set gles2JustRendered = true');
-            }
+            deviceCtx.putImageData(imageData, 0, 0);
             
-            // Verify
+            // CRITICAL: Also set a timestamp to help debug timing issues
+            window.gles2JustRenderedTime = Date.now();
+            
+            // CRITICAL DIAGNOSIS: Verify what was actually written to device canvas
             try {
+              // Check center pixel after putImageData
               const verifyData = deviceCtx.getImageData(srcWidth/2, srcHeight/2, 1, 1).data;
               const verifyPixel = { r: verifyData[0], g: verifyData[1], b: verifyData[2], a: verifyData[3] };
-              log('[CanvasGraphics] drawImage2 - device verify pixel:', verifyData[0], verifyData[1], verifyData[2], verifyData[3]);
+              
+              // Also check what should have been written (from ImageData)
+              const expectedCenterIdx = (centerY * srcWidth + centerX) * 4;
+              const expectedPixel = {
+                r: imageData.data[expectedCenterIdx],
+                g: imageData.data[expectedCenterIdx + 1],
+                b: imageData.data[expectedCenterIdx + 2],
+                a: imageData.data[expectedCenterIdx + 3]
+              };
+              
+              if (!window._putImageDataDiagnosisPrinted) {
+                console.log('[DRAWIMAGE2] putImageData诊断:');
+                console.log('  写入位置: (0, 0), 尺寸:', srcWidth + 'x' + srcHeight);
+                console.log('  ImageData中心像素 (应该写入的):', expectedPixel);
+                console.log('  Device canvas中心像素 (实际读取的):', verifyPixel);
+                if (verifyPixel.r !== expectedPixel.r || verifyPixel.g !== expectedPixel.g || 
+                    verifyPixel.b !== expectedPixel.b || verifyPixel.a !== expectedPixel.a) {
+                  console.error('[DRAWIMAGE2] ❌ 写入的像素与读取的像素不匹配！putImageData可能失败或位置错误');
+                } else {
+                  console.log('[DRAWIMAGE2] ✅ 写入的像素与读取的像素匹配');
+                }
+                window._putImageDataDiagnosisPrinted = true;
+              }
               
               if (window.debugLog) {
                 window.debugLog.info('DRAWIMAGE2', 'Device canvas verify pixel', verifyPixel);
                 
-                // 检查是否为黑色
+                // 检查是否为黑色（只打印一次，避免刷屏）
                 if (verifyPixel.r === 0 && verifyPixel.g === 0 && verifyPixel.b === 0) {
-                  window.debugLog.warn('BLACKSCREEN', 'Device canvas center pixel is BLACK!', {
-                    pixel: verifyPixel,
-                    sourceCenterPixel: centerPixel
-                  });
+                  if (!window._deviceCanvasBlackMessagePrinted) {
+                    window.debugLog.warn('BLACKSCREEN', 'Device canvas center pixel is BLACK!', {
+                      pixel: verifyPixel,
+                      sourceCenterPixel: centerPixel,
+                      note: '3D content was written but appears black. Check WebGL rendering state.'
+                    });
+                    console.log('[BLACKSCREEN] Device canvas center pixel is BLACK after write!');
+                    console.log('[BLACKSCREEN] This suggests the WebGL content itself is black.');
+                    console.log('[BLACKSCREEN] Run window.diagnose3DBlackScreen() for detailed diagnostics');
+                    window._deviceCanvasBlackMessagePrinted = true;
+                  }
+                } else {
+                  // 像素恢复正常时重置标志
+                  if (window._deviceCanvasBlackMessagePrinted) {
+                    window._deviceCanvasBlackMessagePrinted = false;
+                  }
                 }
               }
             } catch (e) {
@@ -413,24 +662,12 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             // Fallback to screenContext2D if no device context
             const targetCtx = window.screenContext2D || ctx;
             targetCtx.putImageData(imageData, 0, 0);
-            log('[CanvasGraphics] drawImage2 - putImageData to offscreen (fallback)');
-            
-            if (window.debugLog) {
-              window.debugLog.warn('DRAWIMAGE2', 'No deviceCtx, using fallback to offscreen canvas');
-            }
           }
           
         } catch (e) {
-          throttledError('webgl-readpixels', '[CanvasGraphics] drawImage2 - WebGL readPixels failed:', e);
-          if (window.debugLog) {
-            window.debugLog.error('DRAWIMAGE2', 'WebGL readPixels failed', {
-              error: e.message || String(e),
-              size: `${srcWidth}x${srcHeight}`
-            });
-          }
+          // 移除调用过程日志
         }
       } else {
-        log('[CanvasGraphics] drawImage2 - No WebGL context, using drawImage fallback');
         // Fallback for non-WebGL source: use regular drawImage
         ctx.save();
         ctx.globalCompositeOperation = 'source-over';
@@ -454,27 +691,21 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
     // Get RGBA data from context
     getRGBAFromCtx: function(lib, ctx, sx, sy, width, height) {
-      log('[CanvasGraphics] getRGBAFromCtx INNER - ctx:', !!ctx, 'sx:', sx, 'sy:', sy, 'w:', width, 'h:', height);
-      
       if (!ctx) {
-        warn('[CanvasGraphics] getRGBAFromCtx INNER - ctx is null');
         return null;
       }
       
       // Get canvas dimensions
       const canvas = ctx.canvas || ctx._canvas;
       if (!canvas) {
-        warn('[CanvasGraphics] getRGBAFromCtx INNER - no canvas found on ctx');
         return null;
       }
       
       const canvasWidth = canvas.width || 0;
       const canvasHeight = canvas.height || 0;
-      log('[CanvasGraphics] getRGBAFromCtx INNER - canvas size:', canvasWidth, 'x', canvasHeight);
       
       // Validate dimensions
       if (canvasWidth <= 0 || canvasHeight <= 0) {
-        warn('[CanvasGraphics] getRGBAFromCtx INNER - invalid canvas size:', canvasWidth, 'x', canvasHeight);
         return null;
       }
       
@@ -484,20 +715,15 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       if (sx + width > canvasWidth) { width = canvasWidth - sx; }
       if (sy + height > canvasHeight) { height = canvasHeight - sy; }
       
-      log('[CanvasGraphics] getRGBAFromCtx INNER - after clamp: sx:', sx, 'sy:', sy, 'w:', width, 'h:', height);
-      
       if (width <= 0 || height <= 0) {
-        warn('[CanvasGraphics] getRGBAFromCtx INNER - invalid dimensions after clamping');
         // Return empty array instead of null to prevent NullPointerException
         return new Int8Array(0);
       }
       
       try {
         const imageData = ctx.getImageData(sx, sy, width, height);
-        log('[CanvasGraphics] getRGBAFromCtx INNER - got imageData, size:', imageData.data.length);
         return new Int8Array(imageData.data.buffer);
       } catch (e) {
-        throttledError('getImageData', '[CanvasGraphics] getRGBAFromCtx INNER - getImageData failed:', e);
         // Return empty array instead of null
         return new Int8Array(0);
       }
@@ -765,52 +991,35 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
     // drawImage2 with signature (Object, Object, int sx, int sy, int x, int y, int width, int height, boolean flipY, boolean withAlpha)
     Native[cgBasePath + '.drawImage2.(Ljava/lang/Object;Ljava/lang/Object;IIIIIIZZ)V'] = function(addr, ctxAddr, canvasAddr, sx, sy, x, y, w, h, flipY, withAlpha) {
-      // ALWAYS log blitGL calls for debugging
-      log('[CanvasGraphics] drawImage2 (blitGL) called - ctxAddr:', ctxAddr, 'typeof:', typeof ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY);
-      log('[CanvasGraphics] drawImage2 - globals: screenContext2D:', !!window.screenContext2D, 'screenCanvas:', !!window.screenCanvas, 'GLES2Context:', !!window.GLES2Context);
+      // 移除调用过程日志
       
       let ctx = getCtx(ctxAddr);
       let canvas = getCtx(canvasAddr);
-      
-      log('[CanvasGraphics] drawImage2 - after getCtx: ctx:', ctx, 'typeof ctx:', typeof ctx, 'canvas:', canvas);
       
       // canvasAddr might be a canvas element reference from GLES2.getCanvasRef()
       if (!canvas && canvasAddr) {
         // Try to get from NativeMap
         if (typeof NativeMap !== 'undefined' && NativeMap.has && NativeMap.has(canvasAddr)) {
           canvas = NativeMap.get(canvasAddr);
-          log('[CanvasGraphics] drawImage2 - got canvas from NativeMap:', canvas);
         } else if (typeof J2ME !== 'undefined' && J2ME.NativeMap && J2ME.NativeMap.has(canvasAddr)) {
           canvas = J2ME.NativeMap.get(canvasAddr);
-          log('[CanvasGraphics] drawImage2 - got canvas from J2ME.NativeMap:', canvas);
         }
       }
       
       // If canvas is a WebGL handle, get its canvas element
       if (canvas && canvas.gl && canvas.gl.canvas) {
-        log('[CanvasGraphics] drawImage2 - extracting gl.canvas from handle');
         canvas = canvas.gl.canvas;
-      }
-      
-      // If canvas is an HTMLCanvasElement directly, use it
-      if (canvas instanceof HTMLCanvasElement) {
-        log('[CanvasGraphics] drawImage2 - canvas is HTMLCanvasElement directly');
       }
       
       // Always try to get WebGL canvas from global GLES2Context as primary source for blitGL
       // This is the most reliable way since _create stores the context globally
       if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
-        log('[CanvasGraphics] drawImage2 - canvas not valid HTMLCanvasElement, trying global GLES2Context. canvas:', canvas, 'GLES2Context:', window.GLES2Context);
         if (window.GLES2Context && window.GLES2Context.gl && window.GLES2Context.gl.canvas) {
-          log('[CanvasGraphics] drawImage2 - using global GLES2Context.gl.canvas');
           canvas = window.GLES2Context.gl.canvas;
         } else if (window.currentGLES2Handle && window.currentGLES2Handle.gl && window.currentGLES2Handle.gl.canvas) {
-          log('[CanvasGraphics] drawImage2 - using currentGLES2Handle.gl.canvas');
           canvas = window.currentGLES2Handle.gl.canvas;
         }
       }
-      
-      log('[CanvasGraphics] drawImage2 - final canvas:', canvas, 'width:', canvas ? canvas.width : 'N/A', 'height:', canvas ? canvas.height : 'N/A');
       
       // Handle canvas context vs canvas element
       let sourceCanvas = canvas;
@@ -820,65 +1029,35 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         sourceCanvas = canvas.canvas;
       }
       
-      // Log WebGL canvas info for blitGL debugging (reduced frequency to prevent spam)
-      var shouldLogBlit = Math.random() < 0.01; // Log ~1% of calls
-      if ((shouldLogBlit || DEBUG) && sourceCanvas && sourceCanvas instanceof HTMLCanvasElement) {
-        // Check if this is a WebGL canvas by checking for WebGL context
-        const webglCtx = sourceCanvas.getContext('webgl2') || sourceCanvas.getContext('webgl');
-        if (webglCtx) {
-          log('[CanvasGraphics] drawImage2 - WebGL canvas detected, size:', sourceCanvas.width, 'x', sourceCanvas.height);
-          // Try to read a pixel to check if canvas has content
-          try {
-            const pixel = new Uint8Array(4);
-            webglCtx.readPixels(0, 0, 1, 1, webglCtx.RGBA, webglCtx.UNSIGNED_BYTE, pixel);
-            log('[CanvasGraphics] drawImage2 - WebGL canvas pixel (0,0):', pixel[0], pixel[1], pixel[2], pixel[3]);
-          } catch (e) {
-            warn('[CanvasGraphics] drawImage2 - failed to read WebGL pixel:', e);
-          }
-        }
-      }
-      
       // Fallback for ctx: if ctxAddr is 0 or ctx is null, try to use screen context
       // CRITICAL FIX: Check for falsy ctx (including 0) not just null/undefined
       if (!ctx || ctx === 0 || ctxAddr === 0 || ctxAddr === null) {
-        log('[CanvasGraphics] drawImage2 - ctx fallback triggered, ctx:', ctx, 'ctxAddr:', ctxAddr);
         // Try to get screen context from global
         if (window.screenContext2D) {
           ctx = window.screenContext2D;
-          log('[CanvasGraphics] drawImage2 - using screenContext2D as fallback, ctx:', ctx);
         } else if (window.screenContextInfo && window.screenContextInfo.ctx) {
           ctx = window.screenContextInfo.ctx;
-          log('[CanvasGraphics] drawImage2 - using screenContextInfo as fallback');
         } else if (window.screenCanvas) {
           ctx = window.screenCanvas.getContext('2d');
-          log('[CanvasGraphics] drawImage2 - using screenCanvas as fallback');
-        } else {
-          throttledError('no-fallback', '[CanvasGraphics] drawImage2 - NO FALLBACK AVAILABLE!');
         }
       }
       
       if (!ctx || !sourceCanvas) {
-        throttledError('missing-ctx-canvas', '[CanvasGraphics] drawImage2 - missing ctx or canvas');
         // As a last resort for blitGL, try to draw directly to screen canvas
         if (sourceCanvas && window.screenCanvas) {
           try {
             const screenCtx = window.screenCanvas.getContext('2d');
             if (screenCtx) {
-              log('[CanvasGraphics] drawImage2 - using screenCanvas directly as LAST RESORT');
               ctx = screenCtx;
             }
           } catch (e) {
-            throttledError('last-resort', '[CanvasGraphics] drawImage2 - last resort failed:', e);
+            // 移除调用过程日志
           }
         }
         if (!ctx) {
-          throttledError('aborting', '[CanvasGraphics] drawImage2 - ABORTING: no ctx available');
           return;
         }
       }
-      
-      // Final check and log
-      log('[CanvasGraphics] drawImage2 - FINAL: ctx:', ctx, 'sourceCanvas:', sourceCanvas, 'sourceCanvas.width:', sourceCanvas?.width);
       
       // Clamp source dimensions to canvas size to avoid IndexOutOfBounds
       const srcWidth = sourceCanvas.width || 0;
@@ -888,11 +1067,9 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       // This happens when swapBuffers is called with targetWidth/targetHeight = 0
       if (w <= 0) {
         w = srcWidth;
-        log('[CanvasGraphics] drawImage2 - w was 0, using srcWidth:', w);
       }
       if (h <= 0) {
         h = srcHeight;
-        log('[CanvasGraphics] drawImage2 - h was 0, using srcHeight:', h);
       }
       
       // Adjust source coordinates if they exceed bounds
@@ -903,7 +1080,6 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       
       // Skip if nothing to draw (after all adjustments)
       if (w <= 0 || h <= 0) {
-        log('[CanvasGraphics] drawImage2 - skipping, final w/h:', w, h);
         return;
       }
       
@@ -911,7 +1087,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         // Pass flipY and withAlpha parameters correctly
         CanvasGraphicsNatives.drawImage2(null, ctx, sourceCanvas, sx, sy, x, y, w, h, flipY, withAlpha);
       } catch (e) {
-        throttledError('drawImage2-final', '[CanvasGraphics] drawImage2 error:', e);
+        // 移除调用过程日志
       }
     };
 
@@ -965,11 +1141,9 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         // This is needed because 3D content is rendered directly to device canvas
         // and games may call getRGB to read pixel data for collision detection, etc.
         if (window.MIDP && window.MIDP.deviceContext) {
-          log('[CanvasGraphics] getRGBAFromCtx - using MIDP.deviceContext as fallback for 3D content');
           ctx = window.MIDP.deviceContext;
           usedFallback = true;
         } else {
-          warn('[CanvasGraphics] getRGBAFromCtx - ctx is null, no fallback available');
           const emptyArrayAddr = J2ME.newByteArray(0);
           return emptyArrayAddr;
         }
@@ -981,7 +1155,6 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         if (canvas) {
           w = w <= 0 ? canvas.width : w;
           h = h <= 0 ? canvas.height : h;
-          log('[CanvasGraphics] getRGBAFromCtx - using canvas dimensions:', w, 'x', h);
         }
       }
       
@@ -990,16 +1163,13 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       // CRITICAL FIX: Convert JavaScript Int8Array to proper Java byte array
       // Direct return of Int8Array doesn't work - must use J2ME.newByteArray
       if (!result || result.length === 0) {
-        warn('[CanvasGraphics] getRGBAFromCtx - result is empty');
         const emptyArrayAddr = J2ME.newByteArray(0);
         return emptyArrayAddr;
       }
       
-      log('[CanvasGraphics] getRGBAFromCtx - creating Java byte array, size:', result.length);
       const arrayAddr = J2ME.newByteArray(result.length);
       const array = J2ME.getArrayFromAddr(arrayAddr);
       array.set(result);
-      log('[CanvasGraphics] getRGBAFromCtx - Java byte array created successfully');
       return arrayAddr;
     };
 

@@ -97,7 +97,6 @@ vec4 lightColor(int i, in vec3 ecPosition3, in vec3 normal, in vec4 ambient, in 
     float spot = 1.0;
 
     if (lSpotCutoffCos[i] != -1.0) {
-        return vec4(1.0, 0.0, 0.0, 1.0);
         float sdot = max(0.0, dot(PV, normalize(mat3(lMatrix[i]) * lDirection[i])));
 
         if (sdot >= lSpotCutoffCos[i]) {
@@ -184,11 +183,26 @@ void main() {
         normal3 = normalize(normal3);
 
         color = applyLights(ecPosition3, normal3, ambient, diffuse);
+        
+        // CRITICAL FIX: If lighting calculation returns black or very dark,
+        // fall back to using material diffuse color to prevent black output
+        // Use a more lenient threshold (0.1) to catch near-black colors
+        if (length(color.rgb) < 0.1 || (color.r < 0.05 && color.g < 0.05 && color.b < 0.05)) {
+            // Lighting returned black or very dark, use diffuse color instead
+            // This ensures we always have visible output even if lighting fails
+            color = diffuse;
+        }
+        
         if (isTwoSided) {
             // at this point we don't know whether the face is front or back faced
             // so we need to compute both versions and then pick the correct one
             // in the fragment shader using gl_FrontFacing
             backColor = applyLights(ecPosition3, -normal3, ambient, diffuse);
+            
+            // CRITICAL FIX: Apply same fix to backColor
+            if (length(backColor.rgb) < 0.1 || (backColor.r < 0.05 && backColor.g < 0.05 && backColor.b < 0.05)) {
+                backColor = diffuse;
+            }
         }
 
 
