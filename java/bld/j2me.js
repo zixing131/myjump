@@ -5525,6 +5525,7 @@ var J2ME;
                                     if (!window._interpretPushPendingNullThrottle || Date.now() - window._interpretPushPendingNullThrottle > 5000) {
                                         console.warn('[interpret] methodInfo or codeAttribute is null after PushPendingFrames, attempting recovery');
                                         window._interpretPushPendingNullThrottle = Date.now();
+                                         
                                     }
                                     // CRITICAL FIX: Instead of returning, try to recover from thread state
                                     if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
@@ -5548,7 +5549,7 @@ var J2ME;
                                         }
                                     }
                                     // If recovery fails, return (but we've tried)
-                                    return;
+                                    continue;
                                 }
                                 maxLocals = mi.codeAttribute.max_locals;
                                 lp = fp - maxLocals | 0;

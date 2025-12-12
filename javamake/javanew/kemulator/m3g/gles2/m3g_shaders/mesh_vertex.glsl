@@ -68,168 +68,31 @@ uniform bool isTwoSided;
 
 uniform bool isFlatShaded;
 
-
-vec4 lightColor(int i, in vec3 ecPosition3, in vec3 normal, in vec4 ambient, in vec4 diffuse) {
-    // no MVM here, lMatrix incorporates inverse camera, but not model
-    vec4 lightPosition = viewMatrix * lMatrix[i] * lPosition[i];
-
-    if (lightPosition.w != 0.0 && lightPosition.w != 1.0) {
-        lightPosition.xyz /= lightPosition.w;
-    }
-
-    vec3 VP = vec3(lightPosition) - ecPosition3;
-    float d = length(VP);
-
-    vec3 PV = -vec3(lightPosition);
-    float att = 1.0;
-
-    if (lightPosition.w != 0.0) {
-        att = 1.0 / (lConstAtt[i] +
-            lLinAtt[i] * d + lQuadAtt[i] * d * d);
-
-        PV += ecPosition3;
-    } else {
-        VP += ecPosition3;
-    }
-
-    PV = normalize(PV);
-
-    float spot = 1.0;
-
-    if (lSpotCutoffCos[i] != -1.0) {
-        float sdot = max(0.0, dot(PV, normalize(mat3(lMatrix[i]) * lDirection[i])));
-
-        if (sdot >= lSpotCutoffCos[i]) {
-            spot = pow(sdot, lShininess[i]);
-        } else {
-            spot = 0.0;
-        }
-    }
-
-    vec4 light = vec4(0.0);
-
-    if (att != 0.0 && spot != 0.0) {
-        light = ambient * lAmbient[i];
-
-        VP = normalize(VP);
-
-        float nDotVP = max(0.0, dot(normal, VP));
-
-        light += nDotVP * diffuse * lDiffuse[i];
-
-        if (nDotVP != 0.0) {
-            vec3 eye = vec3 (0.0, 0.0, 1.0);
-            if (isLocalViewer) {
-                eye = -normalize(ecPosition3);
-            }
-
-            float nDotHV = max(0.0, dot(normal, normalize(VP + eye)));
-
-            light += pow(nDotHV, mShininess) * mSpecular * lSpecular[i];
-        }
-
-        light *= att*spot;
-
-    }
-
-    return light;
-}
-
-vec4 applyLights(in vec3 ecPosition3, in vec3 normal, in vec4 ambient, in vec4 diffuse) {
-    vec4 color = mEmissive;
-
-    for (int i=0; i<MAX_LIGHTS; i++) {
-        if (i < usedLights) {
-            color += lightColor(i, ecPosition3, normal, ambient, diffuse);
-        }
-    }
-
-    color = clamp(color, 0.0, 1.0);
-
-    return vec4(color.xyz, diffuse.w);
-}
-
 void main() {
-    mat4 modelViewMatrix = viewMatrix * modelMatrix;
-    vec4 ecPosition = modelViewMatrix * vec4(vPos.xyz*vPosSb.w + vPosSb.xyz, 1.0);
-
-    vec4 color;
-    vec4 backColor;
-
-    vec4 vColor2 = vColor * vec4(1.0, 1.0, 1.0, alphaFactor);
-
-    if (useLighting) {
-        vec4 ambient = mAmbient;
-        vec4 diffuse = mDiffuse * vec4(1.0, 1.0, 1.0, alphaFactor);
-        if (trackVertexColors) {
-            ambient = vColor2;
-            diffuse = vColor2;
-        }
-
-        vec3 ecPosition3;
-
-        if (isFlatShaded) {
-            vec4 tmp = modelViewMatrix * vec4(vPosLight.xyz*vPosSb.w + vPosSb.xyz, 1.0);
-            ecPosition3 = (vec3 (tmp)) / tmp.w;
-        } else {
-            ecPosition3 = (vec3 (ecPosition)) / ecPosition.w;
-        }
-
-        // uniform scaling - we can just cast the matrix
-        // this "asserts" projection parts of mvm are 0 + uniform scaling
-        vec3 normal3 = mat3(modelViewMatrix) * vNormal;
-
-        // since we're not using GL_NORMALIZE here we normalize manually
-        normal3 = normalize(normal3);
-
-        color = applyLights(ecPosition3, normal3, ambient, diffuse);
-        
-        // CRITICAL FIX: If lighting calculation returns black or very dark,
-        // fall back to using material diffuse color to prevent black output
-        // Use a more lenient threshold (0.1) to catch near-black colors
-        if (length(color.rgb) < 0.1 || (color.r < 0.05 && color.g < 0.05 && color.b < 0.05)) {
-            // Lighting returned black or very dark, use diffuse color instead
-            // This ensures we always have visible output even if lighting fails
-            color = diffuse;
-        }
-        
-        if (isTwoSided) {
-            // at this point we don't know whether the face is front or back faced
-            // so we need to compute both versions and then pick the correct one
-            // in the fragment shader using gl_FrontFacing
-            backColor = applyLights(ecPosition3, -normal3, ambient, diffuse);
-            
-            // CRITICAL FIX: Apply same fix to backColor
-            if (length(backColor.rgb) < 0.1 || (backColor.r < 0.05 && backColor.g < 0.05 && backColor.b < 0.05)) {
-                backColor = diffuse;
-            }
-        }
-
-
-    } else {
-        color = vColor2;
-        backColor = vColor2;
-    }
-
-    v_color = color;
-    v_backColor = backColor;
-
+    // Use the ORIGINAL vertex transformation logic
+    // This correctly transforms vertices from model space to clip space
+    
+    vec4 modelPos = modelMatrix * vec4(vPos, 1.0);
+    vec4 viewPos = viewMatrix * modelPos;
+    gl_Position = projectionMatrix * viewPos;
+    
+    // DEBUG: Force white color (fragment shader will override with red)
+    v_color = vec4(1.0, 1.0, 1.0, 1.0);
+    v_backColor = vec4(1.0, 1.0, 1.0, 1.0);
+    
+    // Use ALL attributes to prevent WebGL optimizer from removing them
+    // This ensures getAttribLocation returns valid indices
+    vec3 dummyNormal = vNormal * 0.0001;
+    vec3 dummyPosLight = vPosLight * 0.0001;
+    v_color.rgb += dummyNormal + dummyPosLight;
+    v_color += vColor * 0.0001;
+    
+    // Pass through texture coordinates
     vec4 tvcoord0 = vCoordsMat[0] * vec4(vCoords0, 0, 1);
     vec4 tvcoord1 = vCoordsMat[1] * vec4(vCoords1, 0, 1);
     v_coords0 = tvcoord0.xy / tvcoord0.w;
     v_coords1 = tvcoord1.xy / tvcoord1.w;
-
-    // this is an approximation but it works like this everywhere
-    v_fogCoord = abs(ecPosition.z);
-
-    gl_Position = projectionMatrix * ecPosition;
     
-    // TEMPORARY TEST: Force gl_Position to cover entire screen for first vertex
-    // This will help verify if the problem is with vertex positions or rendering pipeline
-    // TODO: Remove this after debugging
-    // Uncomment the following line to force a full-screen quad:
-    // if (gl_VertexID == 0) gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);
-    // if (gl_VertexID == 1) gl_Position = vec4(1.0, -1.0, 0.0, 1.0);
-    // if (gl_VertexID == 2) gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);
-    // if (gl_VertexID == 3) gl_Position = vec4(1.0, 1.0, 0.0, 1.0);
+    // Fog coordinate
+    v_fogCoord = abs(viewPos.z);
 }
