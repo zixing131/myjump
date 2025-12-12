@@ -504,15 +504,15 @@ public final class Emulator3D {
 									int a = sampleBuffer[3] & 0xFF;
 									
 									// Log pixel value for debugging black screen issue (throttled)
-									System.out.println("[Emulator3D] swapBuffers - CRITICAL: Sample pixel at center (" + centerX + "," + centerY + "): R=" + r + " G=" + g + " B=" + b + " A=" + a);
+									// System.out.println("[Emulator3D] swapBuffers - CRITICAL: Sample pixel at center (" + centerX + "," + centerY + "): R=" + r + " G=" + g + " B=" + b + " A=" + a);
 									
 									// If pixel is all black (0,0,0,255), warn about potential rendering issue
-									if (r == 0 && g == 0 && b == 0 && a == 255) {
-										System.err.println("[Emulator3D] swapBuffers - WARNING: Center pixel is black (0,0,0,255) - rendering may have failed!");
-										System.err.println("[Emulator3D] swapBuffers - This suggests: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, or 4) depth test failed");
-									} else if (r > 0 || g > 0 || b > 0) {
-										System.out.println("[Emulator3D] swapBuffers - Pixel is NOT black - rendering appears successful!");
-									}
+									// if (r == 0 && g == 0 && b == 0 && a == 255) {
+									// 	System.err.println("[Emulator3D] swapBuffers - WARNING: Center pixel is black (0,0,0,255) - rendering may have failed!");
+									// 	System.err.println("[Emulator3D] swapBuffers - This suggests: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, or 4) depth test failed");
+									// } else if (r > 0 || g > 0 || b > 0) {
+									// 	System.out.println("[Emulator3D] swapBuffers - Pixel is NOT black - rendering appears successful!");
+									// }
 								} catch (Exception e) {
 									System.err.println("[Emulator3D] swapBuffers - Failed to read sample pixel: " + e.getMessage());
 									e.printStackTrace();
@@ -866,7 +866,7 @@ public final class Emulator3D {
 					// Check if projection matrix looks valid (near/far plane, FOV, etc.)
 					float near = projMatrix[14] / (projMatrix[10] - 1.0f);
 					float far = projMatrix[14] / (projMatrix[10] + 1.0f);
-					System.out.println("[Emulator3D] setupCamera - Projection matrix set: near=" + near + ", far=" + far);
+					// System.out.println("[Emulator3D] setupCamera - Projection matrix set: near=" + near + ", far=" + far);
 					// Check if near/far are reasonable (near > 0, far > near)
 					if (near <= 0 || far <= near) {
 						System.err.println("[Emulator3D] setupCamera - WARNING: Invalid near/far planes! near=" + near + ", far=" + far);
@@ -889,11 +889,11 @@ public final class Emulator3D {
 					float tx = viewMatrix[12];
 					float ty = viewMatrix[13];
 					float tz = viewMatrix[14];
-					System.out.println("[Emulator3D] setupCamera - View matrix set: translation=(" + tx + "," + ty + "," + tz + ")");
+					// System.out.println("[Emulator3D] setupCamera - View matrix set: translation=(" + tx + "," + ty + "," + tz + ")");
 					// Check if view matrix translation is reasonable
-					if (Math.abs(tx) > 1000 || Math.abs(ty) > 1000 || Math.abs(tz) > 1000) {
-						System.err.println("[Emulator3D] setupCamera - WARNING: View matrix translation is very large! Camera may be positioned incorrectly!");
-					}
+					// if (Math.abs(tx) > 1000 || Math.abs(ty) > 1000 || Math.abs(tz) > 1000) {
+					// 	System.err.println("[Emulator3D] setupCamera - WARNING: View matrix translation is very large! Camera may be positioned incorrectly!");
+					// }
 					lastCameraLogTime = now;
 				}
 				} else {
