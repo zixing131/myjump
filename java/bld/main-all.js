@@ -2,11 +2,7 @@
 //var midiplayer;
 
 //debugString ByteStream.readString(readStringFast)
-var debugString=0;
-
-//是否启用兼容模式（兼容模式使用旧的classes.jar）
-var enginemode='classesold.jar';
-
+var debugString= 
 //是否是主页
 var isIndex = window.location.href.indexOf('main.html')==-1;
 var isLoadJarFinished = false;
@@ -14412,16 +14408,6 @@ var getMobileInfo = new Promise(function(resolve, reject) {
     resolve();
   });
 });
-
-if(config.enginemode)
-  {
-    try{ 
-      enginemode=config.enginemode.split('-')[1];
-    }
-    catch(err){
-
-    }
-  }
  
 if(!isIndex)
 {
@@ -14429,10 +14415,6 @@ if(!isIndex)
   var loadingMIDletPromises = [getMobileInfo];
   var loadingPromises = [initFS];
   var classedjarname='java/classes.jar';
-  if(enginemode){
-    //启用兼容模式
-    classedjarname='java/'+enginemode;
-  }
   loadingPromises.push(load(classedjarname, "arraybuffer").then(function(data) {
     console.log("buildin enter");
     try{

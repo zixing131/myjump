@@ -210,14 +210,12 @@ if(!isbatch)
 
   function openJar(jarname, midletClassName, islocaljar) {
     //var mycheck1=document.getElementById('mycheck1'); 
-    //var mycheck2=document.getElementById('mycheck2'); 
-    var enginemode=document.getElementById('enginemode'); 
+    //var mycheck2=document.getElementById('mycheck2');  
     var href = 'main.html?jars=jar/' + jarname + '&jad=&midletClassName=' + midletClassName;
     if (islocaljar) {
       href = 'main.html?localjar=' + jarname;
     }
-    
-    href+="&enginemode="+enginemode.options[enginemode.selectedIndex].value; 
+     
     /*
     if(mycheck2.checked)
     {
@@ -339,8 +337,7 @@ var myconfig = function() {
     canvasSize: 0,
     gamepadSize: 3,
     gameresize: 0,
-    gameindex: 0,
-    enginemode:1
+    gameindex: 0
   };
   if (window.localStorage["my"] === undefined) {
     window.localStorage["my"] = JSON.stringify(myInfo);
@@ -370,17 +367,14 @@ var config01 =new myconfig();
 
 var csize = config01.getValueByKey("canvasSize");
 var gsize = config01.getValueByKey("gamepadSize");
-var gresize = config01.getValueByKey("gameresize");
-var enginemode= config01.getValueByKey("enginemode");
+var gresize = config01.getValueByKey("gameresize"); 
 var gamepadSize = document.getElementById('gamepadSize');
 var canvasSize = document.getElementById('canvasSize');
-var gameresize = document.getElementById('gameresize');
-var enginemodeckb = document.getElementById('enginemode');
+var gameresize = document.getElementById('gameresize'); 
 
 canvasSize.selectedIndex = csize;
 gamepadSize.selectedIndex = gsize;
-gameresize.selectedIndex = gresize;
-enginemodeckb.selectedIndex = enginemode;
+gameresize.selectedIndex = gresize; 
 
 window.addEventListener("load", function() {
 
@@ -388,11 +382,7 @@ window.addEventListener("load", function() {
   refreshGameList();
 
 })
-
-function enginemodeOnclick(){
-  var enginemodeckb = document.getElementById('enginemode');
-  config01.setValueByKey("enginemode", enginemodeckb.selectedIndex); 
-} 
+ 
 
 function canvasSizeHandleChange(){
   var canvasSize = document.getElementById('canvasSize');
