@@ -38,6 +38,10 @@ public final class Emulator3D {
 	private static long lastBlendModeLogTime = 0;
 	private static long lastLightsLogTime = 0;
 	private static long lastDepthLogTime = 0;
+	// Pixel sampling throttling to prevent browser freeze
+	private static long lastPixelSampleTime = 0;
+	private static final long PIXEL_SAMPLE_INTERVAL = 5000; // Only sample pixel every 5 seconds
+	private static boolean pixelSamplingEnabled = false; // Disabled by default to prevent performance issues
 
 	public static final int MaxViewportWidth = 2048;
 	public static final int MaxViewportHeight = 2048;
@@ -110,6 +114,22 @@ public final class Emulator3D {
 		}
 
 		return instance;
+	}
+	
+	/**
+	 * Enable or disable pixel sampling for debugging.
+	 * Pixel sampling is disabled by default to prevent browser freeze.
+	 * When enabled, it will sample a pixel every 5 seconds to verify rendering.
+	 * 
+	 * @param enabled true to enable pixel sampling, false to disable
+	 */
+	public static void setPixelSamplingEnabled(boolean enabled) {
+		pixelSamplingEnabled = enabled;
+		if (enabled) {
+			System.out.println("[Emulator3D] Pixel sampling enabled - will sample pixel every " + (PIXEL_SAMPLE_INTERVAL / 1000) + " seconds");
+		} else {
+			System.out.println("[Emulator3D] Pixel sampling disabled");
+		}
 	}
 
 	/*
@@ -234,10 +254,57 @@ public final class Emulator3D {
 	}
 
 	public void swapBuffers() {
-		swapBuffers(0, 0, targetWidth, targetHeight);
+		// CRITICAL FIX: Get dimensions from target object instead of static variables
+		// Static variables may be 0 if bindTarget wasn't called or was called with invalid dimensions
+		int w = targetWidth;
+		int h = targetHeight;
+		
+		// If static variables are 0, try to get dimensions from target object
+		if (w <= 0 || h <= 0) {
+			if (this.target != null) {
+				if (this.target instanceof CanvasGraphics) {
+					w = ((CanvasGraphics) this.target).getWidth();
+					h = ((CanvasGraphics) this.target).getSafeHeight();
+				} else if (this.target instanceof Image2D) {
+					w = ((Image2D) this.target).getWidth();
+					h = ((Image2D) this.target).getHeight();
+				}
+				
+				// Update static variables for next time
+				if (w > 0 && h > 0) {
+					targetWidth = w;
+					targetHeight = h;
+				}
+			}
+		}
+		
+		// If still 0, log error and return
+		if (w <= 0 || h <= 0) {
+			System.err.println("[Emulator3D] swapBuffers - Cannot determine target dimensions! targetWidth=" + targetWidth + " targetHeight=" + targetHeight + " target=" + (this.target != null ? this.target.getClass().getName() : "null"));
+			return;
+		}
+		
+		swapBuffers(0, 0, w, h);
 	}
 
 	public final void swapBuffers(int x, int y, int width, int height) {
+		// CRITICAL FIX: If width or height is 0, try to get dimensions from target object
+		if ((width <= 0 || height <= 0) && this.target != null) {
+			if (this.target instanceof CanvasGraphics) {
+				width = ((CanvasGraphics) this.target).getWidth();
+				height = ((CanvasGraphics) this.target).getSafeHeight();
+			} else if (this.target instanceof Image2D) {
+				width = ((Image2D) this.target).getWidth();
+				height = ((Image2D) this.target).getHeight();
+			}
+			
+			// Update static variables for next time
+			if (width > 0 && height > 0) {
+				targetWidth = width;
+				targetHeight = height;
+			}
+		}
+		
 		// Throttle logging to reduce console spam
 		long now = System.currentTimeMillis();
 		boolean shouldLog = (lastSwapLogTime == 0 || now - lastSwapLogTime > 1000);
@@ -251,6 +318,13 @@ public final class Emulator3D {
 			System.out.println("[Emulator3D] swapBuffers called - x:" + x + " y:" + y + " w:" + width + " h:" + height + " target:" + targetName);
 			lastSwapLogTime = now;
 		}
+		
+		// CRITICAL FIX: Validate dimensions before proceeding
+		if (width <= 0 || height <= 0) {
+			System.err.println("[Emulator3D] swapBuffers - Invalid dimensions! width=" + width + " height=" + height + " target=" + (this.target != null ? this.target.getClass().getName() : "null"));
+			return;
+		}
+		
 		if (this.target != null) {
 			try {
 				if (this.target instanceof Image2D) {
@@ -393,37 +467,48 @@ public final class Emulator3D {
 						// This ensures we get the latest rendered frame, not the previous one
 						if (GLES2.bound) {
 							// Finish all rendering commands before reading pixels
+							// Note: finish() is a synchronous blocking call, but it's necessary to ensure
+							// all rendering is complete before copying to 2D canvas
 							GLES2.finish();
 							
-							// Read a sample pixel to verify rendering
-							// Note: readPixels uses bottom-left origin, so (0,0) is bottom-left corner
-							try {
-								byte[] sampleBuffer = new byte[4];
-								// Read center pixel (WebGL coordinate system: origin at bottom-left)
-								int centerX = width / 2;
-								int centerY = height / 2;
-								
-								// Also try reading from multiple positions to verify
-								GLES2.readPixels(centerX, centerY, 1, 1, sampleBuffer);
-								int r = sampleBuffer[0] & 0xFF;
-								int g = sampleBuffer[1] & 0xFF;
-								int b = sampleBuffer[2] & 0xFF;
-								int a = sampleBuffer[3] & 0xFF;
-								
-								// Always log pixel value for debugging black screen issue (not throttled)
-								// This is critical for diagnosing the black screen problem
-								System.out.println("[Emulator3D] swapBuffers - CRITICAL: Sample pixel at center (" + centerX + "," + centerY + "): R=" + r + " G=" + g + " B=" + b + " A=" + a);
-								
-								// If pixel is all black (0,0,0,255), warn about potential rendering issue
-								if (r == 0 && g == 0 && b == 0 && a == 255) {
-									System.err.println("[Emulator3D] swapBuffers - WARNING: Center pixel is black (0,0,0,255) - rendering may have failed!");
-									System.err.println("[Emulator3D] swapBuffers - This suggests: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, or 4) depth test failed");
-								} else if (r > 0 || g > 0 || b > 0) {
-									System.out.println("[Emulator3D] swapBuffers - Pixel is NOT black - rendering appears successful!");
+							// CRITICAL FIX: Throttle pixel sampling to prevent browser freeze
+							// readPixels is a synchronous blocking operation that can freeze the browser
+							// if called too frequently in a tight loop. Only sample pixel occasionally.
+							long pixelSampleNow = System.currentTimeMillis();
+							boolean shouldSamplePixel = pixelSamplingEnabled && 
+								(lastPixelSampleTime == 0 || pixelSampleNow - lastPixelSampleTime > PIXEL_SAMPLE_INTERVAL);
+							
+							if (shouldSamplePixel) {
+								lastPixelSampleTime = pixelSampleNow;
+								// Read a sample pixel to verify rendering
+								// Note: readPixels uses bottom-left origin, so (0,0) is bottom-left corner
+								try {
+									byte[] sampleBuffer = new byte[4];
+									// Read center pixel (WebGL coordinate system: origin at bottom-left)
+									int centerX = width / 2;
+									int centerY = height / 2;
+									
+									// Also try reading from multiple positions to verify
+									GLES2.readPixels(centerX, centerY, 1, 1, sampleBuffer);
+									int r = sampleBuffer[0] & 0xFF;
+									int g = sampleBuffer[1] & 0xFF;
+									int b = sampleBuffer[2] & 0xFF;
+									int a = sampleBuffer[3] & 0xFF;
+									
+									// Log pixel value for debugging black screen issue (throttled)
+									System.out.println("[Emulator3D] swapBuffers - CRITICAL: Sample pixel at center (" + centerX + "," + centerY + "): R=" + r + " G=" + g + " B=" + b + " A=" + a);
+									
+									// If pixel is all black (0,0,0,255), warn about potential rendering issue
+									if (r == 0 && g == 0 && b == 0 && a == 255) {
+										System.err.println("[Emulator3D] swapBuffers - WARNING: Center pixel is black (0,0,0,255) - rendering may have failed!");
+										System.err.println("[Emulator3D] swapBuffers - This suggests: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, or 4) depth test failed");
+									} else if (r > 0 || g > 0 || b > 0) {
+										System.out.println("[Emulator3D] swapBuffers - Pixel is NOT black - rendering appears successful!");
+									}
+								} catch (Exception e) {
+									System.err.println("[Emulator3D] swapBuffers - Failed to read sample pixel: " + e.getMessage());
+									e.printStackTrace();
 								}
-							} catch (Exception e) {
-								System.err.println("[Emulator3D] swapBuffers - Failed to read sample pixel: " + e.getMessage());
-								e.printStackTrace();
 							}
 						}
 						
@@ -1316,12 +1401,13 @@ public final class Emulator3D {
 			}
 
 			GLES2.uniform1i(meshProgram.uUsedTextures, usedTextures);
-			if (usedTextures == 0) {
-				System.err.println("[Emulator3D] draw - WARNING: No textures bound! SKIPPING this draw call to test if it's the culprit.");
-				// TEMPORARY: Skip draw calls without textures to see if they're covering everything
-				return;
-			} else {
+			// Allow rendering without textures (using vertex colors or material colors)
+			// Some objects may not have textures and should still be rendered
+			if (usedTextures > 0) {
 				System.out.println("[Emulator3D] draw - Bound " + usedTextures + " texture(s)");
+			} else {
+				// Log but don't skip - allow rendering without textures
+				System.out.println("[Emulator3D] draw - No textures bound, rendering with vertex/material colors only");
 			}
 
 

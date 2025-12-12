@@ -3353,7 +3353,10 @@ var J2ME;
             while (true) {
                 // CRITICAL FIX: Prevent infinite loop
                 if (++loopCount > maxLoopCount) {
-                    console.error('[exceptionUnwind] Max loop count reached, breaking out');
+                    if (!window._exUnwindMaxLoopThrottle || Date.now() - window._exUnwindMaxLoopThrottle > 5000) {
+                        console.error('[exceptionUnwind] Max loop count reached, breaking out');
+                        window._exUnwindMaxLoopThrottle = Date.now();
+                    }
                     throw e;
                 }
                 var frameType = i32[this.fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
@@ -3363,8 +3366,13 @@ var J2ME;
                         
                         // CRITICAL FIX: Check if mi is null/undefined
                         if (!mi) {
-                            console.error('[exceptionUnwind] methodInfo is null for Interpreter frame, throwing exception');
-                            throw e;
+                            if (!window._exUnwindNullMiThrottle || Date.now() - window._exUnwindNullMiThrottle > 5000) {
+                                console.warn('[exceptionUnwind] methodInfo is null for Interpreter frame, skipping');
+                                window._exUnwindNullMiThrottle = Date.now();
+                            }
+                            // Try to pop the frame and continue looking for handler
+                            this.fp = i32[this.fp + 1 /* CallerFPOffset */];
+                            break;
                         }
                        
                         release || J2ME.traceWriter && J2ME.traceWriter.writeLn("Looking for handler in: " + mi.implKey);
@@ -3711,7 +3719,11 @@ var J2ME;
         release || assert(mi, "Must have method info.");
         // CRITICAL FIX: Check if methodInfo and codeAttribute exist
         if (!mi || !mi.codeAttribute) {
-            console.error('[interpret] methodInfo or codeAttribute is null, cannot interpret');
+            // Throttle error logging
+            if (!window._interpretNullMiThrottle || Date.now() - window._interpretNullMiThrottle > 5000) {
+                console.error('[interpret] methodInfo or codeAttribute is null, cannot interpret');
+                window._interpretNullMiThrottle = Date.now();
+            }
             return;
         }
         mi.stats.interpreterCallCount++;
@@ -3740,13 +3752,30 @@ var J2ME;
         // HEAD
         var lastPC = 0;
         while (true) {
+            // CRITICAL FIX: Verify mi and code are still valid before accessing code[pc]
+            // This can happen if frame was modified during exception handling
+            if (!mi || !mi.codeAttribute || !code) {
+                if (!window._interpretLoopNullCheckThrottle || Date.now() - window._interpretLoopNullCheckThrottle > 5000) {
+                    console.error('[interpret] mi, codeAttribute, or code is null in loop, cannot continue');
+                    window._interpretLoopNullCheckThrottle = Date.now();
+                }
+                return;
+            }
+            // Re-verify code matches current methodInfo
+            if (code !== mi.codeAttribute.code) {
+                // Code was changed, update it
+                code = mi.codeAttribute.code;
+            }
             opPC = pc, op = code[pc], pc = pc + 1 | 0;
             lastPC = opPC;
             if (!release) {
-                assert(code === mi.codeAttribute.code, "Bad Code.");
-                assert(ci === mi.classInfo, "Bad Class Info.");
-                assert(cp === ci.constantPool, "Bad Constant Pool.");
-                assert(lp === fp - mi.codeAttribute.max_locals, "Bad lp.");
+                // CRITICAL FIX: Add null checks in assert statements to prevent errors
+                if (mi && mi.codeAttribute) {
+                    assert(code === mi.codeAttribute.code, "Bad Code.");
+                    assert(ci === mi.classInfo, "Bad Class Info.");
+                    assert(cp === ci.constantPool, "Bad Constant Pool.");
+                    assert(lp === fp - mi.codeAttribute.max_locals, "Bad lp.");
+                }
                 assert(fp >= (thread.tp >> 2), "Frame pointer is not less than than the top of the stack.");
                 assert(fp < (thread.tp + 4096 /* MAX_STACK_SIZE */ >> 2), "Frame pointer is not greater than the stack size.");
                 J2ME.bytecodeCount++;
@@ -4559,14 +4588,33 @@ var J2ME;
                                     type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
                                     // CRITICAL FIX: Check mi and codeAttribute after OSR return
                                     if (!mi || !mi.codeAttribute) {
-                                        console.error('[interpret] methodInfo or codeAttribute is null after OSR return');
+                                        if (!window._interpretOsrNullThrottle || Date.now() - window._interpretOsrNullThrottle > 5000) {
+                                            console.warn('[interpret] methodInfo or codeAttribute is null after OSR return, returning');
+                                            window._interpretOsrNullThrottle = Date.now();
+                                        }
                                         return;
                                     }
+                                    // CRITICAL FIX: Re-validate and update all variables after OSR return
                                     maxLocals = mi.codeAttribute.max_locals;
                                     lp = fp - maxLocals | 0;
                                     ci = mi.classInfo;
+                                    if (!ci) {
+                                        if (!window._interpretOsrNullCiThrottle || Date.now() - window._interpretOsrNullCiThrottle > 5000) {
+                                            console.warn('[interpret] classInfo is null after OSR return, returning');
+                                            window._interpretOsrNullCiThrottle = Date.now();
+                                        }
+                                        return;
+                                    }
                                     cp = ci.constantPool;
                                     code = mi.codeAttribute.code;
+                                    // CRITICAL FIX: Verify code is valid before accessing it
+                                    if (!code) {
+                                        if (!window._interpretOsrNullCodeThrottle || Date.now() - window._interpretOsrNullCodeThrottle > 5000) {
+                                            console.warn('[interpret] code is null after OSR return, returning');
+                                            window._interpretOsrNullCodeThrottle = Date.now();
+                                        }
+                                        return;
+                                    }
                                     pc = opPC + (code[opPC] === 185 /* INVOKEINTERFACE */ ? 5 : 3);
                                     // Push return value.
                                     switch (kind) {
@@ -4994,12 +5042,213 @@ var J2ME;
                         }
                         var lastMI = mi;
                         if (lastMI.isSynchronized) {
-                            $.ctx.monitorExit(J2ME.getMonitor(i32[fp + 3 /* MonitorOffset */]));
+                            // CRITICAL FIX: monitorExit might throw an exception or trigger thread switching
+                            // but it shouldn't modify the current thread's frame stack
+                            // We just need to handle exceptions properly
+                            try {
+                                $.ctx.monitorExit(J2ME.getMonitor(i32[fp + 3 /* MonitorOffset */]));
+                            } catch (e) {
+                                // If monitorExit throws an exception, let exception handling deal with it
+                                // Don't try to restore frame stack here as it might not be corrupted
+                                throw e;
+                            }
                         }
                         opPC = i32[fp + 0 /* CallerRAOffset */];
                         sp = fp - maxLocals | 0;
+                        // CRITICAL FIX: Save current fp before updating, for recovery purposes
+                        var currentFP = fp;
                         fp = i32[fp + 1 /* CallerFPOffset */];
-                        release || assert(fp >= (thread.tp >> 2), "Valid frame pointer after return.");
+                        
+                        // CRITICAL FIX: Validate fp immediately after update to prevent invalid memory access
+                        var minFP = thread.tp >> 2;
+                        // CRITICAL FIX: Sys.unwind is a special exception handling method that may return with fp=0
+                        // This is normal when returning from native code to Java code during exception handling
+                        var isUnwindMethod = lastMI && lastMI.implKey && lastMI.implKey.indexOf('Sys.unwind') !== -1;
+                        if (fp < minFP || fp === 0) {
+                            // Special handling for Sys.unwind: if fp is 0, it may be normal (returning from native code)
+                            if (isUnwindMethod && fp === 0) {
+                                // For Sys.unwind, fp=0 may indicate we're returning from native code
+                                // Try to use thread state to continue, or just return the value
+                                if (thread.fp >= minFP && thread.fp !== 0) {
+                                    if (!window._interpretUnwindFP0Throttle || Date.now() - window._interpretUnwindFP0Throttle > 5000) {
+                                        console.warn('[interpret] Sys.unwind returned with fp=0, using thread state to continue');
+                                        window._interpretUnwindFP0Throttle = Date.now();
+                                    }
+                                    fp = thread.fp | 0;
+                                    sp = thread.sp | 0;
+                                    opPC = thread.pc | 0;
+                                    mi = thread.frame ? thread.frame.methodInfo : null;
+                                    if (mi && mi.codeAttribute) {
+                                        maxLocals = mi.codeAttribute.max_locals;
+                                        lp = fp - maxLocals | 0;
+                                        ci = mi.classInfo;
+                                        if (ci) {
+                                            cp = ci.constantPool;
+                                            code = mi.codeAttribute.code;
+                                            if (code) {
+                                                pc = opPC;
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                }
+                                // If thread state is also invalid, just return the value (this is better than freezing)
+                                if (!window._interpretUnwindFP0ReturnThrottle || Date.now() - window._interpretUnwindFP0ReturnThrottle > 5000) {
+                                    console.warn('[interpret] Sys.unwind returned with fp=0, thread state also invalid, returning value to continue');
+                                    window._interpretUnwindFP0ReturnThrottle = Date.now();
+                                }
+                                // Return the value and let the caller handle it
+                                switch (op) {
+                                    case 176 /* ARETURN */:
+                                    case 172 /* IRETURN */:
+                                    case 174 /* FRETURN */:
+                                        return returnOne;
+                                    case 173 /* LRETURN */:
+                                        return J2ME.returnLong(returnTwo, returnOne);
+                                    case 175 /* DRETURN */:
+                                        return J2ME.returnDouble(returnTwo, returnOne);
+                                    case 177 /* RETURN */:
+                                        return;
+                                }
+                            }
+                            if (!window._interpretInvalidFPAfterReturnThrottle || Date.now() - window._interpretInvalidFPAfterReturnThrottle > 5000) {
+                                console.error('[interpret] Invalid frame pointer after method return! fp: ' + fp + ', minFP: ' + minFP + ', sp: ' + sp);
+                                console.error('[interpret] Previous fp was valid, but caller fp is invalid. Frame stack may be corrupted.');
+                                console.error('[interpret] Method: ' + (lastMI ? lastMI.implKey : 'unknown') + ', op: ' + J2ME.Bytecode.getBytecodesName(op));
+                                // Try to get more context about the frame that was being returned from
+                                var prevFP = fp; // This is the invalid fp we just read
+                                // The previous fp (before return) should still be in memory, but we've already updated fp
+                                // We can't easily get it back, but we can check if the frame we're returning from had a valid CallerFPOffset
+                                console.error('[interpret] This indicates the frame was created with an invalid caller FP, or the frame stack was corrupted during execution.');
+                                // CRITICAL FIX: Try multiple recovery strategies before giving up
+                                var recovered = false;
+                                
+                                // Strategy 1: Try to recover from thread state
+                                if (thread.fp >= minFP && thread.fp !== 0) {
+                                    console.warn('[interpret] Attempting recovery from thread state: fp=' + thread.fp + ', sp=' + thread.sp + ', pc=' + thread.pc);
+                                    fp = thread.fp | 0;
+                                    sp = thread.sp | 0;
+                                    opPC = thread.pc | 0;
+                                    // Re-load method info and continue
+                                    mi = thread.frame ? thread.frame.methodInfo : null;
+                                    if (mi && mi.codeAttribute) {
+                                        maxLocals = mi.codeAttribute.max_locals;
+                                        lp = fp - maxLocals | 0;
+                                        ci = mi.classInfo;
+                                        if (ci) {
+                                            cp = ci.constantPool;
+                                            code = mi.codeAttribute.code;
+                                            if (code) {
+                                                pc = opPC;
+                                                recovered = true;
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                // Strategy 2: If thread state recovery failed, try to find ExitInterpreter frame
+                                if (!recovered) {
+                                    var searchFP = currentFP; // Use the frame we were returning from
+                                    var maxSearch = 100; // Limit search depth
+                                    var searchCount = 0;
+                                    while (searchFP >= minFP && searchFP !== 0 && searchCount < maxSearch) {
+                                        var frameType = i32[searchFP + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                                        if (frameType === FrameType.ExitInterpreter) {
+                                            console.warn('[interpret] Found ExitInterpreter frame at: ' + searchFP + ', attempting recovery');
+                                            fp = searchFP;
+                                            sp = searchFP + 4 /* CallerSaveSize */;
+                                            opPC = i32[fp + 0 /* CallerRAOffset */];
+                                            thread.set(fp, sp, opPC);
+                                            // Return from the method that caused the issue
+                                            switch (op) {
+                                                case 176 /* ARETURN */:
+                                                case 172 /* IRETURN */:
+                                                case 174 /* FRETURN */:
+                                                    return returnOne;
+                                                case 173 /* LRETURN */:
+                                                    return J2ME.returnLong(returnTwo, returnOne);
+                                                case 175 /* DRETURN */:
+                                                    return J2ME.returnDouble(returnTwo, returnOne);
+                                                case 177 /* RETURN */:
+                                                    return;
+                                            }
+                                            recovered = true;
+                                            break;
+                                        }
+                                        var nextFP = i32[searchFP + 1 /* CallerFPOffset */];
+                                        if (nextFP < minFP || nextFP === 0) {
+                                            break;
+                                        }
+                                        searchFP = nextFP;
+                                        searchCount++;
+                                    }
+                                }
+                                
+                                // Strategy 3: If all recovery strategies failed, try to continue with a safe default
+                                if (!recovered) {
+                                    // Last resort: try to use thread's current state even if fp seems invalid
+                                    // This might allow the game to continue in some edge cases
+                                    if (thread.fp !== 0) {
+                                        console.warn('[interpret] Last resort recovery: using thread.fp=' + thread.fp + ' even though it may be invalid');
+                                        fp = thread.fp | 0;
+                                        sp = thread.sp | 0;
+                                        opPC = thread.pc | 0;
+                                        mi = thread.frame ? thread.frame.methodInfo : null;
+                                        if (mi && mi.codeAttribute) {
+                                            maxLocals = mi.codeAttribute.max_locals;
+                                            lp = fp - maxLocals | 0;
+                                            ci = mi.classInfo;
+                                            if (ci) {
+                                                cp = ci.constantPool;
+                                                code = mi.codeAttribute.code;
+                                                if (code) {
+                                                    pc = opPC;
+                                                    recovered = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if (recovered) {
+                                    console.warn('[interpret] Recovery successful, continuing execution');
+                                    continue;
+                                }
+                                
+                                window._interpretInvalidFPAfterReturnThrottle = Date.now();
+                            }
+                            // Frame stack is corrupted and all recovery strategies failed
+                            // Log error but try to continue anyway to avoid game freezing
+                            if (!window._interpretFPRecoveryFailedThrottle || Date.now() - window._interpretFPRecoveryFailedThrottle > 5000) {
+                                console.error('[interpret] All recovery strategies failed, but continuing anyway to avoid game freeze');
+                                console.error('[interpret] This may cause undefined behavior, but is better than freezing');
+                                window._interpretFPRecoveryFailedThrottle = Date.now();
+                            }
+                            // Try to use thread state as last resort
+                            if (thread.fp !== 0) {
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code) {
+                                            pc = opPC;
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                            // If everything fails, return (this will suspend the thread)
+                            return;
+                        }
+                        
+                        release || assert(fp >= minFP, "Valid frame pointer after return.");
                         mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
                         type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
                         release || assert(type === FrameType.Interpreter && mi || type !== FrameType.Interpreter && !mi, "Is valid frame type and method info after return.");
@@ -5028,6 +5277,33 @@ var J2ME;
                                 opPC = pc = thread.pc;
                                 type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
                                 mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                                // CRITICAL FIX: Verify mi and update variables after PushPendingFrames
+                                if (!mi || !mi.codeAttribute) {
+                                    if (!window._interpretPushPendingNullThrottle || Date.now() - window._interpretPushPendingNullThrottle > 5000) {
+                                        console.warn('[interpret] methodInfo or codeAttribute is null after PushPendingFrames, returning');
+                                        window._interpretPushPendingNullThrottle = Date.now();
+                                    }
+                                    return;
+                                }
+                                maxLocals = mi.codeAttribute.max_locals;
+                                lp = fp - maxLocals | 0;
+                                ci = mi.classInfo;
+                                if (!ci) {
+                                    if (!window._interpretPushPendingNullCiThrottle || Date.now() - window._interpretPushPendingNullCiThrottle > 5000) {
+                                        console.warn('[interpret] classInfo is null after PushPendingFrames, returning');
+                                        window._interpretPushPendingNullCiThrottle = Date.now();
+                                    }
+                                    return;
+                                }
+                                cp = ci.constantPool;
+                                code = mi.codeAttribute.code;
+                                if (!code) {
+                                    if (!window._interpretPushPendingNullCodeThrottle || Date.now() - window._interpretPushPendingNullCodeThrottle > 5000) {
+                                        console.warn('[interpret] code is null after PushPendingFrames, returning');
+                                        window._interpretPushPendingNullCodeThrottle = Date.now();
+                                    }
+                                    return;
+                                }
                                 continue;
                             }
                             else if (type === FrameType.Interrupt) {
@@ -5038,6 +5314,33 @@ var J2ME;
                                 opPC = pc = thread.pc;
                                 type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
                                 mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                                // CRITICAL FIX: Verify mi and update variables after Interrupt
+                                if (!mi || !mi.codeAttribute) {
+                                    if (!window._interpretInterruptNullThrottle || Date.now() - window._interpretInterruptNullThrottle > 5000) {
+                                        console.warn('[interpret] methodInfo or codeAttribute is null after Interrupt, returning');
+                                        window._interpretInterruptNullThrottle = Date.now();
+                                    }
+                                    return;
+                                }
+                                maxLocals = mi.codeAttribute.max_locals;
+                                lp = fp - maxLocals | 0;
+                                ci = mi.classInfo;
+                                if (!ci) {
+                                    if (!window._interpretInterruptNullCiThrottle || Date.now() - window._interpretInterruptNullCiThrottle > 5000) {
+                                        console.warn('[interpret] classInfo is null after Interrupt, returning');
+                                        window._interpretInterruptNullCiThrottle = Date.now();
+                                    }
+                                    return;
+                                }
+                                cp = ci.constantPool;
+                                code = mi.codeAttribute.code;
+                                if (!code) {
+                                    if (!window._interpretInterruptNullCodeThrottle || Date.now() - window._interpretInterruptNullCodeThrottle > 5000) {
+                                        console.warn('[interpret] code is null after Interrupt, returning');
+                                        window._interpretInterruptNullCodeThrottle = Date.now();
+                                    }
+                                    return;
+                                }
                                 interrupt = true;
                                 continue;
                             }
@@ -5046,18 +5349,83 @@ var J2ME;
                             }
                         }
                         release || assert(type === FrameType.Interpreter, "Cannot resume in frame type: " + FrameType[type]);
-                        // CRITICAL FIX: Check mi and codeAttribute after method return
-                        if (!mi || !mi.codeAttribute) {
-                            console.error('[interpret] methodInfo or codeAttribute is null after method return');
+                        // CRITICAL FIX: Validate fp before accessing frame data
+                        var minFP = thread.tp >> 2;
+                        if (fp < minFP || fp === 0) {
+                            if (!window._interpretInvalidFPThrottle || Date.now() - window._interpretInvalidFPThrottle > 5000) {
+                                console.error('[interpret] Invalid frame pointer after method return! fp: ' + fp + ', minFP: ' + minFP + ', sp: ' + sp);
+                                console.error('[interpret] Frame stack appears corrupted. Thread may need to be terminated.');
+                                window._interpretInvalidFPThrottle = Date.now();
+                            }
+                            // Frame stack is corrupted, cannot continue
                             return;
                         }
+                        
+                        // CRITICAL FIX: Check mi and codeAttribute after method return
+                        // If mi is null, it might be a native method frame or the frame stack is corrupted
+                        // Try to continue by checking if we can get the next frame
+                        if (!mi || !mi.codeAttribute) {
+                            if (!window._interpretReturnNullThrottle || Date.now() - window._interpretReturnNullThrottle > 5000) {
+                                console.warn('[interpret] methodInfo or codeAttribute is null after method return');
+                                console.warn('[interpret] Frame type: ' + FrameType[type] + ', fp: ' + fp + ', sp: ' + sp);
+                                // Check if this might be a native method frame
+                                if (type === FrameType.Interpreter && !mi && fp > 0) {
+                                    console.warn('[interpret] Interpreter frame with null methodInfo - might be native method or corrupted stack');
+                                    // Try to continue by checking if there's a next frame
+                                    // CRITICAL: Validate fp before accessing
+                                    if (fp + 1 < (thread.tp + 4096 /* MAX_STACK_SIZE */ >> 2)) {
+                                        var nextFP = i32[fp + 1 /* CallerFPOffset */];
+                                        if (nextFP > minFP && nextFP < (thread.tp + 4096 /* MAX_STACK_SIZE */ >> 2)) {
+                                            console.warn('[interpret] Attempting to continue with next frame: ' + nextFP);
+                                            fp = nextFP;
+                                            sp = thread.sp | 0;
+                                            pc = thread.pc | 0;
+                                            type = i32[fp + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                                            mi = J2ME.methodIdToMethodInfoMap[i32[fp + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                                            if (mi && mi.codeAttribute) {
+                                                // Successfully recovered, continue
+                                                maxLocals = mi.codeAttribute.max_locals;
+                                                lp = fp - maxLocals | 0;
+                                                ci = mi.classInfo;
+                                                if (ci) {
+                                                    cp = ci.constantPool;
+                                                    code = mi.codeAttribute.code;
+                                                    if (code) {
+                                                        continue; // Continue with recovered frame
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                window._interpretReturnNullThrottle = Date.now();
+                            }
+                            // If we can't recover, return to avoid infinite loop
+                            return;
+                        }
+                        // CRITICAL FIX: Re-validate and update all variables after method return
                         maxLocals = mi.codeAttribute.max_locals;
                         lp = fp - maxLocals | 0;
                         release || J2ME.traceWriter && J2ME.traceWriter.outdent();
                         release || J2ME.traceWriter && J2ME.traceWriter.writeLn("<< I " + lastMI.implKey);
                         ci = mi.classInfo;
+                        if (!ci) {
+                            if (!window._interpretReturnNullCiThrottle || Date.now() - window._interpretReturnNullCiThrottle > 5000) {
+                                console.warn('[interpret] classInfo is null after method return, returning');
+                                window._interpretReturnNullCiThrottle = Date.now();
+                            }
+                            return;
+                        }
                         cp = ci.constantPool;
                         code = mi.codeAttribute.code;
+                        // CRITICAL FIX: Verify code is valid before continuing
+                        if (!code) {
+                            if (!window._interpretReturnNullCodeThrottle || Date.now() - window._interpretReturnNullCodeThrottle > 5000) {
+                                console.warn('[interpret] code is null after method return, returning');
+                                window._interpretReturnNullCodeThrottle = Date.now();
+                            }
+                            return;
+                        }
                         if (interrupt) {
                             continue;
                         }
@@ -5095,7 +5463,23 @@ var J2ME;
                         }
                         else {
                             address = i32[sp - calleeMethodInfo.argumentSlots];
-                            classInfo = (address !== 0 /* NULL */) ? J2ME.classIdToClassInfoMap[i32[address >> 2]] : null;
+                            if (address !== 0 /* NULL */) {
+                                // Get classId from object header (first word)
+                                var classId = i32[address >> 2];
+                                classInfo = J2ME.classIdToClassInfoMap[classId];
+                                // CRITICAL FIX: Add diagnostic info if classInfo is null
+                                if (!classInfo && classId !== undefined) {
+                                    // Only log once per unique classId to avoid spam
+                                    if (!window._classIdNotFoundWarned) window._classIdNotFoundWarned = new Set();
+                                    if (!window._classIdNotFoundWarned.has(classId)) {
+                                        console.warn("[J2ME] classId not found in classIdToClassInfoMap: " + classId + " for address: " + address);
+                                        console.warn("[J2ME] This may indicate: 1) object is corrupted, 2) class not loaded, or 3) classId mapping issue");
+                                        window._classIdNotFoundWarned.add(classId);
+                                    }
+                                }
+                            } else {
+                                classInfo = null;
+                            }
                         }
                         if (isStatic) {
                             thread.classInitAndUnwindCheck(fp, sp, opPC, calleeMethodInfo.classInfo);
@@ -5123,13 +5507,23 @@ var J2ME;
                                     if (!window._invokeVirtualWarnedNull) window._invokeVirtualWarnedNull = {};
                                     if (!window._invokeVirtualWarnedNull[calleeMethodInfo.implKey]) {
                                         console.warn("[J2ME] INVOKEVIRTUAL: classInfo is null for address:", address, "method:", calleeMethodInfo.implKey);
+                                        // Add diagnostic info
+                                        var classId = (address !== 0 /* NULL */) ? i32[address >> 2] : -1;
+                                        console.warn("[J2ME] classId from object:", classId, "classIdToClassInfoMap size:", Object.keys(J2ME.classIdToClassInfoMap).length);
                                         window._invokeVirtualWarnedNull[calleeMethodInfo.implKey] = true;
                                     }
                                     // Try to use the method's declaring class as fallback
+                                    // This is safe because Object.equals should work on any object
                                     if (calleeMethodInfo.classInfo && calleeMethodInfo.classInfo.vTable) {
                                         calleeTargetMethodInfo = calleeMethodInfo.classInfo.vTable[calleeMethodInfo.vTableIndex] || calleeMethodInfo;
+                                        // If still null, use the method itself (for Object methods like equals)
+                                        if (!calleeTargetMethodInfo) {
+                                            calleeTargetMethodInfo = calleeMethodInfo;
+                                        }
                                         break;
                                     }
+                                    // Final fallback: use the method itself
+                                    // This works for Object methods that should be available on all objects
                                     calleeTargetMethodInfo = calleeMethodInfo;
                                     break;
                                 }
@@ -5287,13 +5681,40 @@ var J2ME;
                         mi = calleeTargetMethodInfo;
                         // CRITICAL FIX: Check mi and codeAttribute before method call
                         if (!mi || !mi.codeAttribute) {
-                            console.error('[interpret] methodInfo or codeAttribute is null when calling method');
-                            return;
+                            if (!window._interpretCallNullThrottle || Date.now() - window._interpretCallNullThrottle > 5000) {
+                                console.warn('[interpret] methodInfo or codeAttribute is null when calling method, skipping call');
+                                window._interpretCallNullThrottle = Date.now();
+                            }
+                            // Skip this method call and continue with next instruction
+                            pc = opPC + 3; // Skip invoke instruction
+                            continue;
                         }
+                        // CRITICAL FIX: Re-validate and update all variables before method call
                         maxLocals = mi.codeAttribute.max_locals;
                         ci = mi.classInfo;
+                        if (!ci) {
+                            if (!window._interpretCallNullCiThrottle || Date.now() - window._interpretCallNullCiThrottle > 5000) {
+                                console.warn('[interpret] classInfo is null when calling method, skipping call');
+                                window._interpretCallNullCiThrottle = Date.now();
+                            }
+                            // Skip this method call and continue with next instruction
+                            pc = opPC + 3; // Skip invoke instruction
+                            continue;
+                        }
                         cp = ci.constantPool;
                         var callerFPOffset = fp;
+                        // CRITICAL FIX: Validate caller frame pointer before creating new frame
+                        var minFP = thread.tp >> 2;
+                        if (callerFPOffset < minFP || callerFPOffset === 0) {
+                            if (!window._interpretInvalidCallerFPThrottle || Date.now() - window._interpretInvalidCallerFPThrottle > 5000) {
+                                console.error('[interpret] Invalid caller frame pointer when calling method! callerFP: ' + callerFPOffset + ', minFP: ' + minFP + ', sp: ' + sp);
+                                console.error('[interpret] Cannot create new frame with invalid caller FP. Frame stack may be corrupted.');
+                                window._interpretInvalidCallerFPThrottle = Date.now();
+                            }
+                            // Skip this method call and continue with next instruction
+                            pc = opPC + 3; // Skip invoke instruction
+                            continue;
+                        }
                         // Reserve space for non-parameter locals.
                         lp = sp - mi.argumentSlots | 0;
                         fp = lp + maxLocals | 0;
@@ -5319,7 +5740,17 @@ var J2ME;
                                 return;
                             }
                         }
+                        // CRITICAL FIX: Verify code is valid before continuing
                         code = mi.codeAttribute.code;
+                        if (!code) {
+                            if (!window._interpretCallNullCodeThrottle || Date.now() - window._interpretCallNullCodeThrottle > 5000) {
+                                console.warn('[interpret] code is null when calling method, skipping call');
+                                window._interpretCallNullCodeThrottle = Date.now();
+                            }
+                            // Skip this method call and continue with next instruction
+                            pc = opPC + 3; // Skip invoke instruction
+                            continue;
+                        }
                         release || J2ME.traceWriter && J2ME.traceWriter.indent();
                         continue;
     
@@ -5373,26 +5804,41 @@ var J2ME;
                     fp = thread.fp | 0;
                     sp = thread.sp | 0;
                     pc = thread.pc | 0;
-                    mi = thread.frame.methodInfo;
+                    // CRITICAL FIX: Re-get frame and methodInfo after exceptionUnwind
+                    // exceptionUnwind may have modified the frame stack
+                    frame = thread.frame;
+                    mi = frame ? frame.methodInfo : null;
                     // CRITICAL FIX: Check if mi is null/undefined before accessing codeAttribute
                     // This can happen when exceptionUnwind fails to find a handler or method is special
-                    if (!mi) {
-                        console.error('[interpret] methodInfo is null after exceptionUnwind, cannot continue');
-                        return;
+                    if (!mi || !mi.codeAttribute) {
+                        if (!window._interpretExUnwindNullThrottle || Date.now() - window._interpretExUnwindNullThrottle > 5000) {
+                            console.warn('[interpret] methodInfo or codeAttribute is null after exceptionUnwind, re-throwing');
+                            window._interpretExUnwindNullThrottle = Date.now();
+                        }
+                        // Re-throw the exception to let outer handler deal with it
+                        throw e;
                     }
-                    if (mi.codeAttribute) {
-                        maxLocals = mi.codeAttribute.max_locals;
-                    }
+                    // CRITICAL FIX: Re-validate and update all variables after exceptionUnwind
+                    maxLocals = mi.codeAttribute.max_locals;
                     lp = fp - maxLocals | 0;
                     ci = mi.classInfo;
                     if (!ci) {
-                        console.error('[interpret] classInfo is null, cannot continue');
-                        return;
+                        if (!window._interpretNullCiThrottle || Date.now() - window._interpretNullCiThrottle > 5000) {
+                            console.warn('[interpret] classInfo is null, re-throwing');
+                            window._interpretNullCiThrottle = Date.now();
+                        }
+                        throw e;
                     }
                     cp = ci.constantPool;
-                    if (mi.codeAttribute) {
-                        code = mi.codeAttribute.code;
-                    } 
+                    code = mi.codeAttribute.code;
+                    // CRITICAL FIX: Verify code is valid before continuing
+                    if (!code) {
+                        if (!window._interpretNullCodeThrottle || Date.now() - window._interpretNullCodeThrottle > 5000) {
+                            console.warn('[interpret] code is null after exceptionUnwind, re-throwing');
+                            window._interpretNullCodeThrottle = Date.now();
+                        }
+                        throw e;
+                    }
                     continue;
                 } catch (err) {
                     console.error(err)

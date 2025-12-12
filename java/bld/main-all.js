@@ -8377,7 +8377,11 @@ var currentlyFocusedTextEditor;
       // CRITICAL: Skip copying if 3D content was just rendered directly to device canvas
       // Otherwise we would overwrite the 3D content with 2D UI content from offscreen
       if (window.gles2JustRendered) {
-        console.log('[refresh0] Skipping copy - 3D content already on device canvas');
+        // Throttle log to prevent console spam
+        if (!window._refresh0SkipLogThrottle || Date.now() - window._refresh0SkipLogThrottle > 2000) {
+          console.log('[refresh0] Skipping copy - 3D content already on device canvas');
+          window._refresh0SkipLogThrottle = Date.now();
+        }
         window.gles2JustRendered = false;
         J2ME.Scheduler.enqueue(ctx);
         return;

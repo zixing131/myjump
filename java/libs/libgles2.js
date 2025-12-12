@@ -26,7 +26,10 @@ window.GLES2_LIB_VERSION = '20251212g';
   // Quiet logging - only log errors and important events
   const DEBUG = false;
   const log = DEBUG ? console.log.bind(console) : function() {};
-  const logOnce = (key, ...args) => { if (logThrottle.shouldLog(key)) console.log(...args); };
+  const warn = DEBUG ? console.warn.bind(console) : function() {};
+  const logOnce = (key, ...args) => { if (DEBUG && logThrottle.shouldLog(key)) console.log(...args); };
+  const warnOnce = (key, ...args) => { if (logThrottle.shouldLog(key)) console.warn(...args); };
+  const errorOnce = (key, ...args) => { if (logThrottle.shouldLog(key)) console.error(...args); };
 
   function createShader(gl, type, source) {
     const shader = gl.createShader(type);
@@ -283,7 +286,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         if (floatArray) {
           gl.uniform3fv(loc, floatArray);
         } else {
-          console.error('uniform3fv: Invalid array', fa);
+          errorOnce('uniform3fv', 'uniform3fv: Invalid array');
         }
       }
     },
@@ -298,7 +301,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         if (floatArray) {
           gl.uniform4fv(loc, floatArray);
         } else {
-          console.error('uniform4fv: Invalid array', fa);
+          errorOnce('uniform4fv', 'uniform4fv: Invalid array');
         }
       }
     },
@@ -312,7 +315,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       } else {
         floatArray = toFloat32Array(fa);
         if (!floatArray) {
-          console.error('uniformMatrix3fv: Invalid array', fa);
+          errorOnce('uniformMatrix3fv-null', 'uniformMatrix3fv: Invalid array');
           return;
         }
       }
@@ -321,7 +324,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         if (floatArray.length > 9) {
           floatArray = floatArray.subarray(0, 9);
         } else {
-          console.error('uniformMatrix3fv: Array length must be 9, got', floatArray.length);
+          errorOnce('uniformMatrix3fv-len', 'uniformMatrix3fv: Array length must be 9');
           return;
         }
       }
@@ -341,7 +344,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       } else {
         floatArray = toFloat32Array(fa);
         if (!floatArray) {
-          console.error('uniformMatrix4fv: Invalid array', fa);
+          errorOnce('uniformMatrix4fv-null', 'uniformMatrix4fv: Invalid array');
           return;
         }
       }
@@ -387,7 +390,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       const gl = ptr.gl;
       
       if (!array) {
-        console.error('bufferSubData: array is null or undefined');
+        errorOnce('bufferSubData-null', 'bufferSubData: array is null or undefined');
         return;
       }
       
@@ -409,11 +412,11 @@ window.GLES2_LIB_VERSION = '20251212g';
         gl.bufferSubData(type, offset, array);
       } else if (Array.isArray(array)) {
         // Plain JavaScript array - convert to appropriate TypedArray
-        console.warn('bufferSubData: received plain array, converting to Int16Array');
+        warnOnce('bufferSubData-plainarray', 'bufferSubData: received plain array, converting to Int16Array');
         const typedArray = new Int16Array(array);
         gl.bufferSubData(type, offset, typedArray);
       } else {
-        console.error('bufferSubData: array is not a TypedArray or Array', array, typeof array);
+        errorOnce('bufferSubData-invalid', 'bufferSubData: array is not a TypedArray or Array');
       }
     },
 
@@ -437,18 +440,14 @@ window.GLES2_LIB_VERSION = '20251212g';
       // Check if this looks like an integer enum value being passed as float
       // GL_TEXTURE_WRAP_S/T should use texParameteri, not texParameterf
       if ((pname === 0x2802 || pname === 0x2803) && (param > 1000000 || param < -1000000)) {
-        console.warn('[GLES2] texParameterf called with integer enum value for wrap mode. This should use texParameteri instead.');
-        console.warn('[GLES2] Attempting to convert to integer and use texParameteri...');
+        warnOnce('texParameterf-enum', '[GLES2] texParameterf called with integer enum value');
         ptr.gl.texParameteri(target, pname, Math.round(param));
       } else {
         ptr.gl.texParameterf(target, pname, param);
       }
       const error = ptr.gl.getError();
       if (error !== ptr.gl.NO_ERROR) {
-        const errorName = error === 0x0500 ? 'GL_INVALID_ENUM' : 
-                         error === 0x0501 ? 'GL_INVALID_VALUE' : 
-                         error === 0x0502 ? 'GL_INVALID_OPERATION' : 'UNKNOWN';
-        console.warn('[GLES2] texParameterf error:', errorName, '(' + error + ')', 'target:', '0x' + target.toString(16), 'pname:', '0x' + pname.toString(16), 'param:', param);
+        warnOnce('texParameterf-error', '[GLES2] texParameterf error:', error);
       }
     },
 
@@ -456,10 +455,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       ptr.gl.texParameteri(target, pname, param);
       const error = ptr.gl.getError();
       if (error !== ptr.gl.NO_ERROR) {
-        const errorName = error === 0x0500 ? 'GL_INVALID_ENUM' : 
-                         error === 0x0501 ? 'GL_INVALID_VALUE' : 
-                         error === 0x0502 ? 'GL_INVALID_OPERATION' : 'UNKNOWN';
-        console.warn('[GLES2] texParameteri error:', errorName, '(' + error + ')', 'target:', '0x' + target.toString(16), 'pname:', '0x' + pname.toString(16), 'param:', param);
+        warnOnce('texParameteri-error', '[GLES2] texParameteri error:', error);
       }
     },
 
@@ -478,7 +474,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         if (byteArray && byteArray.buffer && byteArray.byteOffset !== undefined) {
           // Validate buffer size
           if (byteArray.byteLength < expectedSize) {
-            console.warn('[GLES2] texImage2D - buffer size mismatch. Expected:', expectedSize, 'Got:', byteArray.byteLength, 'format:', format, 'size:', width, 'x', height);
+            warnOnce('texImage2D-bufsize', '[GLES2] texImage2D - buffer size mismatch');
             // Try to use what we have, but this may cause issues
           }
           // TypedArray - use buffer directly
@@ -492,20 +488,20 @@ window.GLES2_LIB_VERSION = '20251212g';
           const pixels = toUint8Array(byteArray);
           if (pixels) {
             if (pixels.length < expectedSize) {
-              console.warn('[GLES2] texImage2D - buffer size mismatch. Expected:', expectedSize, 'Got:', pixels.length, 'format:', format, 'size:', width, 'x', height);
+              warnOnce('texImage2D-pixbufsize', '[GLES2] texImage2D - buffer size mismatch');
             }
             gl.texImage2D(target, level, intFormat, width, height, border, format, type, pixels);
           } else {
-            console.error('[GLES2] texImage2D: Invalid byteArray', byteArray);
+            errorOnce('texImage2D-invalidbuf', '[GLES2] texImage2D: Invalid byteArray');
           }
         }
         
         const error = gl.getError();
         if (error !== gl.NO_ERROR) {
-          console.warn('[GLES2] texImage2D error:', error, 'target:', target, 'format:', format, 'size:', width, 'x', height);
+          warnOnce('texImage2D-error', '[GLES2] texImage2D error:', error);
         }
       } catch (e) {
-        console.error('[GLES2] texImage2D exception:', e, 'format:', format, 'size:', width, 'x', height);
+        errorOnce('texImage2D-exception', '[GLES2] texImage2D exception:', e);
       }
     },
 
@@ -553,7 +549,7 @@ window.GLES2_LIB_VERSION = '20251212g';
           source = window.screenCanvas;
           log('[GLES2] texImage2DFromHandle - using screenCanvas as fallback');
         } else {
-          console.error('[GLES2] texImage2DFromHandle - source is null, no fallback available');
+          errorOnce('texImage2DFromHandle-null', '[GLES2] texImage2DFromHandle - source is null, no fallback available');
           return;
         }
       }
@@ -562,7 +558,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         ptr.gl.texImage2D(target, level, intFormat, format, type, source);
         log('[GLES2] texImage2DFromHandle - success');
       } catch (e) {
-        console.error('[GLES2] texImage2DFromHandle error:', e);
+        errorOnce('texImage2DFromHandle-error', '[GLES2] texImage2DFromHandle error:', e);
       }
     },
 
@@ -583,7 +579,7 @@ window.GLES2_LIB_VERSION = '20251212g';
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_clear: function(lib, ptr, mask) {
       if (!ptr || !ptr.gl) {
-        console.warn('[GLES2] clear - ptr or gl is null');
+        warnOnce('clear-null', '[GLES2] clear - ptr or gl is null');
         return;
       }
       if (mask === 0) {
@@ -597,10 +593,10 @@ window.GLES2_LIB_VERSION = '20251212g';
         ptr.gl.clear(mask);
         const error = ptr.gl.getError();
         if (error !== ptr.gl.NO_ERROR) {
-          console.warn('[GLES2] GL error after clear:', error);
+          warnOnce('clear-error', '[GLES2] GL error after clear:', error);
         }
       } catch (e) {
-        console.error('[GLES2] clear exception:', e);
+        errorOnce('clear-exception', '[GLES2] clear exception:', e);
       }
     },
 
@@ -650,15 +646,15 @@ window.GLES2_LIB_VERSION = '20251212g';
       const currentProgram = ptr.gl.getParameter(ptr.gl.CURRENT_PROGRAM);
       const viewport = ptr.gl.getParameter(ptr.gl.VIEWPORT);
       if (currentProgram === null) {
-        console.warn('[GLES2] drawArrays - no program bound!');
+        warnOnce('drawArrays-noprogram', '[GLES2] drawArrays - no program bound!');
       }
       if (viewport[2] === 0 || viewport[3] === 0) {
-        console.warn('[GLES2] drawArrays - invalid viewport:', viewport);
+        warnOnce('drawArrays-viewport', '[GLES2] drawArrays - invalid viewport:', viewport);
       }
       ptr.gl.drawArrays(mode, first, count);
       const error = ptr.gl.getError();
       if (error !== ptr.gl.NO_ERROR) {
-        console.warn('[GLES2] GL error after drawArrays:', error, 'mode:', mode, 'count:', count);
+        warnOnce('drawArrays-error', '[GLES2] GL error after drawArrays:', error, 'mode:', mode, 'count:', count);
       }
     },
 
@@ -668,16 +664,16 @@ window.GLES2_LIB_VERSION = '20251212g';
       const currentProgram = ptr.gl.getParameter(ptr.gl.CURRENT_PROGRAM);
       const viewport = ptr.gl.getParameter(ptr.gl.VIEWPORT);
       if (currentProgram === null) {
-        console.warn('[GLES2] drawElements - no program bound!');
+        warnOnce('drawElements-noprogram', '[GLES2] drawElements - no program bound!');
       }
       if (viewport[2] === 0 || viewport[3] === 0) {
-        console.warn('[GLES2] drawElements - invalid viewport:', viewport);
+        warnOnce('drawElements-viewport', '[GLES2] drawElements - invalid viewport:', viewport);
       }
       
       // DEBUG: Check ELEMENT_ARRAY_BUFFER binding
       const elementBuffer = ptr.gl.getParameter(ptr.gl.ELEMENT_ARRAY_BUFFER_BINDING);
       if (!elementBuffer) {
-        console.warn('[GLES2] drawElements - no element array buffer bound!');
+        warnOnce('drawElements-nobuf', '[GLES2] drawElements - no element array buffer bound!');
       }
       
       // DEBUG: Check ARRAY_BUFFER binding
@@ -686,7 +682,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       ptr.gl.drawElements(mode, count, type, offset);
       const error = ptr.gl.getError();
       if (error !== ptr.gl.NO_ERROR) {
-        console.warn('[GLES2] GL error after drawElements:', error, 'mode:', mode, 'count:', count);
+        warnOnce('drawElements-error', '[GLES2] GL error after drawElements:', error, 'mode:', mode, 'count:', count);
       }
       
       // DEBUG: Read center pixel after draw to check if anything was rendered
@@ -699,9 +695,9 @@ window.GLES2_LIB_VERSION = '20251212g';
           const centerX = Math.floor(viewport[2] / 2);
           const centerY = Math.floor(viewport[3] / 2);
           ptr.gl.readPixels(centerX, centerY, 1, 1, ptr.gl.RGBA, ptr.gl.UNSIGNED_BYTE, pixel);
-          console.log('[GLES2] drawElements #' + window._drawElementsCheckCount + ' - center pixel after draw:', pixel[0], pixel[1], pixel[2], pixel[3], 'count:', count, 'elemBuf:', !!elementBuffer, 'arrayBuf:', !!arrayBuffer);
+          log('[GLES2] drawElements #' + window._drawElementsCheckCount + ' - center pixel after draw:', pixel[0], pixel[1], pixel[2], pixel[3], 'count:', count, 'elemBuf:', !!elementBuffer, 'arrayBuf:', !!arrayBuffer);
         } catch (e) {
-          console.warn('[GLES2] drawElements - failed to read pixel:', e);
+          warn('[GLES2] drawElements - failed to read pixel:', e);
         }
       }
     },
@@ -716,7 +712,7 @@ window.GLES2_LIB_VERSION = '20251212g';
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_finish: function(lib, ptr) {
       if (!ptr || !ptr.gl) {
-        console.warn('[GLES2] finish - ptr or gl is null');
+        warnOnce('finish-null', '[GLES2] finish - ptr or gl is null');
         return;
       }
       try {
@@ -724,10 +720,10 @@ window.GLES2_LIB_VERSION = '20251212g';
         // Check for GL errors after finish
         const error = ptr.gl.getError();
         if (error !== ptr.gl.NO_ERROR) {
-          console.warn('[GLES2] GL error after finish:', error);
+          warnOnce('finish-error', '[GLES2] GL error after finish:', error);
         }
       } catch (e) {
-        console.error('[GLES2] finish exception:', e);
+        errorOnce('finish-exception', '[GLES2] finish exception:', e);
       }
     },
 
@@ -745,14 +741,14 @@ window.GLES2_LIB_VERSION = '20251212g';
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_readPixels: function(lib, ptr, x, y, width, height, int8pixels) {
       if (!ptr || !ptr.gl) {
-        console.warn('[GLES2] readPixels - ptr or gl is null');
+        warnOnce('readPixels-null', '[GLES2] readPixels - ptr or gl is null');
         return;
       }
       const gl = ptr.gl;
       try {
         // Validate dimensions
         if (width <= 0 || height <= 0 || x < 0 || y < 0) {
-          console.warn('[GLES2] readPixels - invalid dimensions. x:', x, 'y:', y, 'w:', width, 'h:', height);
+          warnOnce('readPixels-dim', '[GLES2] readPixels - invalid dimensions. x:', x, 'y:', y, 'w:', width, 'h:', height);
           return;
         }
         
@@ -760,7 +756,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         const actualSize = int8pixels ? int8pixels.byteLength : 0;
         
         if (!int8pixels || actualSize < expectedSize) {
-          console.warn('[GLES2] readPixels - buffer size mismatch. Expected:', expectedSize, 'Got:', actualSize, 'x:', x, 'y:', y, 'w:', width, 'h:', height);
+          warnOnce('readPixels-buf', '[GLES2] readPixels - buffer size mismatch. Expected:', expectedSize, 'Got:', actualSize);
           return;
         }
         
@@ -768,7 +764,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         const canvasWidth = gl.canvas.width || 0;
         const canvasHeight = gl.canvas.height || 0;
         if (x + width > canvasWidth || y + height > canvasHeight) {
-          console.warn('[GLES2] readPixels - coordinates out of bounds. Canvas:', canvasWidth, 'x', canvasHeight, 'Read:', x, y, width, height);
+          warnOnce('readPixels-bounds', '[GLES2] readPixels - coordinates out of bounds');
           // Clamp to valid range
           width = Math.min(width, canvasWidth - x);
           height = Math.min(height, canvasHeight - y);
@@ -782,10 +778,10 @@ window.GLES2_LIB_VERSION = '20251212g';
         
         const error = gl.getError();
         if (error !== gl.NO_ERROR) {
-          console.warn('[GLES2] readPixels error:', error, 'x:', x, 'y:', y, 'w:', width, 'h:', height);
+          warnOnce('readPixels-error', '[GLES2] readPixels error:', error);
         }
       } catch (e) {
-        console.error('[GLES2] readPixels exception:', e, 'x:', x, 'y:', y, 'w:', width, 'h:', height);
+        errorOnce('readPixels-exception', '[GLES2] readPixels exception:', e);
       }
     },
 
@@ -795,11 +791,11 @@ window.GLES2_LIB_VERSION = '20251212g';
 
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_viewport: function(lib, ptr, x, y, width, height) {
       if (!ptr || !ptr.gl) {
-        console.warn('[GLES2] viewport - ptr or gl is null');
+        warnOnce('viewport-null', '[GLES2] viewport - ptr or gl is null');
         return;
       }
       if (width <= 0 || height <= 0) {
-        console.warn('[GLES2] viewport - invalid dimensions:', width, 'x', height);
+        warnOnce('viewport-dim', '[GLES2] viewport - invalid dimensions:', width, 'x', height);
         return;
       }
       try {
@@ -810,10 +806,10 @@ window.GLES2_LIB_VERSION = '20251212g';
         ptr.gl.viewport(x, y, width, height);
         const error = ptr.gl.getError();
         if (error !== ptr.gl.NO_ERROR) {
-          console.warn('[GLES2] GL error after viewport:', error);
+          warnOnce('viewport-error', '[GLES2] GL error after viewport:', error);
         }
       } catch (e) {
-        console.error('[GLES2] viewport exception:', e);
+        errorOnce('viewport-exception', '[GLES2] viewport exception:', e);
       }
     },
 
@@ -1136,7 +1132,7 @@ window.GLES2_LIB_VERSION = '20251212g';
           log('[GLES2] allocAndStoreNative - allocated addr:', objAddr, 'type:', objectType, 'for:', jsObject);
           return objAddr;
         } catch (e) {
-          console.warn('[GLES2] allocAndStoreNative failed:', e);
+          warnOnce('allocAndStoreNative', '[GLES2] allocAndStoreNative failed:', e);
         }
       }
       // Fallback: return the object directly and hope J2ME handles it
@@ -1182,7 +1178,7 @@ window.GLES2_LIB_VERSION = '20251212g';
       }
       
       if (!program) {
-        console.error('[GLES2] getAttribLocation - no program available!');
+        errorOnce('getAttribLocation-noprogram', '[GLES2] getAttribLocation - no program available!');
         return -1;
       }
       
@@ -1204,7 +1200,7 @@ window.GLES2_LIB_VERSION = '20251212g';
         }
       }
       if (!program) {
-        console.error('[GLES2] getUniformLocation - no program available!');
+        errorOnce('getUniformLocation-noprogram', '[GLES2] getUniformLocation - no program available!');
         return J2ME.Constants ? J2ME.Constants.NULL : 0;
       }
       const loc = GLES2NativeMethods.Java_pl_zb3_freej2me_bridge_gles2_GLES2_getUniformLocation(null, ptr, program, name);

@@ -8,6 +8,19 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
   
   const DEBUG = false;
   const log = DEBUG ? console.log.bind(console) : function() {};
+  const warn = DEBUG ? console.warn.bind(console) : function() {};
+  
+  // Throttled error logging to prevent console spam
+  const throttledError = (function() {
+    const lastLog = {};
+    return function(key, ...args) {
+      const now = Date.now();
+      if (!lastLog[key] || now - lastLog[key] > 5000) {
+        console.error(...args);
+        lastLog[key] = now;
+      }
+    };
+  })();
 
   const CanvasGraphicsNatives = {
     // Create a new canvas context with given dimensions
@@ -226,10 +239,10 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
     // Draw image from another canvas
     // Parameters: ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha
     drawImage2: function(lib, ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha) {
-      console.log('[CanvasGraphics] drawImage2 INNER START - ctx:', !!ctx, 'canvasRef:', !!canvasRef);
+      log('[CanvasGraphics] drawImage2 INNER START - ctx:', !!ctx, 'canvasRef:', !!canvasRef);
       
       if (!ctx || !canvasRef) {
-        console.error('[CanvasGraphics] drawImage2 inner - MISSING ctx or canvasRef!');
+        throttledError('drawImage2-missing', '[CanvasGraphics] drawImage2 inner - MISSING ctx or canvasRef!');
         return;
       }
       
@@ -238,7 +251,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       let deviceCtx = null;
       if (window.MIDP && window.MIDP.deviceContext) {
         deviceCtx = window.MIDP.deviceContext;
-        console.log('[CanvasGraphics] drawImage2 - Found MIDP.deviceContext, will write to device canvas directly');
+        log('[CanvasGraphics] drawImage2 - Found MIDP.deviceContext, will write to device canvas directly');
       }
       
       // IMPORTANT: We need to get the existing WebGL context, not create a new one
@@ -251,7 +264,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         // Check if this is the same canvas
         if (window.GLES2Context.gl.canvas === canvasRef) {
           webglCtx = window.GLES2Context.gl;
-          console.log('[CanvasGraphics] drawImage2 - Using GLES2Context.gl');
+          log('[CanvasGraphics] drawImage2 - Using GLES2Context.gl');
         }
       }
       
@@ -260,14 +273,14 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         try {
           webglCtx = canvasRef.getContext('webgl2') || canvasRef.getContext('webgl');
           if (webglCtx) {
-            console.log('[CanvasGraphics] drawImage2 - Got WebGL context directly');
+            log('[CanvasGraphics] drawImage2 - Got WebGL context directly');
           }
         } catch (e) {
-          console.log('[CanvasGraphics] drawImage2 - Failed to get WebGL context:', e);
+          log('[CanvasGraphics] drawImage2 - Failed to get WebGL context:', e);
         }
       }
       
-      console.log('[CanvasGraphics] drawImage2 - webglCtx:', !!webglCtx);
+      log('[CanvasGraphics] drawImage2 - webglCtx:', !!webglCtx);
       
       if (webglCtx) {
         // WORKAROUND: drawImage from WebGL canvas to 2D canvas doesn't work reliably
@@ -275,17 +288,17 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         try {
           const srcWidth = canvasRef.width;
           const srcHeight = canvasRef.height;
-          console.log('[CanvasGraphics] drawImage2 - Reading', srcWidth, 'x', srcHeight, 'pixels');
+          log('[CanvasGraphics] drawImage2 - Reading', srcWidth, 'x', srcHeight, 'pixels');
           
           // Read all pixels from WebGL canvas
           const pixels = new Uint8Array(srcWidth * srcHeight * 4);
           webglCtx.readPixels(0, 0, srcWidth, srcHeight, webglCtx.RGBA, webglCtx.UNSIGNED_BYTE, pixels);
           
           // Check first pixel
-          console.log('[CanvasGraphics] drawImage2 - First pixel:', pixels[0], pixels[1], pixels[2], pixels[3]);
+          log('[CanvasGraphics] drawImage2 - First pixel:', pixels[0], pixels[1], pixels[2], pixels[3]);
           // Check center pixel (note: WebGL Y=0 is at bottom)
           const centerIdx = (Math.floor(srcHeight/2) * srcWidth + Math.floor(srcWidth/2)) * 4;
-          console.log('[CanvasGraphics] drawImage2 - Center pixel:', pixels[centerIdx], pixels[centerIdx+1], pixels[centerIdx+2], pixels[centerIdx+3]);
+          log('[CanvasGraphics] drawImage2 - Center pixel:', pixels[centerIdx], pixels[centerIdx+1], pixels[centerIdx+2], pixels[centerIdx+3]);
           
           // Create ImageData for the destination
           const imageData = ctx.createImageData(srcWidth, srcHeight);
@@ -315,7 +328,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
           // So we must write 3D content directly to the visible device canvas
           if (deviceCtx) {
             deviceCtx.putImageData(imageData, 0, 0);
-            console.log('[CanvasGraphics] drawImage2 - putImageData to DEVICE canvas completed');
+            log('[CanvasGraphics] drawImage2 - putImageData to DEVICE canvas completed');
             
             // CRITICAL: Set flag to tell refresh0 to skip copying offscreen to device
             // Otherwise refresh0 will overwrite our 3D content with 2D UI content
@@ -324,22 +337,22 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             // Verify
             try {
               const verifyData = deviceCtx.getImageData(srcWidth/2, srcHeight/2, 1, 1).data;
-              console.log('[CanvasGraphics] drawImage2 - device verify pixel:', verifyData[0], verifyData[1], verifyData[2], verifyData[3]);
+              log('[CanvasGraphics] drawImage2 - device verify pixel:', verifyData[0], verifyData[1], verifyData[2], verifyData[3]);
             } catch (e) {
-              console.warn('[CanvasGraphics] drawImage2 - verify failed:', e);
+              warn('[CanvasGraphics] drawImage2 - verify failed:', e);
             }
           } else {
             // Fallback to screenContext2D if no device context
             const targetCtx = window.screenContext2D || ctx;
             targetCtx.putImageData(imageData, 0, 0);
-            console.log('[CanvasGraphics] drawImage2 - putImageData to offscreen (fallback)');
+            log('[CanvasGraphics] drawImage2 - putImageData to offscreen (fallback)');
           }
           
         } catch (e) {
-          console.error('[CanvasGraphics] drawImage2 - WebGL readPixels failed:', e, e.stack);
+          throttledError('webgl-readpixels', '[CanvasGraphics] drawImage2 - WebGL readPixels failed:', e);
         }
       } else {
-        console.log('[CanvasGraphics] drawImage2 - No WebGL context, using drawImage fallback');
+        log('[CanvasGraphics] drawImage2 - No WebGL context, using drawImage fallback');
         // Fallback for non-WebGL source: use regular drawImage
         ctx.save();
         ctx.globalCompositeOperation = 'source-over';
@@ -354,7 +367,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             ctx.drawImage(canvasRef, sx, sy, width, height, x, y, width, height);
           }
         } catch (e) {
-          console.error('[CanvasGraphics] drawImage2 - drawImage error:', e);
+          throttledError('drawImage-error', '[CanvasGraphics] drawImage2 - drawImage error:', e);
         }
         
         ctx.restore();
@@ -363,27 +376,27 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
     // Get RGBA data from context
     getRGBAFromCtx: function(lib, ctx, sx, sy, width, height) {
-      console.log('[CanvasGraphics] getRGBAFromCtx INNER - ctx:', !!ctx, 'sx:', sx, 'sy:', sy, 'w:', width, 'h:', height);
+      log('[CanvasGraphics] getRGBAFromCtx INNER - ctx:', !!ctx, 'sx:', sx, 'sy:', sy, 'w:', width, 'h:', height);
       
       if (!ctx) {
-        console.warn('[CanvasGraphics] getRGBAFromCtx INNER - ctx is null');
+        warn('[CanvasGraphics] getRGBAFromCtx INNER - ctx is null');
         return null;
       }
       
       // Get canvas dimensions
       const canvas = ctx.canvas || ctx._canvas;
       if (!canvas) {
-        console.warn('[CanvasGraphics] getRGBAFromCtx INNER - no canvas found on ctx');
+        warn('[CanvasGraphics] getRGBAFromCtx INNER - no canvas found on ctx');
         return null;
       }
       
       const canvasWidth = canvas.width || 0;
       const canvasHeight = canvas.height || 0;
-      console.log('[CanvasGraphics] getRGBAFromCtx INNER - canvas size:', canvasWidth, 'x', canvasHeight);
+      log('[CanvasGraphics] getRGBAFromCtx INNER - canvas size:', canvasWidth, 'x', canvasHeight);
       
       // Validate dimensions
       if (canvasWidth <= 0 || canvasHeight <= 0) {
-        console.warn('[CanvasGraphics] getRGBAFromCtx INNER - invalid canvas size:', canvasWidth, 'x', canvasHeight);
+        warn('[CanvasGraphics] getRGBAFromCtx INNER - invalid canvas size:', canvasWidth, 'x', canvasHeight);
         return null;
       }
       
@@ -393,20 +406,20 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       if (sx + width > canvasWidth) { width = canvasWidth - sx; }
       if (sy + height > canvasHeight) { height = canvasHeight - sy; }
       
-      console.log('[CanvasGraphics] getRGBAFromCtx INNER - after clamp: sx:', sx, 'sy:', sy, 'w:', width, 'h:', height);
+      log('[CanvasGraphics] getRGBAFromCtx INNER - after clamp: sx:', sx, 'sy:', sy, 'w:', width, 'h:', height);
       
       if (width <= 0 || height <= 0) {
-        console.warn('[CanvasGraphics] getRGBAFromCtx INNER - invalid dimensions after clamping');
+        warn('[CanvasGraphics] getRGBAFromCtx INNER - invalid dimensions after clamping');
         // Return empty array instead of null to prevent NullPointerException
         return new Int8Array(0);
       }
       
       try {
         const imageData = ctx.getImageData(sx, sy, width, height);
-        console.log('[CanvasGraphics] getRGBAFromCtx INNER - got imageData, size:', imageData.data.length);
+        log('[CanvasGraphics] getRGBAFromCtx INNER - got imageData, size:', imageData.data.length);
         return new Int8Array(imageData.data.buffer);
       } catch (e) {
-        console.error('[CanvasGraphics] getRGBAFromCtx INNER - getImageData failed:', e);
+        throttledError('getImageData', '[CanvasGraphics] getRGBAFromCtx INNER - getImageData failed:', e);
         // Return empty array instead of null
         return new Int8Array(0);
       }
@@ -675,13 +688,13 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
     // drawImage2 with signature (Object, Object, int sx, int sy, int x, int y, int width, int height, boolean flipY, boolean withAlpha)
     Native[cgBasePath + '.drawImage2.(Ljava/lang/Object;Ljava/lang/Object;IIIIIIZZ)V'] = function(addr, ctxAddr, canvasAddr, sx, sy, x, y, w, h, flipY, withAlpha) {
       // ALWAYS log blitGL calls for debugging
-      console.log('[CanvasGraphics] drawImage2 (blitGL) called - ctxAddr:', ctxAddr, 'typeof:', typeof ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY);
-      console.log('[CanvasGraphics] drawImage2 - globals: screenContext2D:', !!window.screenContext2D, 'screenCanvas:', !!window.screenCanvas, 'GLES2Context:', !!window.GLES2Context);
+      log('[CanvasGraphics] drawImage2 (blitGL) called - ctxAddr:', ctxAddr, 'typeof:', typeof ctxAddr, 'canvasAddr:', canvasAddr, 'coords:', sx, sy, x, y, w, h, 'flipY:', flipY);
+      log('[CanvasGraphics] drawImage2 - globals: screenContext2D:', !!window.screenContext2D, 'screenCanvas:', !!window.screenCanvas, 'GLES2Context:', !!window.GLES2Context);
       
       let ctx = getCtx(ctxAddr);
       let canvas = getCtx(canvasAddr);
       
-      console.log('[CanvasGraphics] drawImage2 - after getCtx: ctx:', ctx, 'typeof ctx:', typeof ctx, 'canvas:', canvas);
+      log('[CanvasGraphics] drawImage2 - after getCtx: ctx:', ctx, 'typeof ctx:', typeof ctx, 'canvas:', canvas);
       
       // canvasAddr might be a canvas element reference from GLES2.getCanvasRef()
       if (!canvas && canvasAddr) {
@@ -735,14 +748,14 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         // Check if this is a WebGL canvas by checking for WebGL context
         const webglCtx = sourceCanvas.getContext('webgl2') || sourceCanvas.getContext('webgl');
         if (webglCtx) {
-          console.log('[CanvasGraphics] drawImage2 - WebGL canvas detected, size:', sourceCanvas.width, 'x', sourceCanvas.height);
+          log('[CanvasGraphics] drawImage2 - WebGL canvas detected, size:', sourceCanvas.width, 'x', sourceCanvas.height);
           // Try to read a pixel to check if canvas has content
           try {
             const pixel = new Uint8Array(4);
             webglCtx.readPixels(0, 0, 1, 1, webglCtx.RGBA, webglCtx.UNSIGNED_BYTE, pixel);
-            console.log('[CanvasGraphics] drawImage2 - WebGL canvas pixel (0,0):', pixel[0], pixel[1], pixel[2], pixel[3]);
+            log('[CanvasGraphics] drawImage2 - WebGL canvas pixel (0,0):', pixel[0], pixel[1], pixel[2], pixel[3]);
           } catch (e) {
-            console.warn('[CanvasGraphics] drawImage2 - failed to read WebGL pixel:', e);
+            warn('[CanvasGraphics] drawImage2 - failed to read WebGL pixel:', e);
           }
         }
       }
@@ -750,44 +763,44 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       // Fallback for ctx: if ctxAddr is 0 or ctx is null, try to use screen context
       // CRITICAL FIX: Check for falsy ctx (including 0) not just null/undefined
       if (!ctx || ctx === 0 || ctxAddr === 0 || ctxAddr === null) {
-        console.log('[CanvasGraphics] drawImage2 - ctx fallback triggered, ctx:', ctx, 'ctxAddr:', ctxAddr);
+        log('[CanvasGraphics] drawImage2 - ctx fallback triggered, ctx:', ctx, 'ctxAddr:', ctxAddr);
         // Try to get screen context from global
         if (window.screenContext2D) {
           ctx = window.screenContext2D;
-          console.log('[CanvasGraphics] drawImage2 - using screenContext2D as fallback, ctx:', ctx);
+          log('[CanvasGraphics] drawImage2 - using screenContext2D as fallback, ctx:', ctx);
         } else if (window.screenContextInfo && window.screenContextInfo.ctx) {
           ctx = window.screenContextInfo.ctx;
-          console.log('[CanvasGraphics] drawImage2 - using screenContextInfo as fallback');
+          log('[CanvasGraphics] drawImage2 - using screenContextInfo as fallback');
         } else if (window.screenCanvas) {
           ctx = window.screenCanvas.getContext('2d');
-          console.log('[CanvasGraphics] drawImage2 - using screenCanvas as fallback');
+          log('[CanvasGraphics] drawImage2 - using screenCanvas as fallback');
         } else {
-          console.error('[CanvasGraphics] drawImage2 - NO FALLBACK AVAILABLE! screenContext2D:', window.screenContext2D, 'screenCanvas:', window.screenCanvas);
+          throttledError('no-fallback', '[CanvasGraphics] drawImage2 - NO FALLBACK AVAILABLE!');
         }
       }
       
       if (!ctx || !sourceCanvas) {
-        console.error('[CanvasGraphics] drawImage2 - missing ctx or canvas, ctx:', ctx, 'sourceCanvas:', sourceCanvas);
+        throttledError('missing-ctx-canvas', '[CanvasGraphics] drawImage2 - missing ctx or canvas');
         // As a last resort for blitGL, try to draw directly to screen canvas
         if (sourceCanvas && window.screenCanvas) {
           try {
             const screenCtx = window.screenCanvas.getContext('2d');
             if (screenCtx) {
-              console.log('[CanvasGraphics] drawImage2 - using screenCanvas directly as LAST RESORT');
+              log('[CanvasGraphics] drawImage2 - using screenCanvas directly as LAST RESORT');
               ctx = screenCtx;
             }
           } catch (e) {
-            console.error('[CanvasGraphics] drawImage2 - last resort failed:', e);
+            throttledError('last-resort', '[CanvasGraphics] drawImage2 - last resort failed:', e);
           }
         }
         if (!ctx) {
-          console.error('[CanvasGraphics] drawImage2 - ABORTING: no ctx available');
+          throttledError('aborting', '[CanvasGraphics] drawImage2 - ABORTING: no ctx available');
           return;
         }
       }
       
       // Final check and log
-      console.log('[CanvasGraphics] drawImage2 - FINAL: ctx:', ctx, 'sourceCanvas:', sourceCanvas, 'sourceCanvas.width:', sourceCanvas?.width);
+      log('[CanvasGraphics] drawImage2 - FINAL: ctx:', ctx, 'sourceCanvas:', sourceCanvas, 'sourceCanvas.width:', sourceCanvas?.width);
       
       // Clamp source dimensions to canvas size to avoid IndexOutOfBounds
       const srcWidth = sourceCanvas.width || 0;
@@ -797,11 +810,11 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       // This happens when swapBuffers is called with targetWidth/targetHeight = 0
       if (w <= 0) {
         w = srcWidth;
-        console.log('[CanvasGraphics] drawImage2 - w was 0, using srcWidth:', w);
+        log('[CanvasGraphics] drawImage2 - w was 0, using srcWidth:', w);
       }
       if (h <= 0) {
         h = srcHeight;
-        console.log('[CanvasGraphics] drawImage2 - h was 0, using srcHeight:', h);
+        log('[CanvasGraphics] drawImage2 - h was 0, using srcHeight:', h);
       }
       
       // Adjust source coordinates if they exceed bounds
@@ -812,7 +825,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       
       // Skip if nothing to draw (after all adjustments)
       if (w <= 0 || h <= 0) {
-        console.log('[CanvasGraphics] drawImage2 - skipping, final w/h:', w, h);
+        log('[CanvasGraphics] drawImage2 - skipping, final w/h:', w, h);
         return;
       }
       
@@ -820,7 +833,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         // Pass flipY and withAlpha parameters correctly
         CanvasGraphicsNatives.drawImage2(null, ctx, sourceCanvas, sx, sy, x, y, w, h, flipY, withAlpha);
       } catch (e) {
-        console.error('[CanvasGraphics] drawImage2 error:', e);
+        throttledError('drawImage2-final', '[CanvasGraphics] drawImage2 error:', e);
       }
     };
 
@@ -860,7 +873,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       } catch (e) {
         // Repaint trigger is optional, don't fail if it's not available
         if (DEBUG) {
-          console.log('[CanvasGraphics] triggerRepaint - could not trigger repaint:', e);
+          log('[CanvasGraphics] triggerRepaint - could not trigger repaint:', e);
         }
       }
     };
@@ -874,11 +887,11 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         // This is needed because 3D content is rendered directly to device canvas
         // and games may call getRGB to read pixel data for collision detection, etc.
         if (window.MIDP && window.MIDP.deviceContext) {
-          console.log('[CanvasGraphics] getRGBAFromCtx - using MIDP.deviceContext as fallback for 3D content');
+          log('[CanvasGraphics] getRGBAFromCtx - using MIDP.deviceContext as fallback for 3D content');
           ctx = window.MIDP.deviceContext;
           usedFallback = true;
         } else {
-          console.warn('[CanvasGraphics] getRGBAFromCtx - ctx is null, no fallback available');
+          warn('[CanvasGraphics] getRGBAFromCtx - ctx is null, no fallback available');
           const emptyArrayAddr = J2ME.newByteArray(0);
           return emptyArrayAddr;
         }
@@ -890,7 +903,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         if (canvas) {
           w = w <= 0 ? canvas.width : w;
           h = h <= 0 ? canvas.height : h;
-          console.log('[CanvasGraphics] getRGBAFromCtx - using canvas dimensions:', w, 'x', h);
+          log('[CanvasGraphics] getRGBAFromCtx - using canvas dimensions:', w, 'x', h);
         }
       }
       
@@ -899,16 +912,16 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       // CRITICAL FIX: Convert JavaScript Int8Array to proper Java byte array
       // Direct return of Int8Array doesn't work - must use J2ME.newByteArray
       if (!result || result.length === 0) {
-        console.warn('[CanvasGraphics] getRGBAFromCtx - result is empty');
+        warn('[CanvasGraphics] getRGBAFromCtx - result is empty');
         const emptyArrayAddr = J2ME.newByteArray(0);
         return emptyArrayAddr;
       }
       
-      console.log('[CanvasGraphics] getRGBAFromCtx - creating Java byte array, size:', result.length);
+      log('[CanvasGraphics] getRGBAFromCtx - creating Java byte array, size:', result.length);
       const arrayAddr = J2ME.newByteArray(result.length);
       const array = J2ME.getArrayFromAddr(arrayAddr);
       array.set(result);
-      console.log('[CanvasGraphics] getRGBAFromCtx - Java byte array created successfully');
+      log('[CanvasGraphics] getRGBAFromCtx - Java byte array created successfully');
       return arrayAddr;
     };
 
