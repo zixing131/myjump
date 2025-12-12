@@ -240,15 +240,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
     // Parameters: ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha
     drawImage2: function(lib, ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha) {
       // 移除调用过程日志
-      
-      if (!ctx || !canvasRef) {
-        if (window.debugLog) {
-          window.debugLog.error('DRAWIMAGE2', 'Missing ctx or canvasRef!', { ctx: !!ctx, canvasRef: !!canvasRef });
-        }
-        // 移除调用过程日志
-        return;
-      }
-      
+       
       // CRITICAL FIX: The ctx.canvas is the offscreenCanvas which is NOT in the DOM
       // We need to also write to the actual device canvas (MIDP.deviceContext.canvas) for immediate display
       let deviceCtx = null;
@@ -591,6 +583,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
           // The offscreen canvas gets overwritten by 2D UI rendering before refresh0 copies it
           // So we must write 3D content directly to the visible device canvas
           if (deviceCtx) {
+            console.log('[DRAWIMAGE2] 直接写入设备画布以避免被2D内容覆盖');
             // CRITICAL: Set flag BEFORE writing to ensure refresh0 can detect it
             // This prevents race condition where refresh0 checks flag before it's set
             window.gles2JustRendered = true;
@@ -600,64 +593,6 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             // CRITICAL: Also set a timestamp to help debug timing issues
             window.gles2JustRenderedTime = Date.now();
             
-            // CRITICAL DIAGNOSIS: Verify what was actually written to device canvas
-            try {
-              // Check center pixel after putImageData
-              const verifyData = deviceCtx.getImageData(srcWidth/2, srcHeight/2, 1, 1).data;
-              const verifyPixel = { r: verifyData[0], g: verifyData[1], b: verifyData[2], a: verifyData[3] };
-              
-              // Also check what should have been written (from ImageData)
-              const expectedCenterIdx = (centerY * srcWidth + centerX) * 4;
-              const expectedPixel = {
-                r: imageData.data[expectedCenterIdx],
-                g: imageData.data[expectedCenterIdx + 1],
-                b: imageData.data[expectedCenterIdx + 2],
-                a: imageData.data[expectedCenterIdx + 3]
-              };
-              
-              if (!window._putImageDataDiagnosisPrinted) {
-                console.log('[DRAWIMAGE2] putImageData诊断:');
-                console.log('  写入位置: (0, 0), 尺寸:', srcWidth + 'x' + srcHeight);
-                console.log('  ImageData中心像素 (应该写入的):', expectedPixel);
-                console.log('  Device canvas中心像素 (实际读取的):', verifyPixel);
-                if (verifyPixel.r !== expectedPixel.r || verifyPixel.g !== expectedPixel.g || 
-                    verifyPixel.b !== expectedPixel.b || verifyPixel.a !== expectedPixel.a) {
-                  console.error('[DRAWIMAGE2] ❌ 写入的像素与读取的像素不匹配！putImageData可能失败或位置错误');
-                } else {
-                  console.log('[DRAWIMAGE2] ✅ 写入的像素与读取的像素匹配');
-                }
-                window._putImageDataDiagnosisPrinted = true;
-              }
-              
-              if (window.debugLog) {
-                window.debugLog.info('DRAWIMAGE2', 'Device canvas verify pixel', verifyPixel);
-                
-                // 检查是否为黑色（只打印一次，避免刷屏）
-                if (verifyPixel.r === 0 && verifyPixel.g === 0 && verifyPixel.b === 0) {
-                  if (!window._deviceCanvasBlackMessagePrinted) {
-                    window.debugLog.warn('BLACKSCREEN', 'Device canvas center pixel is BLACK!', {
-                      pixel: verifyPixel,
-                      sourceCenterPixel: centerPixel,
-                      note: '3D content was written but appears black. Check WebGL rendering state.'
-                    });
-                    console.log('[BLACKSCREEN] Device canvas center pixel is BLACK after write!');
-                    console.log('[BLACKSCREEN] This suggests the WebGL content itself is black.');
-                    console.log('[BLACKSCREEN] Run window.diagnose3DBlackScreen() for detailed diagnostics');
-                    window._deviceCanvasBlackMessagePrinted = true;
-                  }
-                } else {
-                  // 像素恢复正常时重置标志
-                  if (window._deviceCanvasBlackMessagePrinted) {
-                    window._deviceCanvasBlackMessagePrinted = false;
-                  }
-                }
-              }
-            } catch (e) {
-              if (window.debugLog) {
-                window.debugLog.error('DRAWIMAGE2', 'Verify failed', e);
-              }
-              warn('[CanvasGraphics] drawImage2 - verify failed:', e);
-            }
           } else {
             // Fallback to screenContext2D if no device context
             const targetCtx = window.screenContext2D || ctx;
@@ -687,6 +622,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
         
         ctx.restore();
       }
+ 
     },
 
     // Get RGBA data from context
@@ -991,8 +927,7 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
 
     // drawImage2 with signature (Object, Object, int sx, int sy, int x, int y, int width, int height, boolean flipY, boolean withAlpha)
     Native[cgBasePath + '.drawImage2.(Ljava/lang/Object;Ljava/lang/Object;IIIIIIZZ)V'] = function(addr, ctxAddr, canvasAddr, sx, sy, x, y, w, h, flipY, withAlpha) {
-      // 移除调用过程日志
-      
+      // 移除调用过程日志 
       let ctx = getCtx(ctxAddr);
       let canvas = getCtx(canvasAddr);
       

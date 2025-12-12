@@ -8425,108 +8425,36 @@ var currentlyFocusedTextEditor;
     return 1;
   };
 
-
-  /************************************************************
- * 3D + 2D 通用版 refresh0
- * - 解决第一帧正常后 3D 卡死的问题
- * - 移除重复 blitGL 和 gl.finish()
- * - 支持 2D 正常绘制
- ************************************************************/
-
-  // === 全局状态 === 
-  window.gles2JustRendered = false;
-  var refreshStr="refresh";
- 
-  let rafScheduled = false;
-  const waiters = [];
-
-  // 这一帧合并一次绘制（可选：把 2D 区域合并成一个大矩形）
-  let pending3D = false;
-  let has2D = false;
-  let minX1 = 0, minY1 = 0, maxX2 = 0, maxY2 = 0;
-  let boundsInit = false;
-
-  function unionRect(x1, y1, x2, y2) {
-    if (!boundsInit) {
-      minX1 = x1; minY1 = y1; maxX2 = x2; maxY2 = y2;
-      boundsInit = true;
+  
+  // ===== 全局状态 =====
+window.gles2JustRendered = false; 
+  var refreshStr = "refresh";
+  Native["com/sun/midp/lcdui/DisplayDevice.refresh0.(IIIIII)V"] = function(addr, hardwareId, displayId, x1, y1, x2, y2) {
+    console.log('refresh0');
+    
+    x1 = Math.max(0, x1);
+    y1 = Math.max(0, y1);
+    x2 = Math.max(0, x2);
+    y2 = Math.max(0, y2);
+    var maxX = Math.min(offscreenCanvas.width, MIDP.deviceContext.canvas.width);
+    x1 = Math.min(maxX, x1);
+    x2 = Math.min(maxX, x2);
+    var maxY = Math.min(offscreenCanvas.height, MIDP.deviceContext.canvas.height);
+    y1 = Math.min(maxY, y1);
+    y2 = Math.min(maxY, y2);
+    var width = x2 - x1;
+    var height = y2 - y1;
+    if (width <= 0 || height <= 0) {
       return;
     }
-    if (x1 < minX1) minX1 = x1;
-    if (y1 < minY1) minY1 = y1;
-    if (x2 > maxX2) maxX2 = x2;
-    if (y2 > maxY2) maxY2 = y2;
-  }
-
-  Native["com/sun/midp/lcdui/DisplayDevice.refresh0.(IIIIII)V"] =
-    function (addr, hardwareId, displayId, x1, y1, x2, y2) {
-      const ctx = $.ctx;
-
-      // 记录这一帧是否出现过 3D
-      if (window.gles2JustRendered === true) {
-        pending3D = true;
-        window.gles2JustRendered = false;
-      }
-
-      // 记录 2D 刷新区域（用来做 overlay / 或 2D 帧）
-      const w = x2 - x1;
-      const h = y2 - y1;
-      if (w > 0 && h > 0) {
-        has2D = true;
-        unionRect(x1, y1, x2, y2);
-      }
-
-      // 本次 ctx 必须等到这一帧 rAF 才能继续
-      waiters.push(ctx);
-
-      if (!rafScheduled) {
-        rafScheduled = true;
-
-        const raf = window.requestAnimationFrame || ((fn) => setTimeout(fn, 16));
-        raf(() => {
-          rafScheduled = false;
-
-          try {
-            // 先 present 3D（如果这一帧有 3D）
-            if (pending3D) {
-              MIDP?.deviceContext?.blitGL?.();
-            }
-
-            // 再画 2D（无论是否 3D，都放在最后当 overlay，更安全）
-            if (has2D && offscreenCanvas && MIDP?.deviceContext) {
-              const dx1 = minX1, dy1 = minY1;
-              const dw = maxX2 - minX1, dh = maxY2 - minY1;
-
-              if (dw > 0 && dh > 0) {
-                MIDP.deviceContext.drawImage(
-                  offscreenCanvas,
-                  dx1, dy1, dw, dh,
-                  dx1, dy1, dw, dh
-                );
-              }
-            }
-          } catch (e) {
-            console.warn('[refresh0] render error', e);
-          }
-
-          // ✅ 关键：一次性唤醒这一帧所有 pause 的 ctx
-          while (waiters.length) {
-            J2ME.Scheduler.enqueue(waiters.shift());
-          }
-
-          // reset frame state
-          pending3D = false;
-          has2D = false;
-          boundsInit = false;  
-        });
-      }
-
-      $.pause(refreshStr);
-      $.nativeBailout(J2ME.Kind.Void);
-    };
-
-
-
+    var ctx = $.ctx;
+    window.requestAnimationFrame(function() {
+      MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height); 
+      J2ME.Scheduler.enqueue(ctx);
+    });
+    $.pause(refreshStr);
+    $.nativeBailout(J2ME.Kind.Void);
+  }; 
   function swapRB(pixel) {
     return pixel & 4278255360 | pixel >> 16 & 255 | (pixel & 255) << 16;
   }
