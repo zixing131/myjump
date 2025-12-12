@@ -580,6 +580,9 @@ window.GLES2_LIB_VERSION = '20251212g';
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_clear: function(lib, ptr, mask) {
       if (!ptr || !ptr.gl) {
         warnOnce('clear-null', '[GLES2] clear - ptr or gl is null');
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'clear - ptr or gl is null');
+        }
         return;
       }
       if (mask === 0) {
@@ -590,13 +593,25 @@ window.GLES2_LIB_VERSION = '20251212g';
         if (DEBUG) {
           console.log('[GLES2] clear called:', mask, 'canvas size:', ptr.gl.canvas.width, 'x', ptr.gl.canvas.height);
         }
+        if (window.debugLog) {
+          window.debugLog.debug('WEBGL', 'clear called', {
+            mask: mask,
+            canvasSize: `${ptr.gl.canvas.width}x${ptr.gl.canvas.height}`
+          });
+        }
         ptr.gl.clear(mask);
         const error = ptr.gl.getError();
         if (error !== ptr.gl.NO_ERROR) {
           warnOnce('clear-error', '[GLES2] GL error after clear:', error);
+          if (window.debugLog) {
+            window.debugLog.error('WEBGL', 'GL error after clear', { error: error });
+          }
         }
       } catch (e) {
         errorOnce('clear-exception', '[GLES2] clear exception:', e);
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'clear exception', e);
+        }
       }
     },
 
@@ -604,6 +619,14 @@ window.GLES2_LIB_VERSION = '20251212g';
       // Reduce log spam - only log if DEBUG is enabled
       if (DEBUG) {
         console.log('[GLES2] clearColor set:', r, g, b, a);
+      }
+      if (window.debugLog) {
+        // 检查是否为黑色背景
+        if (r === 0 && g === 0 && b === 0 && a === 0) {
+          window.debugLog.warn('BLACKSCREEN', 'clearColor set to transparent black (0,0,0,0)', { r, g, b, a });
+        } else if (r === 0 && g === 0 && b === 0 && a > 0) {
+          window.debugLog.debug('BLACKSCREEN', 'clearColor set to black', { r, g, b, a });
+        }
       }
       ptr.gl.clearColor(r, g, b, a);
     },
@@ -665,24 +688,47 @@ window.GLES2_LIB_VERSION = '20251212g';
       const viewport = ptr.gl.getParameter(ptr.gl.VIEWPORT);
       if (currentProgram === null) {
         warnOnce('drawElements-noprogram', '[GLES2] drawElements - no program bound!');
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'drawElements - no program bound!');
+        }
       }
       if (viewport[2] === 0 || viewport[3] === 0) {
         warnOnce('drawElements-viewport', '[GLES2] drawElements - invalid viewport:', viewport);
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'drawElements - invalid viewport', { viewport });
+        }
       }
       
       // DEBUG: Check ELEMENT_ARRAY_BUFFER binding
       const elementBuffer = ptr.gl.getParameter(ptr.gl.ELEMENT_ARRAY_BUFFER_BINDING);
       if (!elementBuffer) {
         warnOnce('drawElements-nobuf', '[GLES2] drawElements - no element array buffer bound!');
+        if (window.debugLog) {
+          window.debugLog.warn('WEBGL', 'drawElements - no element array buffer bound!');
+        }
       }
       
       // DEBUG: Check ARRAY_BUFFER binding
       const arrayBuffer = ptr.gl.getParameter(ptr.gl.ARRAY_BUFFER_BINDING);
       
+      if (window.debugLog && (!window._drawElementsLogThrottle || Date.now() - window._drawElementsLogThrottle > 1000)) {
+        window.debugLog.debug('WEBGL', 'drawElements', {
+          mode, count, type, offset,
+          hasProgram: !!currentProgram,
+          viewport: viewport,
+          hasElementBuffer: !!elementBuffer,
+          hasArrayBuffer: !!arrayBuffer
+        });
+        window._drawElementsLogThrottle = Date.now();
+      }
+      
       ptr.gl.drawElements(mode, count, type, offset);
       const error = ptr.gl.getError();
       if (error !== ptr.gl.NO_ERROR) {
         warnOnce('drawElements-error', '[GLES2] GL error after drawElements:', error, 'mode:', mode, 'count:', count);
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'GL error after drawElements', { error, mode, count });
+        }
       }
       
       // DEBUG: Read center pixel after draw to check if anything was rendered
@@ -696,8 +742,30 @@ window.GLES2_LIB_VERSION = '20251212g';
           const centerY = Math.floor(viewport[3] / 2);
           ptr.gl.readPixels(centerX, centerY, 1, 1, ptr.gl.RGBA, ptr.gl.UNSIGNED_BYTE, pixel);
           log('[GLES2] drawElements #' + window._drawElementsCheckCount + ' - center pixel after draw:', pixel[0], pixel[1], pixel[2], pixel[3], 'count:', count, 'elemBuf:', !!elementBuffer, 'arrayBuf:', !!arrayBuffer);
+          
+          if (window.debugLog) {
+            const pixelData = { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
+            window.debugLog.info('WEBGL', `drawElements #${window._drawElementsCheckCount} - center pixel after draw`, {
+              pixel: pixelData,
+              count,
+              position: { x: centerX, y: centerY }
+            });
+            
+            // 检查是否为黑色
+            if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0 && pixel[3] === 255) {
+              window.debugLog.warn('BLACKSCREEN', 'drawElements center pixel is BLACK!', {
+                pixel: pixelData,
+                count,
+                hasProgram: !!currentProgram,
+                hasElementBuffer: !!elementBuffer
+              });
+            }
+          }
         } catch (e) {
           warn('[GLES2] drawElements - failed to read pixel:', e);
+          if (window.debugLog) {
+            window.debugLog.error('WEBGL', 'drawElements - failed to read pixel', e);
+          }
         }
       }
     },
@@ -742,6 +810,9 @@ window.GLES2_LIB_VERSION = '20251212g';
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_readPixels: function(lib, ptr, x, y, width, height, int8pixels) {
       if (!ptr || !ptr.gl) {
         warnOnce('readPixels-null', '[GLES2] readPixels - ptr or gl is null');
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'readPixels - ptr or gl is null');
+        }
         return;
       }
       const gl = ptr.gl;
@@ -749,6 +820,9 @@ window.GLES2_LIB_VERSION = '20251212g';
         // Validate dimensions
         if (width <= 0 || height <= 0 || x < 0 || y < 0) {
           warnOnce('readPixels-dim', '[GLES2] readPixels - invalid dimensions. x:', x, 'y:', y, 'w:', width, 'h:', height);
+          if (window.debugLog) {
+            window.debugLog.error('WEBGL', 'readPixels - invalid dimensions', { x, y, width, height });
+          }
           return;
         }
         
@@ -757,6 +831,9 @@ window.GLES2_LIB_VERSION = '20251212g';
         
         if (!int8pixels || actualSize < expectedSize) {
           warnOnce('readPixels-buf', '[GLES2] readPixels - buffer size mismatch. Expected:', expectedSize, 'Got:', actualSize);
+          if (window.debugLog) {
+            window.debugLog.error('WEBGL', 'readPixels - buffer size mismatch', { expectedSize, actualSize });
+          }
           return;
         }
         
@@ -765,6 +842,12 @@ window.GLES2_LIB_VERSION = '20251212g';
         const canvasHeight = gl.canvas.height || 0;
         if (x + width > canvasWidth || y + height > canvasHeight) {
           warnOnce('readPixels-bounds', '[GLES2] readPixels - coordinates out of bounds');
+          if (window.debugLog) {
+            window.debugLog.warn('WEBGL', 'readPixels - coordinates out of bounds', {
+              x, y, width, height,
+              canvasSize: `${canvasWidth}x${canvasHeight}`
+            });
+          }
           // Clamp to valid range
           width = Math.min(width, canvasWidth - x);
           height = Math.min(height, canvasHeight - y);
@@ -773,15 +856,60 @@ window.GLES2_LIB_VERSION = '20251212g';
           }
         }
         
+        if (window.debugLog && (!window._readPixelsLogThrottle || Date.now() - window._readPixelsLogThrottle > 1000)) {
+          window.debugLog.debug('SWAPBUFFERS', 'readPixels called', {
+            x, y, width, height,
+            canvasSize: `${canvasWidth}x${canvasHeight}`,
+            bufferSize: actualSize
+          });
+          window._readPixelsLogThrottle = Date.now();
+        }
+        
         const pixels = new Uint8Array(int8pixels.buffer, int8pixels.byteOffset, int8pixels.byteLength);
         gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        
+        // 检查中心像素是否为黑色
+        if (window.debugLog && width > 0 && height > 0) {
+          const centerX = Math.floor(width / 2);
+          const centerY = Math.floor(height / 2);
+          const centerIdx = (centerY * width + centerX) * 4;
+          if (centerIdx + 3 < pixels.length) {
+            const r = pixels[centerIdx];
+            const g = pixels[centerIdx + 1];
+            const b = pixels[centerIdx + 2];
+            const a = pixels[centerIdx + 3];
+            
+            if (r === 0 && g === 0 && b === 0 && a === 255) {
+              window.debugLog.warn('BLACKSCREEN', 'readPixels center pixel is BLACK!', {
+                position: { x: x + centerX, y: y + centerY },
+                pixel: { r, g, b, a },
+                size: `${width}x${height}`
+              });
+            } else if (r > 0 || g > 0 || b > 0) {
+              // 只在非黑色时记录（节流）
+              if (!window._readPixelsNonBlackLogThrottle || Date.now() - window._readPixelsNonBlackLogThrottle > 5000) {
+                window.debugLog.info('SWAPBUFFERS', 'readPixels center pixel is NOT black', {
+                  position: { x: x + centerX, y: y + centerY },
+                  pixel: { r, g, b, a }
+                });
+                window._readPixelsNonBlackLogThrottle = Date.now();
+              }
+            }
+          }
+        }
         
         const error = gl.getError();
         if (error !== gl.NO_ERROR) {
           warnOnce('readPixels-error', '[GLES2] readPixels error:', error);
+          if (window.debugLog) {
+            window.debugLog.error('WEBGL', 'readPixels error', { error });
+          }
         }
       } catch (e) {
         errorOnce('readPixels-exception', '[GLES2] readPixels exception:', e);
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'readPixels exception', e);
+        }
       }
     },
 
@@ -792,10 +920,16 @@ window.GLES2_LIB_VERSION = '20251212g';
     Java_pl_zb3_freej2me_bridge_gles2_GLES2_viewport: function(lib, ptr, x, y, width, height) {
       if (!ptr || !ptr.gl) {
         warnOnce('viewport-null', '[GLES2] viewport - ptr or gl is null');
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'viewport - ptr or gl is null');
+        }
         return;
       }
       if (width <= 0 || height <= 0) {
         warnOnce('viewport-dim', '[GLES2] viewport - invalid dimensions:', width, 'x', height);
+        if (window.debugLog) {
+          window.debugLog.error('WEBGL', 'viewport - invalid dimensions', { x, y, width, height });
+        }
         return;
       }
       try {

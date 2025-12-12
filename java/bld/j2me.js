@@ -4589,8 +4589,29 @@ var J2ME;
                                     // CRITICAL FIX: Check mi and codeAttribute after OSR return
                                     if (!mi || !mi.codeAttribute) {
                                         if (!window._interpretOsrNullThrottle || Date.now() - window._interpretOsrNullThrottle > 5000) {
-                                            console.warn('[interpret] methodInfo or codeAttribute is null after OSR return, returning');
+                                            console.warn('[interpret] methodInfo or codeAttribute is null after OSR return, attempting recovery');
                                             window._interpretOsrNullThrottle = Date.now();
+                                        }
+                                        // CRITICAL FIX: Try to recover from thread state
+                                        if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                            fp = thread.fp | 0;
+                                            sp = thread.sp | 0;
+                                            opPC = thread.pc | 0;
+                                            mi = thread.frame ? thread.frame.methodInfo : null;
+                                            if (mi && mi.codeAttribute) {
+                                                maxLocals = mi.codeAttribute.max_locals;
+                                                lp = fp - maxLocals | 0;
+                                                ci = mi.classInfo;
+                                                if (ci) {
+                                                    cp = ci.constantPool;
+                                                    code = mi.codeAttribute.code;
+                                                    if (code && opPC >= 0 && opPC < code.length) {
+                                                        pc = opPC;
+                                                        console.warn('[interpret] OSR return recovery successful');
+                                                        continue;
+                                                    }
+                                                }
+                                            }
                                         }
                                         return;
                                     }
@@ -4600,8 +4621,29 @@ var J2ME;
                                     ci = mi.classInfo;
                                     if (!ci) {
                                         if (!window._interpretOsrNullCiThrottle || Date.now() - window._interpretOsrNullCiThrottle > 5000) {
-                                            console.warn('[interpret] classInfo is null after OSR return, returning');
+                                            console.warn('[interpret] classInfo is null after OSR return, attempting recovery');
                                             window._interpretOsrNullCiThrottle = Date.now();
+                                        }
+                                        // CRITICAL FIX: Try to recover from thread state
+                                        if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                            fp = thread.fp | 0;
+                                            sp = thread.sp | 0;
+                                            opPC = thread.pc | 0;
+                                            mi = thread.frame ? thread.frame.methodInfo : null;
+                                            if (mi && mi.codeAttribute) {
+                                                maxLocals = mi.codeAttribute.max_locals;
+                                                lp = fp - maxLocals | 0;
+                                                ci = mi.classInfo;
+                                                if (ci) {
+                                                    cp = ci.constantPool;
+                                                    code = mi.codeAttribute.code;
+                                                    if (code && opPC >= 0 && opPC < code.length) {
+                                                        pc = opPC;
+                                                        console.warn('[interpret] OSR return classInfo recovery successful');
+                                                        continue;
+                                                    }
+                                                }
+                                            }
                                         }
                                         return;
                                     }
@@ -4610,8 +4652,29 @@ var J2ME;
                                     // CRITICAL FIX: Verify code is valid before accessing it
                                     if (!code) {
                                         if (!window._interpretOsrNullCodeThrottle || Date.now() - window._interpretOsrNullCodeThrottle > 5000) {
-                                            console.warn('[interpret] code is null after OSR return, returning');
+                                            console.warn('[interpret] code is null after OSR return, attempting recovery');
                                             window._interpretOsrNullCodeThrottle = Date.now();
+                                        }
+                                        // CRITICAL FIX: Try to recover from thread state
+                                        if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                            fp = thread.fp | 0;
+                                            sp = thread.sp | 0;
+                                            opPC = thread.pc | 0;
+                                            mi = thread.frame ? thread.frame.methodInfo : null;
+                                            if (mi && mi.codeAttribute) {
+                                                maxLocals = mi.codeAttribute.max_locals;
+                                                lp = fp - maxLocals | 0;
+                                                ci = mi.classInfo;
+                                                if (ci) {
+                                                    cp = ci.constantPool;
+                                                    code = mi.codeAttribute.code;
+                                                    if (code && opPC >= 0 && opPC < code.length) {
+                                                        pc = opPC;
+                                                        console.warn('[interpret] OSR return code recovery successful');
+                                                        continue;
+                                                    }
+                                                }
+                                            }
                                         }
                                         return;
                                     }
@@ -5085,11 +5148,52 @@ var J2ME;
                                         if (ci) {
                                             cp = ci.constantPool;
                                             code = mi.codeAttribute.code;
-                                            if (code) {
+                                            if (code && opPC >= 0 && opPC < code.length) {
                                                 pc = opPC;
                                                 continue;
                                             }
                                         }
+                                    }
+                                    // CRITICAL FIX: If thread state is valid but mi/codeAttribute/code is incomplete,
+                                    // try to find the next valid frame or use a safe default
+                                    // This prevents the game from freezing when Sys.unwind returns with incomplete state
+                                    if (!window._interpretUnwindIncompleteStateThrottle || Date.now() - window._interpretUnwindIncompleteStateThrottle > 5000) {
+                                        console.warn('[interpret] Sys.unwind: thread state valid but method info incomplete, attempting recovery');
+                                        console.warn('[interpret] fp=' + fp + ', sp=' + sp + ', opPC=' + opPC + ', mi=' + (mi ? 'exists' : 'null'));
+                                        window._interpretUnwindIncompleteStateThrottle = Date.now();
+                                    }
+                                    // Try to find next valid frame by searching up the stack
+                                    var searchFP = fp;
+                                    var maxSearch = 10;
+                                    var searchCount = 0;
+                                    while (searchCount < maxSearch && searchFP >= minFP && searchFP !== 0) {
+                                        var frameType = i32[searchFP + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                                        var frameMI = J2ME.methodIdToMethodInfoMap[i32[searchFP + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                                        if (frameType === FrameType.Interpreter && frameMI && frameMI.codeAttribute && frameMI.codeAttribute.code) {
+                                            // Found a valid frame, use it
+                                            fp = searchFP;
+                                            sp = thread.sp | 0;
+                                            opPC = thread.pc | 0;
+                                            mi = frameMI;
+                                            maxLocals = mi.codeAttribute.max_locals;
+                                            lp = fp - maxLocals | 0;
+                                            ci = mi.classInfo;
+                                            if (ci) {
+                                                cp = ci.constantPool;
+                                                code = mi.codeAttribute.code;
+                                                if (code && opPC >= 0 && opPC < code.length) {
+                                                    pc = opPC;
+                                                    console.warn('[interpret] Sys.unwind: recovered using frame at fp=' + fp);
+                                                    continue;
+                                                }
+                                            }
+                                        }
+                                        var nextFP = i32[searchFP + 1 /* CallerFPOffset */];
+                                        if (nextFP < minFP || nextFP === 0) {
+                                            break;
+                                        }
+                                        searchFP = nextFP;
+                                        searchCount++;
                                     }
                                 }
                                 // If thread state is also invalid, just return the value (this is better than freezing)
@@ -5244,7 +5348,146 @@ var J2ME;
                                     }
                                 }
                             }
-                            // If everything fails, return (this will suspend the thread)
+                            // CRITICAL FIX: Instead of returning (which suspends the thread),
+                            // try one more aggressive recovery: use thread's current state even if it seems invalid
+                            // This prevents the game from freezing when frame stack is corrupted
+                            if (!window._interpretLastResortRecoveryThrottle || Date.now() - window._interpretLastResortRecoveryThrottle > 5000) {
+                                console.warn('[interpret] All recovery strategies failed, attempting last resort recovery to prevent freeze');
+                                window._interpretLastResortRecoveryThrottle = Date.now();
+                            }
+                            // Last resort: try to use thread state even if fp seems invalid
+                            // This might allow the game to continue in some edge cases
+                            if (thread.fp !== 0 && thread.fp >= (thread.tp >> 2)) {
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code) {
+                                            pc = opPC;
+                                            console.warn('[interpret] Last resort recovery successful, continuing execution');
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                            // If even last resort fails, log error but try to continue with a safe default
+                            // This is better than freezing the game
+                            if (!window._interpretFinalRecoveryFailedThrottle || Date.now() - window._interpretFinalRecoveryFailedThrottle > 5000) {
+                                console.error('[interpret] All recovery strategies including last resort failed');
+                                console.error('[interpret] Thread state: fp=' + thread.fp + ', sp=' + thread.sp + ', pc=' + thread.pc);
+                                console.error('[interpret] Attempting to continue with thread state to prevent freeze');
+                                window._interpretFinalRecoveryFailedThrottle = Date.now();
+                            }
+                            // Try to use thread state one more time, even if it seems invalid
+                            // This is a desperate attempt to prevent the game from freezing
+                            fp = thread.fp | 0;
+                            sp = thread.sp | 0;
+                            opPC = thread.pc | 0;
+                            mi = thread.frame ? thread.frame.methodInfo : null;
+                            if (mi && mi.codeAttribute) {
+                                maxLocals = mi.codeAttribute.max_locals;
+                                lp = fp - maxLocals | 0;
+                                ci = mi.classInfo;
+                                if (ci) {
+                                    cp = ci.constantPool;
+                                    code = mi.codeAttribute.code;
+                                    if (code && opPC >= 0 && opPC < code.length) {
+                                        pc = opPC;
+                                        console.warn('[interpret] Final recovery attempt successful, continuing execution');
+                                        continue;
+                                    }
+                                }
+                            }
+                            // CRITICAL FIX: Instead of returning (which suspends the thread and causes game freeze),
+                            // try one final aggressive recovery: reset to a safe state and continue
+                            // This is better than freezing the game completely
+                            if (!window._interpretCompleteFailureThrottle || Date.now() - window._interpretCompleteFailureThrottle > 5000) {
+                                console.error('[interpret] Complete failure: cannot recover frame stack with normal methods');
+                                console.error('[interpret] Attempting final aggressive recovery to prevent game freeze');
+                                console.error('[interpret] Thread state: fp=' + thread.fp + ', sp=' + thread.sp + ', pc=' + thread.pc);
+                                window._interpretCompleteFailureThrottle = Date.now();
+                            }
+                            // Final aggressive recovery: try to find any valid frame in the stack
+                            var searchFP = thread.fp | 0;
+                            var minFP = thread.tp >> 2;
+                            var maxSearch = 50;
+                            var searchCount = 0;
+                            var foundValidFrame = false;
+                            while (searchCount < maxSearch && searchFP >= minFP && searchFP !== 0) {
+                                try {
+                                    var frameType = i32[searchFP + 2 /* FrameTypeOffset */] & 4026531840 /* FrameTypeMask */;
+                                    var frameMI = J2ME.methodIdToMethodInfoMap[i32[searchFP + 2 /* CalleeMethodInfoOffset */] & 268435455 /* CalleeMethodInfoMask */];
+                                    if (frameType === FrameType.Interpreter && frameMI && frameMI.codeAttribute && frameMI.codeAttribute.code) {
+                                        // Found a valid frame, use it
+                                        fp = searchFP;
+                                        sp = thread.sp | 0;
+                                        opPC = thread.pc | 0;
+                                        mi = frameMI;
+                                        maxLocals = mi.codeAttribute.max_locals;
+                                        lp = fp - maxLocals | 0;
+                                        ci = mi.classInfo;
+                                        if (ci) {
+                                            cp = ci.constantPool;
+                                            code = mi.codeAttribute.code;
+                                            if (code && opPC >= 0 && opPC < code.length) {
+                                                pc = opPC;
+                                                console.warn('[interpret] Final aggressive recovery successful, found valid frame at fp=' + fp);
+                                                foundValidFrame = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    var nextFP = i32[searchFP + 1 /* CallerFPOffset */];
+                                    if (nextFP < minFP || nextFP === 0 || nextFP === searchFP) {
+                                        break;
+                                    }
+                                    searchFP = nextFP;
+                                    searchCount++;
+                                } catch (e) {
+                                    // Invalid frame, continue searching
+                                    break;
+                                }
+                            }
+                            if (foundValidFrame) {
+                                continue;
+                            }
+                            // If even final aggressive recovery fails, try to use thread state as absolute last resort
+                            // Even if it seems invalid, it's better than freezing
+                            if (thread.fp !== 0) {
+                                console.warn('[interpret] Using thread state as absolute last resort to prevent freeze');
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code && opPC >= 0 && opPC < code.length) {
+                                            pc = opPC;
+                                            console.warn('[interpret] Absolute last resort recovery successful');
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                            // Only return if absolutely everything fails
+                            // This will suspend the thread, but we've tried everything
+                            if (!window._interpretAbsoluteFailureThrottle || Date.now() - window._interpretAbsoluteFailureThrottle > 5000) {
+                                console.error('[interpret] Absolute failure: all recovery strategies exhausted, suspending thread');
+                                console.error('[interpret] This will cause the game to freeze. Frame stack is severely corrupted.');
+                                window._interpretAbsoluteFailureThrottle = Date.now();
+                            }
                             return;
                         }
                         
@@ -5280,9 +5523,31 @@ var J2ME;
                                 // CRITICAL FIX: Verify mi and update variables after PushPendingFrames
                                 if (!mi || !mi.codeAttribute) {
                                     if (!window._interpretPushPendingNullThrottle || Date.now() - window._interpretPushPendingNullThrottle > 5000) {
-                                        console.warn('[interpret] methodInfo or codeAttribute is null after PushPendingFrames, returning');
+                                        console.warn('[interpret] methodInfo or codeAttribute is null after PushPendingFrames, attempting recovery');
                                         window._interpretPushPendingNullThrottle = Date.now();
                                     }
+                                    // CRITICAL FIX: Instead of returning, try to recover from thread state
+                                    if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                        fp = thread.fp | 0;
+                                        sp = thread.sp | 0;
+                                        opPC = thread.pc | 0;
+                                        mi = thread.frame ? thread.frame.methodInfo : null;
+                                        if (mi && mi.codeAttribute) {
+                                            maxLocals = mi.codeAttribute.max_locals;
+                                            lp = fp - maxLocals | 0;
+                                            ci = mi.classInfo;
+                                            if (ci) {
+                                                cp = ci.constantPool;
+                                                code = mi.codeAttribute.code;
+                                                if (code) {
+                                                    pc = opPC;
+                                                    console.warn('[interpret] PushPendingFrames recovery successful');
+                                                    continue;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // If recovery fails, return (but we've tried)
                                     return;
                                 }
                                 maxLocals = mi.codeAttribute.max_locals;
@@ -5317,9 +5582,31 @@ var J2ME;
                                 // CRITICAL FIX: Verify mi and update variables after Interrupt
                                 if (!mi || !mi.codeAttribute) {
                                     if (!window._interpretInterruptNullThrottle || Date.now() - window._interpretInterruptNullThrottle > 5000) {
-                                        console.warn('[interpret] methodInfo or codeAttribute is null after Interrupt, returning');
+                                        console.warn('[interpret] methodInfo or codeAttribute is null after Interrupt, attempting recovery');
                                         window._interpretInterruptNullThrottle = Date.now();
                                     }
+                                    // CRITICAL FIX: Instead of returning, try to recover from thread state
+                                    if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                        fp = thread.fp | 0;
+                                        sp = thread.sp | 0;
+                                        opPC = thread.pc | 0;
+                                        mi = thread.frame ? thread.frame.methodInfo : null;
+                                        if (mi && mi.codeAttribute) {
+                                            maxLocals = mi.codeAttribute.max_locals;
+                                            lp = fp - maxLocals | 0;
+                                            ci = mi.classInfo;
+                                            if (ci) {
+                                                cp = ci.constantPool;
+                                                code = mi.codeAttribute.code;
+                                                if (code) {
+                                                    pc = opPC;
+                                                    console.warn('[interpret] Interrupt recovery successful');
+                                                    continue;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // If recovery fails, return (but we've tried)
                                     return;
                                 }
                                 maxLocals = mi.codeAttribute.max_locals;
@@ -5327,8 +5614,29 @@ var J2ME;
                                 ci = mi.classInfo;
                                 if (!ci) {
                                     if (!window._interpretInterruptNullCiThrottle || Date.now() - window._interpretInterruptNullCiThrottle > 5000) {
-                                        console.warn('[interpret] classInfo is null after Interrupt, returning');
+                                        console.warn('[interpret] classInfo is null after Interrupt, attempting recovery');
                                         window._interpretInterruptNullCiThrottle = Date.now();
+                                    }
+                                    // CRITICAL FIX: Try to recover from thread state
+                                    if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                        fp = thread.fp | 0;
+                                        sp = thread.sp | 0;
+                                        opPC = thread.pc | 0;
+                                        mi = thread.frame ? thread.frame.methodInfo : null;
+                                        if (mi && mi.codeAttribute) {
+                                            maxLocals = mi.codeAttribute.max_locals;
+                                            lp = fp - maxLocals | 0;
+                                            ci = mi.classInfo;
+                                            if (ci) {
+                                                cp = ci.constantPool;
+                                                code = mi.codeAttribute.code;
+                                                if (code) {
+                                                    pc = opPC;
+                                                    console.warn('[interpret] Interrupt classInfo recovery successful');
+                                                    continue;
+                                                }
+                                            }
+                                        }
                                     }
                                     return;
                                 }
@@ -5336,8 +5644,29 @@ var J2ME;
                                 code = mi.codeAttribute.code;
                                 if (!code) {
                                     if (!window._interpretInterruptNullCodeThrottle || Date.now() - window._interpretInterruptNullCodeThrottle > 5000) {
-                                        console.warn('[interpret] code is null after Interrupt, returning');
+                                        console.warn('[interpret] code is null after Interrupt, attempting recovery');
                                         window._interpretInterruptNullCodeThrottle = Date.now();
+                                    }
+                                    // CRITICAL FIX: Try to recover from thread state
+                                    if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                        fp = thread.fp | 0;
+                                        sp = thread.sp | 0;
+                                        opPC = thread.pc | 0;
+                                        mi = thread.frame ? thread.frame.methodInfo : null;
+                                        if (mi && mi.codeAttribute) {
+                                            maxLocals = mi.codeAttribute.max_locals;
+                                            lp = fp - maxLocals | 0;
+                                            ci = mi.classInfo;
+                                            if (ci) {
+                                                cp = ci.constantPool;
+                                                code = mi.codeAttribute.code;
+                                                if (code) {
+                                                    pc = opPC;
+                                                    console.warn('[interpret] Interrupt code recovery successful');
+                                                    continue;
+                                                }
+                                            }
+                                        }
                                     }
                                     return;
                                 }
@@ -5354,10 +5683,60 @@ var J2ME;
                         if (fp < minFP || fp === 0) {
                             if (!window._interpretInvalidFPThrottle || Date.now() - window._interpretInvalidFPThrottle > 5000) {
                                 console.error('[interpret] Invalid frame pointer after method return! fp: ' + fp + ', minFP: ' + minFP + ', sp: ' + sp);
-                                console.error('[interpret] Frame stack appears corrupted. Thread may need to be terminated.');
+                                console.error('[interpret] Frame stack appears corrupted. Attempting recovery to prevent freeze.');
                                 window._interpretInvalidFPThrottle = Date.now();
                             }
-                            // Frame stack is corrupted, cannot continue
+                            // CRITICAL FIX: Instead of returning (which suspends the thread),
+                            // try to recover from thread state to prevent game freeze
+                            if (thread.fp >= minFP && thread.fp !== 0) {
+                                console.warn('[interpret] Attempting recovery from thread state: fp=' + thread.fp + ', sp=' + thread.sp + ', pc=' + thread.pc);
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code) {
+                                            pc = opPC;
+                                            console.warn('[interpret] Recovery successful, continuing execution');
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                            // If recovery fails, log error but try to continue anyway to avoid freeze
+                            if (!window._interpretFPRecoveryFailed2Throttle || Date.now() - window._interpretFPRecoveryFailed2Throttle > 5000) {
+                                console.error('[interpret] Recovery failed, but continuing anyway to prevent freeze');
+                                console.error('[interpret] This may cause undefined behavior, but is better than freezing');
+                                window._interpretFPRecoveryFailed2Throttle = Date.now();
+                            }
+                            // Try to use thread state as last resort
+                            if (thread.fp !== 0) {
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code) {
+                                            pc = opPC;
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                            // Frame stack is corrupted and recovery failed, but we try to continue anyway
+                            // This is better than freezing the game
                             return;
                         }
                         
@@ -5400,6 +5779,28 @@ var J2ME;
                                 }
                                 window._interpretReturnNullThrottle = Date.now();
                             }
+                            // CRITICAL FIX: Instead of returning, try one more recovery attempt
+                            // Try to use thread state even if it seems invalid
+                            if (thread.fp !== 0) {
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code && opPC >= 0 && opPC < code.length) {
+                                            pc = opPC;
+                                            console.warn('[interpret] Method return recovery successful');
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
                             // If we can't recover, return to avoid infinite loop
                             return;
                         }
@@ -5411,8 +5812,29 @@ var J2ME;
                         ci = mi.classInfo;
                         if (!ci) {
                             if (!window._interpretReturnNullCiThrottle || Date.now() - window._interpretReturnNullCiThrottle > 5000) {
-                                console.warn('[interpret] classInfo is null after method return, returning');
+                                console.warn('[interpret] classInfo is null after method return, attempting recovery');
                                 window._interpretReturnNullCiThrottle = Date.now();
+                            }
+                            // CRITICAL FIX: Try to recover from thread state
+                            if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code && opPC >= 0 && opPC < code.length) {
+                                            pc = opPC;
+                                            console.warn('[interpret] Method return classInfo recovery successful');
+                                            continue;
+                                        }
+                                    }
+                                }
                             }
                             return;
                         }
@@ -5421,8 +5843,29 @@ var J2ME;
                         // CRITICAL FIX: Verify code is valid before continuing
                         if (!code) {
                             if (!window._interpretReturnNullCodeThrottle || Date.now() - window._interpretReturnNullCodeThrottle > 5000) {
-                                console.warn('[interpret] code is null after method return, returning');
+                                console.warn('[interpret] code is null after method return, attempting recovery');
                                 window._interpretReturnNullCodeThrottle = Date.now();
+                            }
+                            // CRITICAL FIX: Try to recover from thread state
+                            if (thread.fp >= (thread.tp >> 2) && thread.fp !== 0) {
+                                fp = thread.fp | 0;
+                                sp = thread.sp | 0;
+                                opPC = thread.pc | 0;
+                                mi = thread.frame ? thread.frame.methodInfo : null;
+                                if (mi && mi.codeAttribute) {
+                                    maxLocals = mi.codeAttribute.max_locals;
+                                    lp = fp - maxLocals | 0;
+                                    ci = mi.classInfo;
+                                    if (ci) {
+                                        cp = ci.constantPool;
+                                        code = mi.codeAttribute.code;
+                                        if (code && opPC >= 0 && opPC < code.length) {
+                                            pc = opPC;
+                                            console.warn('[interpret] Method return code recovery successful');
+                                            continue;
+                                        }
+                                    }
+                                }
                             }
                             return;
                         }

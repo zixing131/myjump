@@ -40,8 +40,8 @@ public final class Emulator3D {
 	private static long lastDepthLogTime = 0;
 	// Pixel sampling throttling to prevent browser freeze
 	private static long lastPixelSampleTime = 0;
-	private static final long PIXEL_SAMPLE_INTERVAL = 5000; // Only sample pixel every 5 seconds
-	private static boolean pixelSamplingEnabled = false; // Disabled by default to prevent performance issues
+	private static final long PIXEL_SAMPLE_INTERVAL = 2000; // Only sample pixel every 2 seconds
+	private static boolean pixelSamplingEnabled = true; // Enabled for debugging black screen issue
 
 	public static final int MaxViewportWidth = 2048;
 	public static final int MaxViewportHeight = 2048;
@@ -126,9 +126,9 @@ public final class Emulator3D {
 	public static void setPixelSamplingEnabled(boolean enabled) {
 		pixelSamplingEnabled = enabled;
 		if (enabled) {
-			System.out.println("[Emulator3D] Pixel sampling enabled - will sample pixel every " + (PIXEL_SAMPLE_INTERVAL / 1000) + " seconds");
+			//System.out.println("[Emulator3D] Pixel sampling enabled - will sample pixel every " + (PIXEL_SAMPLE_INTERVAL / 1000) + " seconds");
 		} else {
-			System.out.println("[Emulator3D] Pixel sampling disabled");
+			//System.out.println("[Emulator3D] Pixel sampling disabled");
 		}
 	}
 
@@ -315,7 +315,7 @@ public final class Emulator3D {
 				int lastDot = className.lastIndexOf('.');
 				targetName = lastDot >= 0 ? className.substring(lastDot + 1) : className;
 			}
-			System.out.println("[Emulator3D] swapBuffers called - x:" + x + " y:" + y + " w:" + width + " h:" + height + " target:" + targetName);
+			//System.out.println("[Emulator3D] swapBuffers called - x:" + x + " y:" + y + " w:" + width + " h:" + height + " target:" + targetName);
 			lastSwapLogTime = now;
 		}
 		
@@ -514,12 +514,12 @@ public final class Emulator3D {
 						
 						// flipY must be true because WebGL Y-axis is bottom-up while Canvas2D Y-axis is top-down
 						if (shouldLog) {
-							System.out.println("[Emulator3D] swapBuffers - calling blitGL on CanvasGraphics after finish()");
+							//System.out.println("[Emulator3D] swapBuffers - calling blitGL on CanvasGraphics after finish()");
 						}
 						try {
 							((CanvasGraphics) this.target).blitGL(x, y, x, y, width, height, true, false);
 							if (shouldLog) {
-								System.out.println("[Emulator3D] swapBuffers - blitGL completed");
+								//System.out.println("[Emulator3D] swapBuffers - blitGL completed");
 							}
 							
 							// CRITICAL FIX: Trigger canvas refresh after blitGL
@@ -541,7 +541,7 @@ public final class Emulator3D {
 				e.printStackTrace();
 			}
 		} else {
-			System.out.println("[Emulator3D] swapBuffers - target is null, skipping");
+			//System.out.println("[Emulator3D] swapBuffers - target is null, skipping");
 		}
 	}
 
@@ -595,7 +595,7 @@ public final class Emulator3D {
 			GLES2.viewport(viewportX, viewportY_flipped, viewportWidth, viewportHeight);
 			GLES2.scissor(viewportX, viewportY_flipped, viewportWidth, viewportHeight);
 			// Log viewport settings for debugging black screen issue
-			System.out.println("[Emulator3D] setViewport - Viewport: x=" + viewportX + " y=" + viewportY_flipped + " w=" + viewportWidth + " h=" + viewportHeight + " (targetHeight=" + targetHeight + ", original y=" + viewportY + ")");
+			//System.out.println("[Emulator3D] setViewport - Viewport: x=" + viewportX + " y=" + viewportY_flipped + " w=" + viewportWidth + " h=" + viewportHeight + " (targetHeight=" + targetHeight + ", original y=" + viewportY + ")");
 		}
 	}
 
@@ -623,10 +623,10 @@ public final class Emulator3D {
 		// Throttle logging to reduce console spam
 		long now = System.currentTimeMillis();
 		if (lastClearLogTime == 0 || now - lastClearLogTime > 1000) {
-			System.out.println("[Emulator3D] clearBackgound - bgColor: 0x" + Integer.toHexString(bgColor) + " rgba: (" + r + ", " + g + ", " + b + ", " + a + ")");
+			//System.out.println("[Emulator3D] clearBackgound - bgColor: 0x" + Integer.toHexString(bgColor) + " rgba: (" + r + ", " + g + ", " + b + ", " + a + ")");
 			if (bg != null) {
-				System.out.println("[Emulator3D] clearBackgound - Background has image: " + (bg.getImage() != null) + 
-					", colorClear: " + bg.isColorClearEnabled() + ", depthClear: " + bg.isDepthClearEnabled());
+				//System.out.println("[Emulator3D] clearBackgound - Background has image: " + (bg.getImage() != null) + 
+				//	", colorClear: " + bg.isColorClearEnabled() + ", depthClear: " + bg.isDepthClearEnabled());
 			}
 			lastClearLogTime = now;
 		}
@@ -644,7 +644,7 @@ public final class Emulator3D {
 			// Log if we're overriding the background settings
 			if (!bg.isColorClearEnabled() || !bg.isDepthClearEnabled()) {
 				if (lastClearLogTime == 0 || now - lastClearLogTime > 1000) {
-					System.out.println("[Emulator3D] clearBackgound - OVERRIDE: Always clearing buffers to prevent ghosting. bg.colorClear=" + bg.isColorClearEnabled() + ", bg.depthClear=" + bg.isDepthClearEnabled());
+					//System.out.println("[Emulator3D] clearBackgound - OVERRIDE: Always clearing buffers to prevent ghosting. bg.colorClear=" + bg.isColorClearEnabled() + ", bg.depthClear=" + bg.isDepthClearEnabled());
 				}
 			}
 			
@@ -664,11 +664,11 @@ public final class Emulator3D {
 			long now = System.currentTimeMillis();
 			if (lastBgLogTime == 0 || now - lastBgLogTime > 2000) {
 				if (bg == null) {
-					System.out.println("[Emulator3D] drawBackgroundImage - Background is null");
+					//System.out.println("[Emulator3D] drawBackgroundImage - Background is null");
 				} else if (bg.getImage() == null) {
-					System.out.println("[Emulator3D] drawBackgroundImage - Background image is null");
+					//System.out.println("[Emulator3D] drawBackgroundImage - Background image is null");
 				} else {
-					System.out.println("[Emulator3D] drawBackgroundImage - Invalid crop: w=" + bg.getCropWidth() + " h=" + bg.getCropHeight());
+					//System.out.println("[Emulator3D] drawBackgroundImage - Invalid crop: w=" + bg.getCropWidth() + " h=" + bg.getCropHeight());
 				}
 				lastBgLogTime = now;
 			}
@@ -678,8 +678,8 @@ public final class Emulator3D {
 		// Diagnostic: Log background image rendering
 		long now = System.currentTimeMillis();
 		if (lastBgLogTime == 0 || now - lastBgLogTime > 2000) {
-			System.out.println("[Emulator3D] drawBackgroundImage - Drawing background: " + bg.getImage().getWidth() + "x" + bg.getImage().getHeight() + 
-				" crop: " + bg.getCropX() + "," + bg.getCropY() + " " + bg.getCropWidth() + "x" + bg.getCropHeight());
+			//System.out.println("[Emulator3D] drawBackgroundImage - Drawing background: " + bg.getImage().getWidth() + "x" + bg.getImage().getHeight() + 
+			//	" crop: " + bg.getCropX() + "," + bg.getCropY() + " " + bg.getCropWidth() + "x" + bg.getCropHeight());
 			lastBgLogTime = now;
 		}
 
@@ -854,7 +854,7 @@ public final class Emulator3D {
 				// Log projection matrix for debugging (throttled)
 				long now = System.currentTimeMillis();
 				if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
-					System.out.println("[Emulator3D] setupCamera - Projection matrix set");
+					//System.out.println("[Emulator3D] setupCamera - Projection matrix set");
 					lastCameraLogTime = now;
 				}
 			} else {
@@ -867,7 +867,7 @@ public final class Emulator3D {
 					GLES2.uniformMatrix4fv(meshProgram.uViewMatrix, true, viewMatrix);
 					long now = System.currentTimeMillis();
 					if (lastCameraLogTime == 0 || now - lastCameraLogTime > 2000) {
-						System.out.println("[Emulator3D] setupCamera - View matrix set");
+						//System.out.println("[Emulator3D] setupCamera - View matrix set");
 						lastCameraLogTime = now;
 					}
 				} else {
@@ -893,7 +893,7 @@ public final class Emulator3D {
 			
 			if (light == null) {
 				if (shouldLog && i == 0) {
-					System.out.println("[Emulator3D] setupLights - light[" + i + "] is null, scope=" + scope);
+					//System.out.println("[Emulator3D] setupLights - light[" + i + "] is null, scope=" + scope);
 				}
 				continue;
 			}
@@ -904,14 +904,14 @@ public final class Emulator3D {
 			
 			if (!scopeMatch || !visible) {
 				if (shouldLog && i == 0) {
-					System.out.println("[Emulator3D] setupLights - light[" + i + "] filtered: scope=" + lightScope + " & " + scope + " = " + (lightScope & scope) + " (match=" + scopeMatch + "), visible=" + visible);
+					//System.out.println("[Emulator3D] setupLights - light[" + i + "] filtered: scope=" + lightScope + " & " + scope + " = " + (lightScope & scope) + " (match=" + scopeMatch + "), visible=" + visible);
 				}
 				continue;
 			}
 			
 			// Diagnostic: Log when first light is being set up
 			if (usedLights == 0 && shouldLog) {
-				System.out.println("[Emulator3D] setupLights - Setting up first light (index=" + i + ", scope=" + scope + ", lightScope=" + lightScope + ")");
+				//System.out.println("[Emulator3D] setupLights - Setting up first light (index=" + i + ", scope=" + scope + ", lightScope=" + lightScope + ")");
 			}
 
 			int lightId = usedLights;
@@ -983,7 +983,7 @@ public final class Emulator3D {
 		// Diagnostic: Log lights setup - always log usedLights value (critical for debugging)
 		// Always log the first time, then throttle
 		if (shouldLog || lastLightsLogTime == 0) {
-			System.out.println("[Emulator3D] setupLights - FINAL: usedLights=" + usedLights + " scope=" + scope + " (lights.size()=" + lights.size() + ")");
+			//System.out.println("[Emulator3D] setupLights - FINAL: usedLights=" + usedLights + " scope=" + scope + " (lights.size()=" + lights.size() + ")");
 			if (usedLights == 0) {
 				System.err.println("[Emulator3D] setupLights - CRITICAL: No lights active (usedLights=0)! If useLighting=true, output will be black (only emissive color).");
 				System.err.println("[Emulator3D] setupLights - This means: emissive=(0,0,0,1) + no light contribution = black output!");
@@ -1005,11 +1005,11 @@ public final class Emulator3D {
 		
 		int cameraScope = CameraCache.camera.getScope();
 		if ((cameraScope & scope) == 0) {
-			System.out.println("[Emulator3D] renderVertex - Scope mismatch: cameraScope=" + cameraScope + ", objectScope=" + scope);
+			//System.out.println("[Emulator3D] renderVertex - Scope mismatch: cameraScope=" + cameraScope + ", objectScope=" + scope);
 			return;
 		}
 		
-		System.out.println("[Emulator3D] renderVertex - Rendering object with scope=" + scope + ", alphaFactor=" + alphaFactor);
+		//System.out.println("[Emulator3D] renderVertex - Rendering object with scope=" + scope + ", alphaFactor=" + alphaFactor);
 		
 		useProgram(meshProgram);
 
@@ -1125,10 +1125,10 @@ public final class Emulator3D {
 		// Diagnostic: Log settings (throttled)
 		long now = System.currentTimeMillis();
 		if (lastDepthLogTime == 0 || now - lastDepthLogTime > 2000) {
-			System.out.println("[Emulator3D] setupCompositingMode - depthBufferEnabled=" + depthBufferEnabled + 
-				", depthTestEnabled=" + cm.isDepthTestEnabled() + " (forced=" + forceDepthTest + 
-				"), depthWriteEnabled=" + depthWriteEnabled + " (actual=" + actualDepthWrite + 
-				"), colorWriteEnabled=" + cm.isColorWriteEnabled() + " (actual=" + actualColorWrite + ")");
+			//System.out.println("[Emulator3D] setupCompositingMode - depthBufferEnabled=" + depthBufferEnabled + 
+				// ", depthTestEnabled=" + cm.isDepthTestEnabled() + " (forced=" + forceDepthTest + 
+				// "), depthWriteEnabled=" + depthWriteEnabled + " (actual=" + actualDepthWrite + 
+				// "), colorWriteEnabled=" + cm.isColorWriteEnabled() + " (actual=" + actualColorWrite + ")");
 			lastDepthLogTime = now;
 		}
 		
@@ -1185,7 +1185,7 @@ public final class Emulator3D {
 			// Diagnostic: Log trackVertexColors status
 			long now = System.currentTimeMillis();
 			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
-				System.out.println("[Emulator3D] setupMaterial - trackVertexColors=" + trackVertexColors + " useLighting=" + useLighting);
+				//System.out.println("[Emulator3D] setupMaterial - trackVertexColors=" + trackVertexColors + " useLighting=" + useLighting);
 				if (trackVertexColors) {
 					System.err.println("[Emulator3D] setupMaterial - WARNING: trackVertexColors=true! If vertex colors are black, lighting will output black!");
 				}
@@ -1227,17 +1227,17 @@ public final class Emulator3D {
 			
 			// Diagnostic logging for black screen issue (using existing 'now' variable)
 			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
-				System.out.println("[Emulator3D] setupMaterial - useLighting=" + useLighting + 
-					" ambient=(" + ambientCol[0] + "," + ambientCol[1] + "," + ambientCol[2] + "," + ambientCol[3] + ")" +
-					" diffuse=(" + diffuseCol[0] + "," + diffuseCol[1] + "," + diffuseCol[2] + "," + diffuseCol[3] + ")" +
-					" emissive=(" + emissiveCol[0] + "," + emissiveCol[1] + "," + emissiveCol[2] + "," + emissiveCol[3] + ")");
+				//System.out.println("[Emulator3D] setupMaterial - useLighting=" + useLighting + 
+					// " ambient=(" + ambientCol[0] + "," + ambientCol[1] + "," + ambientCol[2] + "," + ambientCol[3] + ")" +
+					// " diffuse=(" + diffuseCol[0] + "," + diffuseCol[1] + "," + diffuseCol[2] + "," + diffuseCol[3] + ")" +
+					// " emissive=(" + emissiveCol[0] + "," + emissiveCol[1] + "," + emissiveCol[2] + "," + emissiveCol[3] + ")");
 				lastMaterialLogTime = now;
 			}
 		} else {
 			// No material - will use vertex colors directly
 			long now = System.currentTimeMillis();
 			if (lastMaterialLogTime == 0 || now - lastMaterialLogTime > 2000) {
-				System.out.println("[Emulator3D] setupMaterial - WARNING: No material! useLighting=false, will use vertex colors directly");
+				//System.out.println("[Emulator3D] setupMaterial - WARNING: No material! useLighting=false, will use vertex colors directly");
 				lastMaterialLogTime = now;
 			}
 		}
@@ -1320,8 +1320,8 @@ public final class Emulator3D {
 			// Diagnostic: Log blend mode for ALL textures
 			long now = System.currentTimeMillis();
 			if (lastBlendModeLogTime == 0 || now - lastBlendModeLogTime > 2000) {
-				System.out.println("[Emulator3D] draw - Texture " + textureIdx + ": blendMode=" + blendMode + 
-					" (REPLACE=228, MODULATE=227, DECAL=226, BLEND=225, ADD=224)");
+				//System.out.println("[Emulator3D] draw - Texture " + textureIdx + ": blendMode=" + blendMode + 
+					// " (REPLACE=228, MODULATE=227, DECAL=226, BLEND=225, ADD=224)");
 				lastBlendModeLogTime = now;
 			}
 
@@ -1347,7 +1347,7 @@ public final class Emulator3D {
 			
 			// Diagnostic: Log hasColor and hasAlpha
 			if (lastBlendModeLogTime == 0 || System.currentTimeMillis() - lastBlendModeLogTime < 100) {
-				System.out.println("[Emulator3D] draw - Texture " + textureIdx + ": hasColor=" + hasColor + ", hasAlpha=" + hasAlpha + ", format=" + image2D.getFormat());
+				//System.out.println("[Emulator3D] draw - Texture " + textureIdx + ": hasColor=" + hasColor + ", hasAlpha=" + hasAlpha + ", format=" + image2D.getFormat());
 			}
 
 
@@ -1404,10 +1404,10 @@ public final class Emulator3D {
 			// Allow rendering without textures (using vertex colors or material colors)
 			// Some objects may not have textures and should still be rendered
 			if (usedTextures > 0) {
-				System.out.println("[Emulator3D] draw - Bound " + usedTextures + " texture(s)");
+				//System.out.println("[Emulator3D] draw - Bound " + usedTextures + " texture(s)");
 			} else {
 				// Log but don't skip - allow rendering without textures
-				System.out.println("[Emulator3D] draw - No textures bound, rendering with vertex/material colors only");
+				//System.out.println("[Emulator3D] draw - No textures bound, rendering with vertex/material colors only");
 			}
 
 
@@ -1460,7 +1460,16 @@ public final class Emulator3D {
 		LightsCache.addLightsFromWorld(world);
 		renderPipe.pushRenderNode(world, null);
 
+		int nodeCountBefore = renderPipe.getSize();
 		renderPushedNodes();
+		int nodeCountAfter = renderPipe.getSize();
+		
+		// Log if no nodes were rendered
+		if (nodeCountBefore == 0) {
+			System.out.println("[Emulator3D] render - WARNING: No render nodes to draw! This may cause black screen.");
+		} else {
+			System.out.println("[Emulator3D] render - Rendered " + nodeCountBefore + " nodes");
+		}
 	}
 
 	public synchronized void render(Node node, Transform transform) {
@@ -1473,6 +1482,9 @@ public final class Emulator3D {
 		// Clearing here would break rendering order and depth test
 		
 		renderPipe.sortNodes();
+		
+		int meshCount = 0;
+		int spriteCount = 0;
 
 		for (int i = 0; i < renderPipe.getSize(); i++) {
 			RenderObject ro = renderPipe.getRenderObj(i);
@@ -1485,10 +1497,18 @@ public final class Emulator3D {
 				if (indices != null && ap != null) {
 					VertexBuffer vb = MeshMorph.getInstance().getMorphedVertexBuffer(mesh);
 					renderVertex(vb, indices, ap, ro.trans, mesh.getScope(), ro.alphaFactor);
+					meshCount++;
+				} else {
+					System.err.println("[Emulator3D] renderPushedNodes - WARNING: Mesh " + i + " has null indices or appearance");
 				}
 			} else {
 				renderSprite((Sprite3D) ro.node, ro.trans, ro.alphaFactor);
+				spriteCount++;
 			}
+		}
+		
+		if (meshCount == 0 && spriteCount == 0 && renderPipe.getSize() > 0) {
+			System.err.println("[Emulator3D] renderPushedNodes - WARNING: Had " + renderPipe.getSize() + " nodes but rendered 0 meshes and 0 sprites!");
 		}
 
 		renderPipe.clear();
@@ -1755,7 +1775,7 @@ public final class Emulator3D {
 			if (imageData.length < expectedSize) {
 				System.err.println("[Emulator3D] ensureTextureLoaded - WARNING: imageData size mismatch. Expected: " + expectedSize + ", Got: " + imageData.length + " (format: " + image2D.getFormat() + ", size: " + image2D.getWidth() + "x" + image2D.getHeight() + ")");
 			} else {
-				System.out.println("[Emulator3D] ensureTextureLoaded - Loading texture: " + image2D.getWidth() + "x" + image2D.getHeight() + ", format: " + image2D.getFormat() + ", data size: " + imageData.length);
+				//System.out.println("[Emulator3D] ensureTextureLoaded - Loading texture: " + image2D.getWidth() + "x" + image2D.getHeight() + ", format: " + image2D.getFormat() + ", data size: " + imageData.length);
 			}
 			
 			// Diagnostic: Check if texture data looks valid
@@ -1769,9 +1789,9 @@ public final class Emulator3D {
 					sb.append(Integer.toHexString(val & 0xF));
 					sb.append(" ");
 				}
-				System.out.println(sb.toString());
+				//System.out.println(sb.toString());
 			} else {
-				System.out.println("[Emulator3D] ensureTextureLoaded - Texture data appears valid (" + nonZeroPercent + "% non-zero bytes in sample)");
+				//System.out.println("[Emulator3D] ensureTextureLoaded - Texture data appears valid (" + nonZeroPercent + "% non-zero bytes in sample)");
 			}
 
 			try {
@@ -1785,7 +1805,7 @@ public final class Emulator3D {
 					GLES2.generateMipmap(GLES2.Constants.GL_TEXTURE_2D);
 				}
 				
-				System.out.println("[Emulator3D] ensureTextureLoaded - Texture loaded successfully");
+				//System.out.println("[Emulator3D] ensureTextureLoaded - Texture loaded successfully");
 			} catch (Exception e) {
 				System.err.println("[Emulator3D] ensureTextureLoaded - ERROR loading texture: " + e.getMessage());
 				e.printStackTrace();

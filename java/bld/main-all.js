@@ -8382,13 +8382,70 @@ var currentlyFocusedTextEditor;
           console.log('[refresh0] Skipping copy - 3D content already on device canvas');
           window._refresh0SkipLogThrottle = Date.now();
         }
+        
+        if (window.debugLog) {
+          window.debugLog.info('REFRESH0', 'Skipping copy - 3D content already on device canvas', {
+            area: `${x1},${y1} ${x2},${y2}`,
+            size: `${width}x${height}`
+          });
+        }
+        
         window.gles2JustRendered = false;
         J2ME.Scheduler.enqueue(ctx);
         return;
       }
       
       // Copy offscreen canvas to device canvas (for 2D-only frames)
+      if (window.debugLog) {
+        window.debugLog.debug('REFRESH0', 'Copying offscreen to device canvas', {
+          area: `${x1},${y1} ${x2},${y2}`,
+          size: `${width}x${height}`,
+          gles2JustRendered: window.gles2JustRendered
+        });
+        
+        // 检查offscreen canvas的中心像素
+        try {
+          const offscreenCenterX = Math.floor(offscreenCanvas.width / 2);
+          const offscreenCenterY = Math.floor(offscreenCanvas.height / 2);
+          const offscreenPixel = offscreenContext2D.getImageData(offscreenCenterX, offscreenCenterY, 1, 1).data;
+          const offscreenPixelData = { r: offscreenPixel[0], g: offscreenPixel[1], b: offscreenPixel[2], a: offscreenPixel[3] };
+          
+          window.debugLog.debug('REFRESH0', 'Offscreen canvas center pixel', offscreenPixelData);
+          
+          // 检查是否为黑色
+          if (offscreenPixelData.r === 0 && offscreenPixelData.g === 0 && offscreenPixelData.b === 0 && offscreenPixelData.a === 255) {
+            window.debugLog.warn('BLACKSCREEN', 'Offscreen canvas center pixel is BLACK before copy!', {
+              pixel: offscreenPixelData,
+              size: `${offscreenCanvas.width}x${offscreenCanvas.height}`
+            });
+          }
+        } catch (e) {
+          // 忽略错误
+        }
+      }
       MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height);
+      
+      // 验证复制后的device canvas像素
+      if (window.debugLog) {
+        try {
+          const deviceCenterX = Math.floor(MIDP.deviceContext.canvas.width / 2);
+          const deviceCenterY = Math.floor(MIDP.deviceContext.canvas.height / 2);
+          const devicePixel = MIDP.deviceContext.getImageData(deviceCenterX, deviceCenterY, 1, 1).data;
+          const devicePixelData = { r: devicePixel[0], g: devicePixel[1], b: devicePixel[2], a: devicePixel[3] };
+          
+          window.debugLog.debug('REFRESH0', 'Device canvas center pixel after copy', devicePixelData);
+          
+          // 检查是否为黑色
+          if (devicePixelData.r === 0 && devicePixelData.g === 0 && devicePixelData.b === 0 && devicePixelData.a === 255) {
+            window.debugLog.warn('BLACKSCREEN', 'Device canvas center pixel is BLACK after refresh0 copy!', {
+              pixel: devicePixelData,
+              size: `${MIDP.deviceContext.canvas.width}x${MIDP.deviceContext.canvas.height}`
+            });
+          }
+        } catch (e) {
+          // 忽略错误
+        }
+      }
       
       // CRITICAL FIX: Clear the offscreen canvas after refresh to prevent ghosting
       // Mode 2 (aggressive): Clear entire canvas - fixes most ghosting issues

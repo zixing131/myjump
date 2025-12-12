@@ -239,9 +239,19 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
     // Draw image from another canvas
     // Parameters: ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha
     drawImage2: function(lib, ctx, canvasRef, sx, sy, x, y, width, height, flipY, withAlpha) {
+      if (window.debugLog) {
+        window.debugLog.debug('DRAWIMAGE2', 'drawImage2 START', {
+          hasCtx: !!ctx,
+          hasCanvasRef: !!canvasRef,
+          params: { sx, sy, x, y, width, height, flipY, withAlpha }
+        });
+      }
       log('[CanvasGraphics] drawImage2 INNER START - ctx:', !!ctx, 'canvasRef:', !!canvasRef);
       
       if (!ctx || !canvasRef) {
+        if (window.debugLog) {
+          window.debugLog.error('DRAWIMAGE2', 'Missing ctx or canvasRef!', { ctx: !!ctx, canvasRef: !!canvasRef });
+        }
         throttledError('drawImage2-missing', '[CanvasGraphics] drawImage2 inner - MISSING ctx or canvasRef!');
         return;
       }
@@ -251,6 +261,9 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
       let deviceCtx = null;
       if (window.MIDP && window.MIDP.deviceContext) {
         deviceCtx = window.MIDP.deviceContext;
+        if (window.debugLog) {
+          window.debugLog.info('DRAWIMAGE2', 'Found MIDP.deviceContext, will write to device canvas directly');
+        }
         log('[CanvasGraphics] drawImage2 - Found MIDP.deviceContext, will write to device canvas directly');
       }
       
@@ -295,10 +308,38 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
           webglCtx.readPixels(0, 0, srcWidth, srcHeight, webglCtx.RGBA, webglCtx.UNSIGNED_BYTE, pixels);
           
           // Check first pixel
+          const firstPixel = { r: pixels[0], g: pixels[1], b: pixels[2], a: pixels[3] };
           log('[CanvasGraphics] drawImage2 - First pixel:', pixels[0], pixels[1], pixels[2], pixels[3]);
           // Check center pixel (note: WebGL Y=0 is at bottom)
           const centerIdx = (Math.floor(srcHeight/2) * srcWidth + Math.floor(srcWidth/2)) * 4;
+          const centerPixel = { r: pixels[centerIdx], g: pixels[centerIdx+1], b: pixels[centerIdx+2], a: pixels[centerIdx+3] };
           log('[CanvasGraphics] drawImage2 - Center pixel:', pixels[centerIdx], pixels[centerIdx+1], pixels[centerIdx+2], pixels[centerIdx+3]);
+          
+          if (window.debugLog) {
+            window.debugLog.info('DRAWIMAGE2', 'readPixels completed', {
+              size: `${srcWidth}x${srcHeight}`,
+              firstPixel: firstPixel,
+              centerPixel: centerPixel
+            });
+            
+            // 检查WebGL读取的像素是否为黑色
+            if (centerPixel.r === 0 && centerPixel.g === 0 && centerPixel.b === 0 && centerPixel.a === 255) {
+              window.debugLog.warn('BLACKSCREEN', 'WebGL readPixels center pixel is BLACK!', {
+                pixel: centerPixel,
+                size: `${srcWidth}x${srcHeight}`,
+                firstPixel: firstPixel
+              });
+              // Also log to console for immediate visibility
+              console.warn('[BLACKSCREEN] WebGL canvas center pixel is BLACK (0,0,0,255)! This indicates rendering may have failed.');
+              console.warn('[BLACKSCREEN] Possible causes: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, 4) depth test failed, 5) no draw calls executed');
+            }
+          } else {
+            // Even without debugLog, check for black pixels and warn
+            if (centerPixel.r === 0 && centerPixel.g === 0 && centerPixel.b === 0 && centerPixel.a === 255) {
+              console.warn('[BLACKSCREEN] WebGL canvas center pixel is BLACK (0,0,0,255)! This indicates rendering may have failed.');
+              console.warn('[BLACKSCREEN] Possible causes: 1) shader outputs black, 2) textures not sampling, 3) vertices outside view frustum, 4) depth test failed, 5) no draw calls executed');
+            }
+          }
           
           // Create ImageData for the destination
           const imageData = ctx.createImageData(srcWidth, srcHeight);
@@ -330,15 +371,42 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             deviceCtx.putImageData(imageData, 0, 0);
             log('[CanvasGraphics] drawImage2 - putImageData to DEVICE canvas completed');
             
+            if (window.debugLog) {
+              window.debugLog.info('DRAWIMAGE2', 'putImageData to DEVICE canvas completed', {
+                size: `${srcWidth}x${srcHeight}`,
+                centerPixel: centerPixel
+              });
+            }
+            
             // CRITICAL: Set flag to tell refresh0 to skip copying offscreen to device
             // Otherwise refresh0 will overwrite our 3D content with 2D UI content
             window.gles2JustRendered = true;
             
+            if (window.debugLog) {
+              window.debugLog.info('DRAWIMAGE2', 'Set gles2JustRendered = true');
+            }
+            
             // Verify
             try {
               const verifyData = deviceCtx.getImageData(srcWidth/2, srcHeight/2, 1, 1).data;
+              const verifyPixel = { r: verifyData[0], g: verifyData[1], b: verifyData[2], a: verifyData[3] };
               log('[CanvasGraphics] drawImage2 - device verify pixel:', verifyData[0], verifyData[1], verifyData[2], verifyData[3]);
+              
+              if (window.debugLog) {
+                window.debugLog.info('DRAWIMAGE2', 'Device canvas verify pixel', verifyPixel);
+                
+                // 检查是否为黑色
+                if (verifyPixel.r === 0 && verifyPixel.g === 0 && verifyPixel.b === 0) {
+                  window.debugLog.warn('BLACKSCREEN', 'Device canvas center pixel is BLACK!', {
+                    pixel: verifyPixel,
+                    sourceCenterPixel: centerPixel
+                  });
+                }
+              }
             } catch (e) {
+              if (window.debugLog) {
+                window.debugLog.error('DRAWIMAGE2', 'Verify failed', e);
+              }
               warn('[CanvasGraphics] drawImage2 - verify failed:', e);
             }
           } else {
@@ -346,10 +414,20 @@ console.log('[libcanvasgraphics.js] Loaded v20251212g');
             const targetCtx = window.screenContext2D || ctx;
             targetCtx.putImageData(imageData, 0, 0);
             log('[CanvasGraphics] drawImage2 - putImageData to offscreen (fallback)');
+            
+            if (window.debugLog) {
+              window.debugLog.warn('DRAWIMAGE2', 'No deviceCtx, using fallback to offscreen canvas');
+            }
           }
           
         } catch (e) {
           throttledError('webgl-readpixels', '[CanvasGraphics] drawImage2 - WebGL readPixels failed:', e);
+          if (window.debugLog) {
+            window.debugLog.error('DRAWIMAGE2', 'WebGL readPixels failed', {
+              error: e.message || String(e),
+              size: `${srcWidth}x${srcHeight}`
+            });
+          }
         }
       } else {
         log('[CanvasGraphics] drawImage2 - No WebGL context, using drawImage fallback');

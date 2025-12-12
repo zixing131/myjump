@@ -29,6 +29,7 @@ classes.jar: $(SRCS) $(JPP_DESTS) $(EXTRA)
 	#cp -a sootOutput/. build/
 	cd build && "C:\Program Files\Java\jdk1.8.0_202\bin\jar" cf0 ../classes.jar *
 	"C:\Program Files\Java\jdk1.8.0_202\bin\jar" uf0 classes.jar $(EXTRA)
+	mv classes.jar ../../java/java
 
 tools/Jpp.class: tools/Jpp.java
 	"C:\Program Files\Java\jdk1.8.0_202\bin\javac.exe" $^
