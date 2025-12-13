@@ -3711,19 +3711,78 @@ var J2ME;
             thread.pushPendingNativeFrames();
             frame = thread.frame;
         }
+        
+        // CRITICAL FIX: Handle special frame types that don't have methodInfo
+        // FrameType values: Interpreter=0, ExitInterpreter=268435456, PushPendingFrames=536870912, 
+        //                   Interrupt=805306368, Native=1073741824
+        var frameType = frame.type;
+        if (frameType !== 0 /* FrameType.Interpreter */) {
+            // Handle different special frame types appropriately
+            if (frameType === 268435456 /* FrameType.ExitInterpreter */) {
+                // ExitInterpreter means we should EXIT the interpreter loop
+                // This happens when returning from Java code called by native code
+                // We should NOT terminate the thread - just return from interpret() to let native code continue
+                try {
+                    thread.popMarkerFrame(FrameType.ExitInterpreter);
+                } catch (e) {
+                    // Failed to pop - this is unusual but we should still return
+                    if (!window._interpretExitInterpreterPopFailThrottle || Date.now() - window._interpretExitInterpreterPopFailThrottle > 5000) {
+                        console.warn('[interpret] Failed to pop ExitInterpreter frame, returning to caller');
+                        window._interpretExitInterpreterPopFailThrottle = Date.now();
+                    }
+                }
+                // CRITICAL: Just return to let native code continue
+                // Do NOT check for more frames - the ExitInterpreter frame is specifically
+                // a marker that says "when you reach this, return to the native code that called interpret()"
+                // The native code will handle what happens next
+                return;
+            } else {
+                // Other special frame types (Native, PushPendingFrames, Interrupt)
+                // Pause and let Context.execute handle it
+                if (!window._interpretSpecialFrameThrottle || Date.now() - window._interpretSpecialFrameThrottle > 5000) {
+                    console.log('[interpret] Special frame type detected: ' + frameType + ', pausing for Context.execute to handle');
+                    window._interpretSpecialFrameThrottle = Date.now();
+                }
+                U = 2; // Pausing
+                return;
+            }
+        }
+        
         release || assert(frame.type === FrameType.Interpreter, "Must begin with interpreter frame.");
         var mi = frame.methodInfo;
     
     
     
         release || assert(mi, "Must have method info.");
-        // CRITICAL FIX: Check if methodInfo and codeAttribute exist
+        // CRITICAL FIX: Check if methodInfo and codeAttribute exist for Interpreter frames
         if (!mi || !mi.codeAttribute) {
-            // Throttle error logging
+            // For Interpreter frames, methodInfo should exist - this indicates corruption
             if (!window._interpretNullMiThrottle || Date.now() - window._interpretNullMiThrottle > 5000) {
-                console.error('[interpret] methodInfo or codeAttribute is null, cannot interpret');
+                console.error('[interpret] Interpreter frame has null methodInfo, attempting recovery');
                 window._interpretNullMiThrottle = Date.now();
             }
+            // Try to pop the corrupted frame and recover
+            try {
+                // Check the caller frame before popping
+                var callerFP = i32[thread.fp + 1 /* CallerFPOffset */];
+                if (callerFP > 0 && callerFP >= (thread.tp >> 2)) {
+                    thread.popFrame(null, FrameType.Interpreter);
+                    var nextFrame = thread.frame;
+                    if (nextFrame) {
+                        // Found another frame, pause and let scheduler retry
+                        console.log('[interpret] Popped corrupted frame, found frame type=' + nextFrame.type);
+                        U = 2; // Pausing
+                        return;
+                    }
+                }
+            } catch (popErr) {
+                if (!window._interpretPopFrameFailThrottle || Date.now() - window._interpretPopFrameFailThrottle > 5000) {
+                    console.error('[interpret] Failed to pop corrupted frame:', popErr);
+                    window._interpretPopFrameFailThrottle = Date.now();
+                }
+            }
+            // Cannot recover - pause and let Context.execute decide
+            U = 2; // Pausing
             return;
         }
         mi.stats.interpreterCallCount++;
@@ -3756,9 +3815,12 @@ var J2ME;
             // This can happen if frame was modified during exception handling
             if (!mi || !mi.codeAttribute || !code) {
                 if (!window._interpretLoopNullCheckThrottle || Date.now() - window._interpretLoopNullCheckThrottle > 5000) {
-                    console.error('[interpret] mi, codeAttribute, or code is null in loop, cannot continue');
+                    console.error('[interpret] mi, codeAttribute, or code is null in loop, pausing thread');
                     window._interpretLoopNullCheckThrottle = Date.now();
                 }
+                // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                thread.set(fp, sp, opPC);
+                U = 2; // Pausing
                 return;
             }
             // Re-verify code matches current methodInfo
@@ -5130,8 +5192,19 @@ var J2ME;
                         if (fp < minFP || fp === 0) {
                             // Special handling for Sys.unwind: if fp is 0, it may be normal (returning from native code)
                             if (isUnwindMethod && fp === 0) {
-                                // For Sys.unwind, fp=0 may indicate we're returning from native code
-                                // Try to use thread state to continue, or just return the value
+                                // For Sys.unwind, fp=0 indicates we're returning from the entire call stack
+                                // This is NORMAL - we should just return from interpret() and let the caller handle it
+                                // DO NOT try to continue executing - there's nothing left to execute
+                                if (!window._interpretUnwindFP0ReturnThrottle || Date.now() - window._interpretUnwindFP0ReturnThrottle > 5000) {
+                                    console.log('[interpret] Sys.unwind returned with fp=0, returning from interpret normally');
+                                    window._interpretUnwindFP0ReturnThrottle = Date.now();
+                                }
+                                // Save thread state and pause - let the scheduler handle resumption
+                                thread.set(thread.fp, thread.sp, thread.pc);
+                                U = 2; // Pausing
+                                return;
+                                
+                                /* OLD CODE THAT CAUSED INFINITE LOOP:
                                 if (thread.fp >= minFP && thread.fp !== 0) {
                                     if (!window._interpretUnwindFP0Throttle || Date.now() - window._interpretUnwindFP0Throttle > 5000) {
                                         console.warn('[interpret] Sys.unwind returned with fp=0, using thread state to continue');
@@ -5153,7 +5226,9 @@ var J2ME;
                                                 continue;
                                             }
                                         }
-                                    }
+                                    }*/
+                                // The following code is now unreachable but kept for reference
+                                if (false && thread.fp >= minFP && thread.fp !== 0) {
                                     // CRITICAL FIX: If thread state is valid but mi/codeAttribute/code is incomplete,
                                     // try to find the next valid frame or use a safe default
                                     // This prevents the game from freezing when Sys.unwind returns with incomplete state
@@ -5196,11 +5271,15 @@ var J2ME;
                                         searchCount++;
                                     }
                                 }
-                                // If thread state is also invalid, just return the value (this is better than freezing)
+                                // If thread state is also invalid, pause thread instead of killing it
                                 if (!window._interpretUnwindFP0ReturnThrottle || Date.now() - window._interpretUnwindFP0ReturnThrottle > 5000) {
-                                    console.warn('[interpret] Sys.unwind returned with fp=0, thread state also invalid, returning value to continue');
+                                    console.warn('[interpret] Sys.unwind returned with fp=0, thread state also invalid, pausing thread');
                                     window._interpretUnwindFP0ReturnThrottle = Date.now();
                                 }
+                                // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                                // This allows the thread to potentially be resumed later
+                                thread.set(fp, sp, opPC);
+                                U = 2; // Pausing
                                 // Return the value and let the caller handle it
                                 switch (op) {
                                     case 176 /* ARETURN */:
@@ -5482,12 +5561,15 @@ var J2ME;
                                 }
                             }
                             // Only return if absolutely everything fails
-                            // This will suspend the thread, but we've tried everything
+                            // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                            // This allows the thread to potentially be resumed later
                             if (!window._interpretAbsoluteFailureThrottle || Date.now() - window._interpretAbsoluteFailureThrottle > 5000) {
-                                console.error('[interpret] Absolute failure: all recovery strategies exhausted, suspending thread');
-                                console.error('[interpret] This will cause the game to freeze. Frame stack is severely corrupted.');
+                                console.error('[interpret] Absolute failure: all recovery strategies exhausted, pausing thread');
+                                console.error('[interpret] Frame stack is severely corrupted, but thread will be paused instead of killed');
                                 window._interpretAbsoluteFailureThrottle = Date.now();
                             }
+                            thread.set(fp, sp, opPC);
+                            U = 2; // Pausing
                             return;
                         }
                         
@@ -5556,18 +5638,24 @@ var J2ME;
                                 ci = mi.classInfo;
                                 if (!ci) {
                                     if (!window._interpretPushPendingNullCiThrottle || Date.now() - window._interpretPushPendingNullCiThrottle > 5000) {
-                                        console.warn('[interpret] classInfo is null after PushPendingFrames, returning');
+                                        console.warn('[interpret] classInfo is null after PushPendingFrames, pausing thread');
                                         window._interpretPushPendingNullCiThrottle = Date.now();
                                     }
+                                    // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                                    thread.set(fp, sp, opPC);
+                                    U = 2; // Pausing
                                     return;
                                 }
                                 cp = ci.constantPool;
                                 code = mi.codeAttribute.code;
                                 if (!code) {
                                     if (!window._interpretPushPendingNullCodeThrottle || Date.now() - window._interpretPushPendingNullCodeThrottle > 5000) {
-                                        console.warn('[interpret] code is null after PushPendingFrames, returning');
+                                        console.warn('[interpret] code is null after PushPendingFrames, pausing thread');
                                         window._interpretPushPendingNullCodeThrottle = Date.now();
                                     }
+                                    // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                                    thread.set(fp, sp, opPC);
+                                    U = 2; // Pausing
                                     return;
                                 }
                                 continue;
@@ -5607,7 +5695,10 @@ var J2ME;
                                             }
                                         }
                                     }
-                                    // If recovery fails, return (but we've tried)
+                                    // If recovery fails, pause thread instead of killing it
+                                    // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                                    thread.set(fp, sp, opPC);
+                                    U = 2; // Pausing
                                     return;
                                 }
                                 maxLocals = mi.codeAttribute.max_locals;
@@ -5639,6 +5730,9 @@ var J2ME;
                                             }
                                         }
                                     }
+                                    // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                                    thread.set(fp, sp, opPC);
+                                    U = 2; // Pausing
                                     return;
                                 }
                                 cp = ci.constantPool;
@@ -5669,6 +5763,9 @@ var J2ME;
                                             }
                                         }
                                     }
+                                    // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                                    thread.set(fp, sp, opPC);
+                                    U = 2; // Pausing
                                     return;
                                 }
                                 interrupt = true;
@@ -5736,8 +5833,15 @@ var J2ME;
                                     }
                                 }
                             }
-                            // Frame stack is corrupted and recovery failed, but we try to continue anyway
-                            // This is better than freezing the game
+                            // Frame stack is corrupted and recovery failed
+                            // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                            // This allows the thread to potentially be resumed later
+                            if (!window._interpretFPRecoveryFailed3Throttle || Date.now() - window._interpretFPRecoveryFailed3Throttle > 5000) {
+                                console.warn('[interpret] All recovery attempts failed, pausing thread instead of killing');
+                                window._interpretFPRecoveryFailed3Throttle = Date.now();
+                            }
+                            thread.set(fp, sp, opPC);
+                            U = 2; // Pausing
                             return;
                         }
                         
@@ -5802,7 +5906,10 @@ var J2ME;
                                     }
                                 }
                             }
-                            // If we can't recover, return to avoid infinite loop
+                            // If we can't recover, pause thread instead of killing it
+                            // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                            thread.set(fp, sp, opPC);
+                            U = 2; // Pausing
                             return;
                         }
                         // CRITICAL FIX: Re-validate and update all variables after method return
@@ -5837,6 +5944,9 @@ var J2ME;
                                     }
                                 }
                             }
+                            // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                            thread.set(fp, sp, opPC);
+                            U = 2; // Pausing
                             return;
                         }
                         cp = ci.constantPool;
@@ -5868,6 +5978,9 @@ var J2ME;
                                     }
                                 }
                             }
+                            // CRITICAL FIX: Set U = 2 (Pausing) to prevent thread from being killed
+                            thread.set(fp, sp, opPC);
+                            U = 2; // Pausing
                             return;
                         }
                         if (interrupt) {
@@ -11712,6 +11825,158 @@ var J2ME;
                 this.clearCurrentContext();
                 return;
             }
+            // CRITICAL FIX: If U === 0 but thread still has valid frame stack, resume instead of kill
+            // This fixes the issue where interpret() returns early due to frame stack issues
+            // but the thread should continue running instead of being terminated
+            var thread = this.nativeThread;
+            var minFP = thread.tp >> 2;
+            if (thread.fp >= minFP && thread.fp !== 0) {
+                // IMPORTANT: Check frame type and content to determine if frame is valid
+                var frame = thread.frame;
+                var frameType = frame ? frame.type : -1;
+                
+                // FrameType values:
+                // Interpreter = 0 (needs methodInfo)
+                // ExitInterpreter = 268435456
+                // PushPendingFrames = 536870912
+                // Interrupt = 805306368
+                // Native = 1073741824
+                
+                var isInterpreterFrame = (frameType === 0); // FrameType.Interpreter
+                var isExitInterpreterFrame = (frameType === 268435456); // FrameType.ExitInterpreter
+                var hasValidMethodInfo = frame && frame.methodInfo && frame.methodInfo.codeAttribute;
+                
+                // ExitInterpreter frame: This is tricky - it means interpret() returned after
+                // executing some Java code. But the thread might still have work to do.
+                // CRITICAL: We should almost NEVER terminate a thread just because we see ExitInterpreter
+                // The only safe case to terminate is when fp is 0 or truly at stack base
+                if (isExitInterpreterFrame) {
+                    var minFPForTermination = thread.tp >> 2;
+                    var fpIsAtBase = (thread.fp === 0) || (thread.fp === minFPForTermination);
+                    
+                    if (!fpIsAtBase) {
+                        // fp is not at base, there might be more work to do
+                        // Try to pop and see what's underneath
+                        try {
+                            thread.popMarkerFrame(FrameType.ExitInterpreter);
+                        } catch (e) {
+                            // Failed to pop, but we still should resume
+                        }
+                        
+                        if (!window._executeExitInterpreterResumeThrottle || Date.now() - window._executeExitInterpreterResumeThrottle > 5000) {
+                            console.log('[execute] ExitInterpreter: fp=' + thread.fp + ' (base=' + minFPForTermination + '), resuming thread');
+                            window._executeExitInterpreterResumeThrottle = Date.now();
+                        }
+                        this.resume();
+                        this.clearCurrentContext();
+                        return;
+                    } else {
+                        // fp is at base, thread truly has no more frames
+                        // BUT WAIT: Even if this thread is done, we shouldn't just kill it if it's the main thread
+                        // Check if this is a critical thread by looking at pending work
+                        
+                        // DIAGNOSTIC: Log which thread is being terminated and how many are left
+                        var ctxId = this.id || 'unknown';
+                        var threadAddr = this.threadAddress || 0;
+                        var runningCount = J2ME.Scheduler.running ? J2ME.Scheduler.running.length : 0;
+                        
+                        // CRITICAL FIX: If ExitInterpreter's fp equals tp>>2, maybe the ExitInterpreter
+                        // frame itself wasn't properly popped. The real frames might be above it.
+                        // Let's check if there's actually content above the ExitInterpreter
+                        var frameContent = i32[thread.fp + 2] & 4026531840; // FrameTypeMask
+                        var hasCallerFP = i32[thread.fp + 1]; // CallerFPOffset
+                        
+                        if (hasCallerFP > minFPForTermination && hasCallerFP !== thread.fp) {
+                            // There's a caller frame above! Don't terminate
+                            if (!window._executeExitInterpreterHasCallerThrottle || Date.now() - window._executeExitInterpreterHasCallerThrottle > 5000) {
+                                console.log('[execute] ExitInterpreter: fp at base but has caller (callerFP=' + hasCallerFP + '), resuming');
+                                window._executeExitInterpreterHasCallerThrottle = Date.now();
+                            }
+                            this.resume();
+                            this.clearCurrentContext();
+                            return;
+                        }
+                        
+                        // CRITICAL FIX: If this is the last running thread (running=0), 
+                        // just don't terminate - allow the event loop to continue
+                        if (runningCount === 0) {
+                            // Start/continue polling for new work
+                            if (!window._vmIdlePolling) {
+                                window._vmIdlePolling = true;
+                                console.warn('[execute] ExitInterpreter: LAST THREAD - VM idle, starting event polling');
+                                
+                                // Use a closure to capture the correct Scheduler reference
+                                var schedulerRef = J2ME.Scheduler;
+                                var pollForWork = function() {
+                                    // Check if there's new work by trying to access internal runningQueue
+                                    // We can use Scheduler.shouldPreempt() as a proxy - if there's work, it returns true
+                                    // Or we can check if processRunningQueue does anything
+                                    
+                                    // Trigger processRunningQueue - if there's work, it will execute
+                                    // If not, it will return quickly
+                                    try {
+                                        schedulerRef.processRunningQueue();
+                                    } catch (e) {
+                                        console.error('[pollForWork] Error calling processRunningQueue:', e);
+                                    }
+                                    
+                                    // Keep polling - but with longer interval to reduce CPU usage
+                                    if (window._vmIdlePolling) {
+                                        if (typeof requestAnimationFrame !== 'undefined') {
+                                            requestAnimationFrame(pollForWork);
+                                        } else {
+                                            setTimeout(pollForWork, 16);
+                                        }
+                                    }
+                                };
+                                
+                                // Start polling immediately
+                                pollForWork();
+                            }
+                            
+                            this.clearCurrentContext();
+                            return;
+                        }
+                        
+                        if (!window._executeExitInterpreterThrottle || Date.now() - window._executeExitInterpreterThrottle > 5000) {
+                            console.log('[execute] ExitInterpreter: TERMINATING thread (ctx=' + ctxId + ', addr=' + threadAddr + 
+                                ', fp=' + thread.fp + ', base=' + minFPForTermination + ', running=' + runningCount + ')');
+                            window._executeExitInterpreterThrottle = Date.now();
+                        }
+                        // Fall through to kill()
+                    }
+                }
+                // Resume if:
+                // 1. It's an interpreter frame with valid methodInfo, OR
+                // 2. It's a special frame type (Native, PushPendingFrames, Interrupt) that needs handling
+                //    But NOT ExitInterpreter - that means execution is complete
+                else if (hasValidMethodInfo || (!isInterpreterFrame && !isExitInterpreterFrame && frameType !== -1)) {
+                    // Thread still has valid frame stack, try to resume
+                    if (!window._executeResumeInsteadOfKillThrottle || Date.now() - window._executeResumeInsteadOfKillThrottle > 5000) {
+                        console.warn('[execute] interpret returned with U=0, resuming (fp=' + thread.fp + ', frameType=' + frameType + ', hasMethodInfo=' + hasValidMethodInfo + ')');
+                        window._executeResumeInsteadOfKillThrottle = Date.now();
+                    }
+                    this.resume();
+                    this.clearCurrentContext();
+                    return;
+                } else {
+                    // Interpreter frame but methodInfo is null - this is corrupted
+                    if (!window._executeCorruptedFrameThrottle || Date.now() - window._executeCorruptedFrameThrottle > 5000) {
+                        console.warn('[execute] Thread has corrupted interpreter frame (fp=' + thread.fp + ', frameType=' + frameType + '), allowing termination');
+                        window._executeCorruptedFrameThrottle = Date.now();
+                    }
+                }
+            }
+            // DIAGNOSTIC: Track all thread terminations
+            if (!window._threadTerminationCount) window._threadTerminationCount = 0;
+            window._threadTerminationCount++;
+            var runningQueueLen = J2ME.Scheduler.running ? J2ME.Scheduler.running.length : 
+                                  (typeof runningQueue !== 'undefined' ? runningQueue.length : 'unknown');
+            console.warn('[execute] THREAD KILL #' + window._threadTerminationCount + 
+                ' - ctx=' + (this.id || 'unknown') + 
+                ', fp=' + (thread ? thread.fp : 'null') + 
+                ', frameType=' + (frame ? frame.type : 'null') +
+                ', runningQueue=' + runningQueueLen);
             this.clearCurrentContext();
             this.kill();
         };
@@ -11729,6 +11994,22 @@ var J2ME;
                 if (!ctx) {
                     continue;
                 }
+                
+                // CRITICAL FIX: Check if this context is valid before waking up
+                var thread = ctx.nativeThread;
+                if (thread) {
+                    var minFP = thread.tp >> 2;
+                    var fpAtBase = (thread.fp === 0) || (thread.fp === minFP);
+                    var frame = thread.frame;
+                    var isExitInterpreterAtBase = frame && (frame.type === 268435456) && (i32[thread.fp + 1] <= minFP);
+                    
+                    if (fpAtBase || isExitInterpreterAtBase) {
+                        console.warn('[unblock] Skipping invalid context (ctx=' + (ctx.id || 'unknown') + 
+                            ', fp=' + thread.fp + ', base=' + minFP + ')');
+                        continue; // Skip this context
+                    }
+                }
+                
                 ctx.wakeup(lock);
                 if (!notifyAll) {
                     break;
@@ -11740,6 +12021,26 @@ var J2ME;
                 window.clearTimeout(this.lockTimeout);
                 this.lockTimeout = null;
             }
+            
+            // CRITICAL FIX: Check if this context has a valid frame stack before waking up
+            // If the thread's frame stack is empty (fp at base), don't wake it up
+            var thread = this.nativeThread;
+            if (thread) {
+                var minFP = thread.tp >> 2;
+                var fpAtBase = (thread.fp === 0) || (thread.fp === minFP);
+                
+                // Also check if the current frame is ExitInterpreter with no caller
+                var frame = thread.frame;
+                var isExitInterpreterAtBase = frame && (frame.type === 268435456) && (i32[thread.fp + 1] <= minFP);
+                
+                if (fpAtBase || isExitInterpreterAtBase) {
+                    // Thread has no valid frames, don't wake it up
+                    console.warn('[wakeup] Skipping context with empty frame stack (ctx=' + (this.id || 'unknown') + 
+                        ', fp=' + thread.fp + ', base=' + minFP + ', frameType=' + (frame ? frame.type : 'null') + ')');
+                    return; // Don't wake up this thread
+                }
+            }
+            
             if (lock.level !== 0) {
                 lock.ready.push(this);
             }

@@ -8430,8 +8430,7 @@ var currentlyFocusedTextEditor;
 window.gles2JustRendered = false; 
   var refreshStr = "refresh";
   Native["com/sun/midp/lcdui/DisplayDevice.refresh0.(IIIIII)V"] = function(addr, hardwareId, displayId, x1, y1, x2, y2) {
-    console.log('refresh0');
-    
+     
     x1 = Math.max(0, x1);
     y1 = Math.max(0, y1);
     x2 = Math.max(0, x2);
