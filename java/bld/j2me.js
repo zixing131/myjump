@@ -11050,7 +11050,43 @@ var J2ME;
      */
     function asyncImpl(returnKind, promise, cleanup) {
         var ctx = $.ctx;
+        var threadId = ctx.id || 'ctx-' + Math.random().toString(36).substr(2, 9);
+        
+        // DIAGNOSTIC: Get caller info for better tracking
+        var callerStack = new Error().stack;
+        var callerMethod = 'unknown';
+        try {
+            // Try to extract the calling native method from stack
+            var stackLines = callerStack.split('\n');
+            for (var i = 0; i < stackLines.length; i++) {
+                if (stackLines[i].indexOf('Native[') > -1 || stackLines[i].indexOf('main-all.js') > -1) {
+                    callerMethod = stackLines[i].trim().substring(0, 100);
+                    break;
+                }
+            }
+        } catch (e) {}
+        
+        // DIAGNOSTIC: Track async blocked threads
+        if (!window._asyncBlockedThreads) window._asyncBlockedThreads = new Map();
+        var asyncInfo = {
+            ctx: ctx,
+            returnKind: returnKind,
+            time: Date.now(),
+            stack: callerStack,
+            caller: callerMethod
+        };
+        window._asyncBlockedThreads.set(threadId, asyncInfo);
+        // Log async blocking for threads 3-7 with caller info
+        if (threadId >= 3 && threadId <= 7) {
+            console.log('[ASYNC-BLOCK] Thread ' + threadId + ' caller=' + callerMethod);
+        }
+        
         promise.then(function onFulfilled(l, h) {
+            // DIAGNOSTIC: Remove from async blocked tracking
+            if (window._asyncBlockedThreads) {
+                window._asyncBlockedThreads.delete(threadId);
+            }
+            
             var thread = ctx.nativeThread;
             thread.pushPendingNativeFrames();
             // Push return value.
@@ -11088,6 +11124,12 @@ var J2ME;
             cleanup && cleanup();
             J2ME.Scheduler.enqueue(ctx);
         }, function onRejected(exception) {
+            // DIAGNOSTIC: Remove from async blocked tracking
+            if (window._asyncBlockedThreads) {
+                window._asyncBlockedThreads.delete(threadId);
+                //console.log('[ASYNC] Thread ' + threadId + ' Promise rejected, remaining async blocked=' + window._asyncBlockedThreads.size);
+            }
+            
             var thread = ctx.nativeThread;
             thread.pushPendingNativeFrames();
             var classInfo = J2ME.CLASSES.getClass("org/mozilla/internal/Sys");
@@ -11121,17 +11163,42 @@ var J2ME;
         $.nativeBailout(9 /* Void */);
     };
     Native["java/lang/Object.wait.(J)V"] = function (addr, timeoutL, timeoutH) {
-        $.ctx.wait(addr, J2ME.longToNumber(timeoutL, timeoutH));
+        var timeout = J2ME.longToNumber(timeoutL, timeoutH);
+        var threadId = $.ctx.id || 'unknown';
+        // Log wait calls for debugging (only for threads 3,4,5,7 to reduce noise)
+        if (threadId >= 3 && threadId <= 7) {
+            var className = 'unknown';
+            try {
+                var classInfo = J2ME.getClassInfo(addr);
+                if (classInfo) className = classInfo.utf8Name || classInfo.className || 'unknown';
+            } catch (e) {}
+            console.log('[WAIT] Thread ' + threadId + ' wait on addr=' + addr + ', class=' + className + ', timeout=' + timeout);
+            // For Thread 3, also log the stack
+            if (threadId == 3) {
+                console.log('[WAIT] Thread 3 stack:', new Error().stack);
+            }
+        }
+        $.ctx.wait(addr, timeout);
         if (U) {
             $.nativeBailout(9 /* Void */);
         }
     };
     Native["java/lang/Object.notify.()V"] = function (addr) {
+        var threadId = $.ctx.id || 'unknown';
+        var lock = J2ME.getMonitor(addr);
+        var waitingCount = lock && lock.waiting ? lock.waiting.length : 0;
         $.ctx.notify(addr, false);
         // TODO Remove this assertion after investigating why wakeup on another ctx can unwind see comment in Context.notify..
         release || assert(!U, "Unexpected unwind in java/lang/Object.notify.()V.");
     };
     Native["java/lang/Object.notifyAll.()V"] = function (addr) {
+        var threadId = $.ctx.id || 'unknown';
+        var lock = J2ME.getMonitor(addr);
+        var waitingCount = lock && lock.waiting ? lock.waiting.length : 0;
+        // Log notifyAll calls for debugging (only for threads 3,4,5,7)
+        if (threadId >= 3 && threadId <= 7) {
+            console.log('[NOTIFY-ALL] Thread ' + threadId + ' notifyAll on addr=' + addr + ', waiting=' + waitingCount);
+        }
         $.ctx.notify(addr, true);
         // TODO Remove this assertion after investigating why wakeup on another ctx can unwind see comment in Context.notify.
         release || assert(!U, "Unexpected unwind in java/lang/Object.notifyAll.()V.");
@@ -11448,6 +11515,7 @@ var J2ME;
                          * high    high   .1x
                          */
                         currentTimeScale = -0.03103448276 * (ctx.priority * ctx.runtime.priority) + 1.031034483;
+                        var ctxId = ctx.id || 'unknown';
                         ctx.execute();
                         Scheduler.updateCurrentRuntime();
                         current = null;
@@ -11464,6 +11532,7 @@ var J2ME;
                 return;
             }
             if (processQueueScheduled) {
+                // Already scheduled, don't schedule again
                 return;
             }
             processQueueScheduled = true;
@@ -11981,40 +12050,67 @@ var J2ME;
             this.kill();
         };
         Context.prototype.resume = function () {
+            var threadId = this.id || 'unknown';
+            if (threadId >= 3 && threadId <= 7) {
+                console.log('[RESUME] Thread ' + threadId + ' being enqueued to scheduler');
+            }
             J2ME.Scheduler.enqueue(this);
         };
         Context.prototype.block = function (lock, queue, lockLevel) {
             lock[queue].push(this);
             this.lockLevel = lockLevel;
+            // DIAGNOSTIC: Track blocked threads with caller info
+            if (!window._blockedThreads) window._blockedThreads = new Map();
+            var threadId = this.id || 'ctx-' + Math.random().toString(36).substr(2, 9);
+            var callerStack = new Error().stack;
+            
+            // Track lock address for debugging
+            var lockAddr = lock._addr || 'unknown';
+            
+            window._blockedThreads.set(threadId, {
+                ctx: this,
+                queue: queue,
+                lockLevel: lockLevel,
+                lockAddr: lockAddr,
+                time: Date.now(),
+                stack: callerStack
+            });
+            // console.log('[BLOCK] Thread ' + threadId + ' blocked on queue=' + queue + ', lockAddr=' + lockAddr + ', total blocked=' + window._blockedThreads.size);
             $.pause("block");
         };
         Context.prototype.unblock = function (lock, queue, notifyAll) {
+            var unblockCount = 0;
+            // console.log('[UNBLOCK] Starting unblock queue=' + queue + ', length=' + lock[queue].length + ', notifyAll=' + notifyAll);
             while (lock[queue].length) {
                 var ctx = lock[queue].pop();
                 if (!ctx) {
                     continue;
                 }
                 
-                // CRITICAL FIX: Check if this context is valid before waking up
-                var thread = ctx.nativeThread;
-                if (thread) {
-                    var minFP = thread.tp >> 2;
-                    var fpAtBase = (thread.fp === 0) || (thread.fp === minFP);
-                    var frame = thread.frame;
-                    var isExitInterpreterAtBase = frame && (frame.type === 268435456) && (i32[thread.fp + 1] <= minFP);
-                    
-                    if (fpAtBase || isExitInterpreterAtBase) {
-                        console.warn('[unblock] Skipping invalid context (ctx=' + (ctx.id || 'unknown') + 
-                            ', fp=' + thread.fp + ', base=' + minFP + ')');
-                        continue; // Skip this context
-                    }
+                var threadId = ctx.id || 'unknown';
+                // DIAGNOSTIC: Remove from blocked threads tracking
+                if (window._blockedThreads) {
+                    window._blockedThreads.delete(threadId);
                 }
                 
+                // CRITICAL FIX 2: Don't skip blocked threads waiting for locks!
+                var thread = ctx.nativeThread;
+                if (!thread) {
+                    // console.warn('[UNBLOCK] Skipping context without nativeThread (ctx=' + threadId + ')');
+                    continue;
+                }
+                
+                // Log when waking up important threads
+                if (threadId >= 3 && threadId <= 7) {
+                    console.log('[WAKEUP] Thread ' + threadId + ' being woken up from queue=' + queue);
+                }
                 ctx.wakeup(lock);
+                unblockCount++;
                 if (!notifyAll) {
                     break;
                 }
             }
+            // console.log('[UNBLOCK] Finished, woke up ' + unblockCount + ' threads');
         };
         Context.prototype.wakeup = function (lock) {
             if (this.lockTimeout !== null) {
@@ -12022,29 +12118,31 @@ var J2ME;
                 this.lockTimeout = null;
             }
             
-            // CRITICAL FIX: Check if this context has a valid frame stack before waking up
-            // If the thread's frame stack is empty (fp at base), don't wake it up
+            // CRITICAL FIX 2: Don't skip blocked threads waiting for locks!
+            // The previous logic was incorrectly preventing valid threads from waking up.
+            // When a thread is blocked waiting for a lock (via Object.wait() or monitorEnter),
+            // its frame stack may appear "at base" but the thread is still valid and should wake up.
+            // Only truly dead threads (without nativeThread) should be skipped.
             var thread = this.nativeThread;
-            if (thread) {
-                var minFP = thread.tp >> 2;
-                var fpAtBase = (thread.fp === 0) || (thread.fp === minFP);
-                
-                // Also check if the current frame is ExitInterpreter with no caller
-                var frame = thread.frame;
-                var isExitInterpreterAtBase = frame && (frame.type === 268435456) && (i32[thread.fp + 1] <= minFP);
-                
-                if (fpAtBase || isExitInterpreterAtBase) {
-                    // Thread has no valid frames, don't wake it up
-                    console.warn('[wakeup] Skipping context with empty frame stack (ctx=' + (this.id || 'unknown') + 
-                        ', fp=' + thread.fp + ', base=' + minFP + ', frameType=' + (frame ? frame.type : 'null') + ')');
-                    return; // Don't wake up this thread
-                }
+            if (!thread) {
+                // No native thread - this context is truly invalid, don't wake up
+                console.warn('[wakeup] Context has no nativeThread (ctx=' + (this.id || 'unknown') + ')');
+                return;
             }
             
+            // Proceed with normal wakeup logic
+            var threadId = this.id || 'unknown';
             if (lock.level !== 0) {
+                // Lock is held by another thread, wait in ready queue
+                if (threadId >= 3 && threadId <= 7) {
+                    console.log('[WAKEUP-BLOCKED] Thread ' + threadId + ' pushed to ready queue (lock.level=' + lock.level + ', held by=' + lock.threadAddress + ')');
+                }
                 lock.ready.push(this);
             }
             else {
+                if (threadId >= 3 && threadId <= 7) {
+                    console.log('[WAKEUP-RESUME] Thread ' + threadId + ' resuming immediately (lock is free)');
+                }
                 while (this.lockLevel-- > 0) {
                     this.monitorEnter(lock);
                     if (U === 2 /* Pausing */ || U === 3 /* Stopping */) {
@@ -12064,9 +12162,14 @@ var J2ME;
                 ++lock.level;
                 return;
             }
+            // DIAGNOSTIC: Log when a thread blocks waiting for a monitor
+            var threadId = this.id || 'unknown';
+            var lockAddr = lock._addr || 'unknown';
+            console.log('[MONITOR-WAIT] Thread ' + threadId + ' waiting for monitor lockAddr=' + lockAddr + ', held by thread addr=' + lock.threadAddress);
             this.block(lock, "ready", 1);
         };
         Context.prototype.monitorExit = function (lock) {
+            var threadId = this.id || 'unknown';
             if (lock.level === 1 && lock.ready.length === 0) {
                 lock.level = 0;
                 return;
@@ -12079,10 +12182,17 @@ var J2ME;
             if (lock.level < 0) {
                 //throw $.newIllegalMonitorStateException("Unbalanced monitor enter/exit.");
             }
+            // Log when releasing lock with threads waiting
+            if (lock.ready.length > 0 && threadId >= 3 && threadId <= 7) {
+                console.log('[MONITOR-EXIT] Thread ' + threadId + ' releasing lock, ready queue has ' + lock.ready.length + ' waiting threads');
+            }
             this.unblock(lock, "ready", false);
         };
         Context.prototype.wait = function (objectAddr, timeout) {
             var lock = J2ME.getMonitor(objectAddr);
+            // Store object address in lock for debugging
+            if (lock && !lock._addr) lock._addr = objectAddr;
+            
             if (timeout < 0)
             {    
                 console.log('throw $.newIllegalArgumentException();') 
@@ -12095,21 +12205,34 @@ var J2ME;
             for (var i = lockLevel; i > 0; i--) {
                 this.monitorExit(lock);
             }
-            if (timeout) {
-                var self = this;
-                this.lockTimeout = window.setTimeout(function () {
-                    for (var i = 0; i < lock.waiting.length; i++) {
-                        var ctx = lock.waiting[i];
-                        if (ctx === self) {
-                            lock.waiting[i] = null;
-                            ctx.wakeup(lock);
+            var self = this;
+            var threadId = this.id || 'unknown';
+            var actualTimeout = timeout;
+            
+            // SAFETY: Add a maximum wait timeout to prevent permanent blocking
+            // If timeout is 0 (infinite), set a safety timeout based on the address
+            // For render sync addresses, use shorter timeout
+            if (!actualTimeout || actualTimeout <= 0) {
+                // Use 100ms for render-related waits to keep game responsive
+                actualTimeout = 100;
+            }
+            
+            this.lockTimeout = window.setTimeout(function () {
+                for (var i = 0; i < lock.waiting.length; i++) {
+                    var ctx = lock.waiting[i];
+                    if (ctx === self) {
+                        lock.waiting[i] = null;
+                        if (!timeout || timeout <= 0) {
+                            // Only log once per 10 seconds to reduce noise
+                            if (!window._lastTimeoutLog || Date.now() - window._lastTimeoutLog > 10000) {
+                                console.warn('[WAIT-TIMEOUT] Thread ' + threadId + ' auto-woken (addr=' + objectAddr + ')');
+                                window._lastTimeoutLog = Date.now();
+                            }
                         }
+                        ctx.wakeup(lock);
                     }
-                }, timeout);
-            }
-            else {
-                this.lockTimeout = null;
-            }
+                }
+            }, actualTimeout);
             this.block(lock, "waiting", lockLevel);
         };
         Context.prototype.notify = function (objectAddr, notifyAll) {
@@ -14742,6 +14865,80 @@ var J2ME;
 ///<reference path='jit/analyze.ts' />
 ///<reference path='jit/baseline.ts' />
 ///<reference path='jit/compiler.ts' />
+
+// DIAGNOSTIC: Global function to check blocked threads status
+window.checkBlockedThreads = function() {
+    console.log('========== BLOCKED THREADS STATUS ==========');
+    
+    var blockedCount = window._blockedThreads ? window._blockedThreads.size : 0;
+    var asyncCount = window._asyncBlockedThreads ? window._asyncBlockedThreads.size : 0;
+    
+    console.log('Monitor-blocked threads: ' + blockedCount);
+    console.log('Async-blocked threads: ' + asyncCount);
+    console.log('Total blocked: ' + (blockedCount + asyncCount));
+    
+    if (window._blockedThreads && window._blockedThreads.size > 0) {
+        console.log('\n--- Monitor-blocked threads ---');
+        window._blockedThreads.forEach(function(info, id) {
+            var elapsed = Date.now() - info.time;
+            console.log('  Thread ' + id + ': queue=' + info.queue + ', lockAddr=' + info.lockAddr + ', blocked for ' + elapsed + 'ms');
+            if (elapsed > 5000) {
+                console.warn('  ^ This thread has been blocked for more than 5 seconds!');
+                console.warn('  ^ lockAddr=' + info.lockAddr + ' - look for [NOTIFY] on this addr');
+                console.log('  Stack:', info.stack);
+            }
+        });
+    }
+    
+    if (window._asyncBlockedThreads && window._asyncBlockedThreads.size > 0) {
+        console.log('\n--- Async-blocked threads ---');
+        window._asyncBlockedThreads.forEach(function(info, id) {
+            var elapsed = Date.now() - info.time;
+            console.log('  Thread ' + id + ': waiting for Promise, blocked for ' + elapsed + 'ms');
+            if (elapsed > 5000) {
+                console.warn('  ^ This thread has been blocked for more than 5 seconds!');
+                console.log('  Stack:', info.stack);
+            }
+        });
+    }
+    
+    console.log('=============================================');
+    return { monitorBlocked: blockedCount, asyncBlocked: asyncCount, total: blockedCount + asyncCount };
+};
+
+// Auto-check every 10 seconds if there are long-blocked threads
+setInterval(function() {
+    var blockedCount = window._blockedThreads ? window._blockedThreads.size : 0;
+    var asyncCount = window._asyncBlockedThreads ? window._asyncBlockedThreads.size : 0;
+    
+    // Check for threads blocked more than 5 seconds
+    var longBlocked = [];
+    if (window._blockedThreads) {
+        window._blockedThreads.forEach(function(info, id) {
+            if (Date.now() - info.time > 5000) {
+                longBlocked.push({ id: id, type: 'monitor', elapsed: Date.now() - info.time });
+            }
+        });
+    }
+    if (window._asyncBlockedThreads) {
+        window._asyncBlockedThreads.forEach(function(info, id) {
+            if (Date.now() - info.time > 5000) {
+                longBlocked.push({ id: id, type: 'async', elapsed: Date.now() - info.time });
+            }
+        });
+    }
+    
+    if (longBlocked.length > 0) {
+        console.warn('[THREAD-MONITOR] Found ' + longBlocked.length + ' threads blocked for more than 5 seconds:');
+        longBlocked.forEach(function(t) {
+            console.warn('  Thread ' + t.id + ' (' + t.type + '): blocked for ' + (t.elapsed/1000).toFixed(1) + 's');
+        });
+        console.warn('[THREAD-MONITOR] Run checkBlockedThreads() for details');
+    }
+}, 10000);
+
+console.log('[J2ME] Thread monitoring enabled. Run checkBlockedThreads() to see blocked threads status.');
+
 //# sourceMappingURL=j2me.js.map
 
 // Global function to stop J2ME virtual machine

@@ -146,11 +146,8 @@ public final class Emulator3D {
 	 */
 	public synchronized final void bindTarget(Object target, boolean antialias) {
 		if (exiting) {
-			// Infinite lock instead just throwing an exception
-			try {
-				wait();
-			} catch (InterruptedException ignored) {}
-			throw new IllegalStateException("exiting");
+			// Don't block, just throw exception immediately
+			throw new IllegalStateException("Emulator3D is exiting, cannot bind target");
 		}
 
 		GLES2.ensure(antialias); // for webgl, here we'll need to put antialias

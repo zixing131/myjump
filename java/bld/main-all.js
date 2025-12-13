@@ -8448,7 +8448,12 @@ window.gles2JustRendered = false;
     }
     var ctx = $.ctx;
     window.requestAnimationFrame(function() {
-      MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height); 
+      try {
+        MIDP.deviceContext.drawImage(offscreenCanvas, x1, y1, width, height, x1, y1, width, height); 
+      } catch (e) {
+        console.error('[refresh0] drawImage error:', e);
+      }
+      // CRITICAL: Always enqueue the context, even if drawImage fails
       J2ME.Scheduler.enqueue(ctx);
     });
     $.pause(refreshStr);
