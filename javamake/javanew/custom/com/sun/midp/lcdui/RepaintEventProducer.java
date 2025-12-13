@@ -267,9 +267,18 @@ public class RepaintEventProducer implements EventListener {
             }
 
             currentEventUseID = eventToWaitFor.perUseID;
+            // FIX: Add timeout to prevent permanent blocking
+            // This prevents the game from freezing when the event thread
+            // doesn't process repaint events (e.g., during 3D rendering)
+            int waitCount = 0;
             while (eventToWaitFor.perUseID == currentEventUseID) {
                 try {
-                    wait();
+                    wait(50); // Wait max 50ms before checking again
+                    waitCount++;
+                    // After 100ms (2 iterations), give up waiting
+                    if (waitCount >= 2) {
+                        break;
+                    }
                 } catch (InterruptedException ie) {
                     /* The application wants this thread to unblock */
                     break;

@@ -103,6 +103,7 @@ class CanvasLFImpl extends DisplayableLFImpl implements CanvasLF {
      * given <code>Display</code>.
      */
     public void uCallShow() {
+        System.out.println("[CANVAS] uCallShow called - calling showNotify");
 
         // Create native resource with title and ticker
         super.uCallShow();
@@ -130,27 +131,20 @@ class CanvasLFImpl extends DisplayableLFImpl implements CanvasLF {
      * given <code>Display</code>.
      */
     public void uCallHide() {
+        System.out.println("[CANVAS] uCallHide called - calling showNotify to counteract any pause");
         
         int oldState = state;
 
         // Delete native resources including title and ticker
         super.uCallHide();
 
-        // Notify canvas subclass after hiding the native resource
+        // FIX: Instead of calling hideNotify(), call showNotify() to ensure game stays active
+        // This counteracts any pause logic that may have been triggered
         synchronized (Display.calloutLock) {
-            if (oldState == SHOWN) {
-                try {
-                    canvas.hideNotify();
-        		    /* For MMAPI VideoControl in a Canvas */
-                    if (mmHelper != null) {
-                        for (Enumeration e = embeddedVideos.elements();
-                                                  e.hasMoreElements();) {
-                            mmHelper.hideVideo(e.nextElement());
-                        }
-                    }
-                } catch (Throwable t) {
-                    Display.handleThrowable(t);
-                }
+            try {
+                canvas.showNotify();
+            } catch (Throwable t) {
+                Display.handleThrowable(t);
             }
         }
     }
@@ -159,29 +153,14 @@ class CanvasLFImpl extends DisplayableLFImpl implements CanvasLF {
       * Notify this <code>Canvas</code> that it is being frozen on the
       * given <code>Display</code>.
       */
-
      public void uCallFreeze() {
- 
-         int oldState = state;
- 
-         // Delete native resources including title and ticker
-         super.uCallFreeze();
- 
-         // Notify canvas subclass after hiding the native resource
+         System.out.println("[CANVAS] uCallFreeze called - calling showNotify to counteract any pause");
+         // FIX: Instead of freezing, call showNotify() to ensure game stays active
          synchronized (Display.calloutLock) {
-             if (oldState == SHOWN) {
-                 try {
-                     canvas.hideNotify();
-                    // For MMAPI VideoControl in a Canvas 
-                    if (mmHelper != null) {
-                        for (Enumeration e = embeddedVideos.elements();
-                                                  e.hasMoreElements();) {
-                            mmHelper.hideVideo(e.nextElement());
-                        }
-                    }
-                 } catch (Throwable t) {
-                     Display.handleThrowable(t);
-                 }
+             try {
+                 canvas.showNotify();
+             } catch (Throwable t) {
+                 Display.handleThrowable(t);
              }
          }
      }

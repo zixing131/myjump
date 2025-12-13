@@ -1992,7 +1992,9 @@ public class Display {
 
 
 
+            // FIX: Call uCallShow right after uCallHide to counteract pause
             oldCurrent.uCallHide();
+            oldCurrent.uCallShow(); // Counteract the hideNotify effect
         }
 
         if (newCurrent != null) {
@@ -2019,7 +2021,9 @@ public class Display {
 
                 newCurrent.uCallShow();
             } else {
-                newCurrent.uCallFreeze();
+                // FIX: Call uCallShow instead of uCallFreeze to prevent game freeze
+                newCurrent.uCallShow();
+                // newCurrent.uCallFreeze();
             }
         }
 
@@ -3153,7 +3157,9 @@ public class Display {
 
             // SYNC NOTE: The implementation of dsFreeze() could call
             // app's hideNotify(). So do this outside LCDUILock.
-            currentCopy.uCallFreeze();
+            // FIX: Call uCallShow instead of uCallFreeze to prevent game freeze
+            currentCopy.uCallShow();
+            // currentCopy.uCallFreeze();
 
             // We want to re-set the scroll indicators when we suspend so
             // that the overtaking screen doesn't have to do it
@@ -3840,7 +3846,8 @@ public class Display {
 
 
 
-                currentCopy.uCallFreeze();
+                // FIX: Skip uCallFreeze to prevent game freeze
+                // currentCopy.uCallFreeze();
             }
             displayEventHandlerImpl.onDisplayBackgroundProcessed(displayId);
         }

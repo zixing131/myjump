@@ -7309,6 +7309,9 @@ if (typeof module !== "undefined" && module.exports) {
     }
     asyncImpl("I", new Promise(function (resolve, reject) {
       waitingNativeEventQueue[isolateId] = { resolve: resolve, nativeEvent: event };
+      // Note: No timeout here - the event loop should wait for real events
+      // Adding a timeout causes "Invalid event in the queue" errors because
+      // the nativeEvent is not filled with valid data when timeout occurs
     }));
   };
   Native["com/sun/midp/events/NativeEventMonitor.readNativeEvent.(Lcom/sun/midp/events/NativeEvent;)Z"] = function (addr, eventAddr) {

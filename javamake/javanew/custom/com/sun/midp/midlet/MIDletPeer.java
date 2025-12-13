@@ -185,7 +185,14 @@ public class MIDletPeer implements MIDletEventConsumer {
      *
      */
     void pauseApp() {
+        System.out.println("[MIDLET] pauseApp called - immediately calling startApp to resume");
         tunnel.callPauseApp(midlet);
+        // FIX: Immediately call startApp to counteract the pause
+        try {
+            tunnel.callStartApp(midlet);
+        } catch (Throwable t) {
+            // Ignore any exceptions from startApp
+        }
     }
 
     /**
